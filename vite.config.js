@@ -10,6 +10,9 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/js/app.js',
                 'resources/js/passkeys.js',
+                'resources/js/surveillance/capture.js',
+                'resources/js/surveillance/heatmap.js',
+                'resources/js/surveillance/report.js',
             ],
             refresh: true,
             fonts: [
