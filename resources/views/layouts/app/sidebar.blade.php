@@ -11,9 +11,26 @@
             </flux:sidebar.header>
 
             <flux:sidebar.nav>
-                <flux:sidebar.group :heading="__('Platform')" class="grid">
-                    <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
-                        {{ __('Dashboard') }}
+                <flux:sidebar.group
+                    expandable
+                    icon="home"
+                    :heading="__('Dashboard')"
+                    :expanded="request()->routeIs('dashboard') || request()->routeIs('surveillance.*')"
+                >
+                    <flux:sidebar.item icon="squares-2x2" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
+                        {{ __('Overview') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="users" :href="route('surveillance.customers')" :current="request()->routeIs('surveillance.customers')">
+                        {{ __('Customers') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="chart-bar" :href="route('surveillance.trends')" :current="request()->routeIs('surveillance.trends')">
+                        {{ __('Trends') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="map-pin" :href="route('surveillance.heatmap')" :current="request()->routeIs('surveillance.heatmap')">
+                        {{ __('Entry points') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="home-modern" :href="route('surveillance.rooms')" :current="request()->routeIs('surveillance.rooms')">
+                        {{ __('Rooms') }}
                     </flux:sidebar.item>
                 </flux:sidebar.group>
 

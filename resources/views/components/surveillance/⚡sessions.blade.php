@@ -136,26 +136,9 @@ new class extends Component {
 }; ?>
 
 <section class="w-full">
-    <div class="flex items-center justify-between">
-        <div>
-            <flux:heading size="lg">{{ __('Surveillance') }}</flux:heading>
-            <flux:text class="mt-2">{{ __('Overnight bug watching sessions') }}</flux:text>
-        </div>
-
-        <div class="flex items-center gap-3">
-            <flux:button icon="users" href="{{ route('surveillance.customers') }}" data-test="customers-link">
-                {{ __('Customers') }}
-            </flux:button>
-            <flux:button icon="chart-bar" href="{{ route('surveillance.trends') }}" data-test="trends-link">
-                {{ __('Trends') }}
-            </flux:button>
-            <flux:button icon="map-pin" href="{{ route('surveillance.heatmap') }}" data-test="heatmap-link">
-                {{ __('Entry points') }}
-            </flux:button>
-            <flux:button icon="home-modern" href="{{ route('surveillance.rooms') }}" data-test="rooms-link">
-                {{ __('Rooms') }}
-            </flux:button>
-        </div>
+    <div>
+        <flux:heading size="lg">{{ __('Surveillance') }}</flux:heading>
+        <flux:text class="mt-2">{{ __('Overnight bug watching sessions') }}</flux:text>
     </div>
 
     <form wire:submit="startSession" class="mt-4 flex flex-wrap items-end gap-3">
