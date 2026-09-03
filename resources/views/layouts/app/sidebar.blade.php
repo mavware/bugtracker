@@ -4,7 +4,9 @@
         @include('partials.head')
     </head>
     <body class="min-h-screen bg-white dark:bg-zinc-800">
-        <flux:sidebar sticky collapsible="mobile" class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
+        {{-- data-app-nav marks the app chrome that capture.js makes inert while a night
+             is recording; leaving this page ends the night. --}}
+        <flux:sidebar data-app-nav sticky collapsible="mobile" class="border-e border-zinc-200 bg-zinc-50 transition-opacity dark:border-zinc-700 dark:bg-zinc-900">
             <flux:sidebar.header>
                 <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
                 <flux:sidebar.collapse class="lg:hidden" />
@@ -18,7 +20,7 @@
                     :expanded="request()->routeIs('dashboard') || request()->routeIs('surveillance.*')"
                 >
                     <flux:sidebar.item icon="squares-2x2" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
-                        {{ __('Overview') }}
+                        {{ __('Surveillance') }}
                     </flux:sidebar.item>
                     <flux:sidebar.item icon="users" :href="route('surveillance.customers')" :current="request()->routeIs('surveillance.customers')">
                         {{ __('Customers') }}
@@ -42,7 +44,7 @@
                         :expanded="request()->routeIs('admin.*')"
                     >
                         <flux:sidebar.item icon="squares-2x2" :href="route('admin.index')" :current="request()->routeIs('admin.index')">
-                            {{ __('Overview') }}
+                            {{ __('Surveillance') }}
                         </flux:sidebar.item>
                         <flux:sidebar.item icon="users" :href="route('admin.users')" :current="request()->routeIs('admin.users')">
                             {{ __('Users') }}
@@ -76,7 +78,7 @@
         </flux:sidebar>
 
         <!-- Mobile User Menu -->
-        <flux:header class="lg:hidden">
+        <flux:header data-app-nav class="transition-opacity lg:hidden">
             <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
 
             <flux:spacer />

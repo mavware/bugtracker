@@ -68,11 +68,36 @@ function initCaptureApp(root) {
             endNight(true);
         }
     });
+    // The back button and closing the tab reach past the locked chrome, and either
+    // one ends the night for good. Browsers word this prompt themselves; all we can
+    // do is ask for it. Ending or discarding clears app.running first, so the trip
+    // to the report is never interrupted.
+    window.addEventListener('beforeunload', (event) => {
+        if (app.running) {
+            event.preventDefault();
+            event.returnValue = '';
+        }
+    });
+
     window.addEventListener('pagehide', () => {
         if (app.running) {
             app.uploader.flush({ keepalive: true });
         }
     });
+
+    /**
+     * Lock the app chrome while a night is recording. Leaving this page ends the
+     * night, so a stray tap on a sidebar link would throw away hours of watching
+     * with nothing asking first. `inert` takes the links out of the tab order too,
+     * which pointer-events alone would not; the fade says the lock is deliberate
+     * rather than the page having broken.
+     */
+    function setNavigationLocked(locked) {
+        for (const region of document.querySelectorAll('[data-app-nav]')) {
+            region.toggleAttribute('inert', locked);
+            region.classList.toggle('opacity-40', locked);
+        }
+    }
 
     function showBanner(message) {
         ui.banner.textContent = message;
@@ -150,6 +175,7 @@ function initCaptureApp(root) {
         await app.wakeLock.acquire();
 
         app.running = true;
+        setNavigationLocked(true);
         ui.setupHelp.classList.add('hidden');
         ui.startButton.classList.add('hidden');
         ui.endButton.classList.remove('hidden');
@@ -250,6 +276,7 @@ function initCaptureApp(root) {
         }
 
         app.running = false;
+        setNavigationLocked(false);
         clearInterval(app.loopTimer);
         setState('Finishing…');
 

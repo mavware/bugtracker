@@ -78,11 +78,13 @@ const ROUTES = {
 };
 
 const el = (name) => document.querySelector(`[data-capture="${name}"]`);
+const nav = () => document.querySelector('[data-app-nav]');
 
 function mountPage() {
     const config = { csrfToken: 'test-csrf-token', routes: ROUTES };
 
     document.body.innerHTML = `
+        <nav data-app-nav>sidebar</nav>
         <section id="capture-app" data-config='${JSON.stringify(config)}'>
             <button data-capture="start">Start watching</button>
             <button data-capture="end" class="hidden">End night</button>
@@ -110,10 +112,33 @@ function mountPage() {
     });
 }
 
+/**
+ * Every boot re-imports capture.js and registers another set of window listeners,
+ * but happy-dom's window outlives the whole file. Left alone they pile up, and a
+ * previous test's app — still mid-night as far as its closure knows — answers
+ * events meant for this one. Recorded here so afterEach can take them off again.
+ */
+const windowListeners = [];
+
 /** Load capture.js against the mounted page and let its start-up chain settle. */
 async function bootCaptureApp() {
+    const addEventListener = window.addEventListener.bind(window);
+
+    vi.spyOn(window, 'addEventListener').mockImplementation((type, handler, options) => {
+        windowListeners.push([type, handler, options]);
+        addEventListener(type, handler, options);
+    });
+
     vi.resetModules();
     await import('../../../resources/js/surveillance/capture.js');
+
+    window.addEventListener.mockRestore();
+}
+
+function removeTrackedWindowListeners() {
+    for (const [type, handler, options] of windowListeners.splice(0)) {
+        window.removeEventListener(type, handler, options);
+    }
 }
 
 /** Let awaited promise chains resolve without letting the frame loop run. */
@@ -141,6 +166,7 @@ describe('capture page', () => {
     });
 
     afterEach(() => {
+        removeTrackedWindowListeners();
         vi.useRealTimers();
         vi.unstubAllGlobals();
     });
@@ -219,6 +245,37 @@ describe('capture page', () => {
 
         expect(el('banner').classList.contains('hidden')).toBe(false);
         expect(el('banner').textContent).toContain('would not keep its screen on');
+    });
+
+    test('the app navigation is locked while recording, so a stray tap cannot end the night', async () => {
+        expect(nav().hasAttribute('inert')).toBe(false);
+
+        await startWatching();
+
+        expect(nav().hasAttribute('inert')).toBe(true);
+        expect(nav().classList.contains('opacity-40')).toBe(true);
+    });
+
+    test('navigation comes back when the night is over', async () => {
+        await startWatching();
+
+        el('end').click();
+        await settle();
+
+        expect(nav().hasAttribute('inert')).toBe(false);
+        expect(nav().classList.contains('opacity-40')).toBe(false);
+    });
+
+    test('navigation comes back even when the night could not be ended', async () => {
+        await startWatching();
+        stubs.uploaderPost.mockResolvedValue({ ok: false, status: 500 });
+
+        el('end').click();
+        await settle();
+
+        // Stranded on the page with an error banner: locking them out too would
+        // leave no way off it at all.
+        expect(nav().hasAttribute('inert')).toBe(false);
     });
 
     test('the setup advice makes way once the night is under way', async () => {
@@ -351,6 +408,34 @@ describe('capture page', () => {
 
         await vi.advanceTimersByTimeAsync(1000);
         expect(stubs.grabProcessedFrame.mock.calls.length).toBe(framesWhileWatching);
+    });
+
+    test('closing the tab mid-night is challenged first', async () => {
+        await startWatching();
+
+        const leaving = new Event('beforeunload', { cancelable: true });
+        window.dispatchEvent(leaving);
+
+        expect(leaving.defaultPrevented).toBe(true);
+    });
+
+    test('leaving is not challenged before a night has started', async () => {
+        const leaving = new Event('beforeunload', { cancelable: true });
+        window.dispatchEvent(leaving);
+
+        expect(leaving.defaultPrevented).toBe(false);
+    });
+
+    test('the trip to the report is not challenged', async () => {
+        await startWatching();
+
+        el('end').click();
+        await settle();
+
+        const leaving = new Event('beforeunload', { cancelable: true });
+        window.dispatchEvent(leaving);
+
+        expect(leaving.defaultPrevented).toBe(false);
     });
 
     test('leaving the page mid-night flushes whatever is queued', async () => {

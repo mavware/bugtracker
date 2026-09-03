@@ -33,6 +33,34 @@ test('the capture page says how to stop the screen sleeping', function () {
         ->assertSee('Low Power Mode');
 });
 
+// A slept or hijacked capture device can only be noticed from somewhere else, so
+// the address has to be in front of the user before they walk out of the room.
+test('the capture page points the user at their dashboard on another device', function () {
+    $user = User::factory()->create();
+    $session = SurveillanceSession::factory()->for($user)->create();
+
+    $this->actingAs($user)
+        ->get(route('surveillance.capture', $session))
+        ->assertSee('Checking on it later')
+        ->assertSee('a different phone or computer', false)
+        ->assertSee(route('dashboard'));
+});
+
+// capture.js makes [data-app-nav] inert while recording. Flux owns the markup for
+// both regions, so nothing but this catches the attribute being dropped.
+test('the app chrome carries the hook capture.js locks while recording', function () {
+    $user = User::factory()->create();
+    $session = SurveillanceSession::factory()->for($user)->create();
+
+    $page = $this->actingAs($user)->get(route('surveillance.capture', $session));
+
+    // Counted as elements, not occurrences: a valueless Blade attribute renders
+    // as data-app-nav="data-app-nav", so the raw string appears twice per tag.
+    preg_match_all('/<[a-z-]+[^>]*\sdata-app-nav[=\s>]/i', $page->getContent(), $marked);
+
+    expect($marked[0])->toHaveCount(2);
+});
+
 /**
  * Asserted exactly, both ways. Nothing else can catch drift here: the only consumer
  * is resources/js/surveillance/capture.js, which these tests cannot execute. A key
