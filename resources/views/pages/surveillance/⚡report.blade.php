@@ -1,12 +1,14 @@
 <?php
 
+use App\Enums\SurveillanceSessionStatus;
 use App\Actions\Surveillance\ComputeSessionAnalytics;
 use App\Models\SurveillanceSession;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Report')] class extends Component {
+new #[Title('Report')]
+class extends Component {
     public SurveillanceSession $session;
 
     public function mount(SurveillanceSession $session, ComputeSessionAnalytics $analytics): void
@@ -41,23 +43,23 @@ new #[Title('Report')] class extends Component {
     public function reportPayload(): array
     {
         return [
-            'frameWidth' => $this->session->frame_width,
-            'frameHeight' => $this->session->frame_height,
+            'frameWidth'        => $this->session->frame_width,
+            'frameHeight'       => $this->session->frame_height,
             'referenceImageUrl' => $this->session->reference_image_path !== null
                 ? route('surveillance.reference.show', $this->session)
                 : null,
-            'analytics' => $this->session->analytics,
-            'tracks' => $this->session->tracks()
+            'analytics'         => $this->session->analytics,
+            'tracks'            => $this->session->tracks()
                 ->confirmed()
                 ->orderBy('start_offset_ms')
                 ->get()
-                ->map(fn ($track) => [
-                    'id' => $track->id,
+                ->map(fn($track) => [
+                    'id'            => $track->id,
                     'startOffsetMs' => $track->start_offset_ms,
-                    'endOffsetMs' => $track->end_offset_ms,
-                    'points' => $track->points,
-                    'entryEdge' => $track->entry_edge,
-                    'exitEdge' => $track->exit_edge,
+                    'endOffsetMs'   => $track->end_offset_ms,
+                    'points'        => $track->points,
+                    'entryEdge'     => $track->entry_edge,
+                    'exitEdge'      => $track->exit_edge,
                 ])->all(),
         ];
     }
@@ -70,7 +72,8 @@ new #[Title('Report')] class extends Component {
             <flux:callout.heading>{{ __('This session is still recording') }}</flux:callout.heading>
             <flux:callout.text>
                 {{ __('The report is generated once the night ends.') }}
-                <flux:link href="{{ route('surveillance.capture', $session) }}">{{ __('Go to the capture page') }}</flux:link>
+                <flux:link
+                    href="{{ route('surveillance.capture', $session) }}">{{ __('Go to the capture page') }}</flux:link>
             </flux:callout.text>
         </flux:callout>
     @else
@@ -84,7 +87,7 @@ new #[Title('Report')] class extends Component {
             <flux:button href="{{ route('dashboard') }}" icon="arrow-left">{{ __('Dashboard') }}</flux:button>
         </div>
 
-        @if ($session->status === \App\Enums\SurveillanceSessionStatus::Aborted)
+        @if ($session->status === SurveillanceSessionStatus::Aborted)
             <flux:callout icon="x-circle" class="mt-6" data-test="discarded-notice">
                 <flux:callout.heading>{{ __('You discarded this night') }}</flux:callout.heading>
                 <flux:callout.text>
@@ -129,17 +132,18 @@ new #[Title('Report')] class extends Component {
                     <flux:select.option value="10">10×</flux:select.option>
                     <flux:select.option value="600">600×</flux:select.option>
                 </flux:select>
-                <input type="range" data-report="scrub" min="0" max="1000" value="0" class="min-w-48 flex-1" />
+                <input type="range" data-report="scrub" min="0" max="1000" value="0" class="min-w-48 flex-1"/>
                 <span class="text-sm tabular-nums text-zinc-500" data-report="clock">–</span>
                 <label class="flex items-center gap-2 text-sm text-zinc-500">
-                    <input type="checkbox" data-report="trails" class="rounded" checked />
+                    <input type="checkbox" data-report="trails" class="rounded" checked/>
                     {{ __('Show all trails') }}
                 </label>
             </div>
 
             @if ($session->tracks->isNotEmpty())
                 <flux:heading size="lg" class="mt-8">{{ __('Sightings') }}</flux:heading>
-                <flux:text class="mt-1 text-sm">{{ __('Snapshots let you verify each sighting was really a bug. Click a row to highlight its trail, or mark false positives to exclude them from the report.') }}</flux:text>
+                <flux:text
+                    class="mt-1 text-sm">{{ __('Snapshots let you verify each sighting was really a bug. Click a row to highlight its trail, or mark false positives to exclude them from the report.') }}</flux:text>
 
                 <flux:table class="mt-4">
                     <flux:table.columns>
@@ -162,19 +166,23 @@ new #[Title('Report')] class extends Component {
                                 <flux:table.cell variant="strong">
                                     {{ $session->started_at?->addMilliseconds($track->start_offset_ms)->format('H:i:s') }}
                                 </flux:table.cell>
-                                <flux:table.cell>{{ round(($track->end_offset_ms - $track->start_offset_ms) / 1000, 1) }}s</flux:table.cell>
+                                <flux:table.cell>{{ round(($track->end_offset_ms - $track->start_offset_ms) / 1000, 1) }}
+                                    s
+                                </flux:table.cell>
                                 <flux:table.cell>{{ ucfirst($track->entry_edge ?? '—') }}</flux:table.cell>
                                 <flux:table.cell>{{ ucfirst($track->exit_edge ?? '—') }}</flux:table.cell>
                                 <flux:table.cell>
                                     @if ($track->start_crop_path !== null)
-                                        <img src="{{ route('surveillance.crop.show', [$session, $track, 'start']) }}" alt="" class="size-12 rounded object-cover" loading="lazy" />
+                                        <img src="{{ route('surveillance.crop.show', [$session, $track, 'start']) }}"
+                                             alt="" class="size-12 rounded object-cover" loading="lazy"/>
                                     @else
                                         —
                                     @endif
                                 </flux:table.cell>
                                 <flux:table.cell>
                                     @if ($track->end_crop_path !== null)
-                                        <img src="{{ route('surveillance.crop.show', [$session, $track, 'end']) }}" alt="" class="size-12 rounded object-cover" loading="lazy" />
+                                        <img src="{{ route('surveillance.crop.show', [$session, $track, 'end']) }}"
+                                             alt="" class="size-12 rounded object-cover" loading="lazy"/>
                                     @else
                                         —
                                     @endif
