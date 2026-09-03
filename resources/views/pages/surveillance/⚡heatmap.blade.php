@@ -1,19 +1,34 @@
 <?php
 
 use App\Actions\Surveillance\ComputeEntryPointHeatmap;
+use App\Actions\Surveillance\ComputeNightlyTrend;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 new #[Title('Entry points')] class extends Component {
+    /** Empty means every room, which only makes sense if the camera never moved. */
+    #[Url]
+    public string $room = '';
+
     /**
      * @return array<string, mixed>
      */
     #[Computed]
     public function heatmap(): array
     {
-        return app(ComputeEntryPointHeatmap::class)->handle(Auth::user());
+        return app(ComputeEntryPointHeatmap::class)->handle(Auth::user(), $this->room !== '' ? $this->room : null);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    #[Computed]
+    public function rooms(): array
+    {
+        return app(ComputeNightlyTrend::class)->rooms(Auth::user());
     }
 
     /**
@@ -41,7 +56,17 @@ new #[Title('Entry points')] class extends Component {
             <flux:heading size="xl">{{ __('Entry points') }}</flux:heading>
             <flux:text class="mt-2">{{ __('Where bugs enter and leave the frame, aggregated across every completed night.') }}</flux:text>
         </div>
-        <flux:button href="{{ route('dashboard') }}" icon="arrow-left">{{ __('Dashboard') }}</flux:button>
+        <div class="flex items-center gap-3">
+            @if ($this->rooms !== [])
+                <flux:select wire:model.live="room" size="sm" class="max-w-44" data-test="room-filter">
+                    <flux:select.option value="">{{ __('All rooms') }}</flux:select.option>
+                    @foreach ($this->rooms as $roomOption)
+                        <flux:select.option value="{{ $roomOption }}">{{ $roomOption }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+            @endif
+            <flux:button href="{{ route('dashboard') }}" icon="arrow-left">{{ __('Dashboard') }}</flux:button>
+        </div>
     </div>
 
     @if ($this->heatmap['session_count'] === 0)
@@ -86,7 +111,9 @@ new #[Title('Entry points')] class extends Component {
             </div>
 
             <flux:text class="mt-4 text-sm">
-                {{ __('The backdrop is the most recent completed night\'s reference photo. Older nights recorded at a different resolution are scaled to match, so keep the camera in the same spot for the clearest picture.') }}
+                {{ $this->room !== ''
+                    ? __('Showing nights recorded in :room. The backdrop is that room\'s most recent reference photo; nights shot at a different resolution are scaled to match.', ['room' => $this->room])
+                    : __('Showing every room at once, which only makes sense if the camera never moved. Pick a room above to compare nights shot from one spot.') }}
             </flux:text>
         </div>
 

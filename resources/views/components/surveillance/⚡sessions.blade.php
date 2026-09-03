@@ -9,6 +9,21 @@ use Livewire\Component;
 
 new class extends Component {
     /**
+     * Which room the camera is watching. Grouping nights by room keeps the entry
+     * point map honest — it only makes sense to merge nights shot from one spot.
+     */
+    public string $room = '';
+
+    public function mount(): void
+    {
+        $this->room = (string) Auth::user()->surveillanceSessions()
+            ->whereNotNull('room')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->value('room');
+    }
+
+    /**
      * @return Collection<int, SurveillanceSession>
      */
     #[Computed]
@@ -26,8 +41,11 @@ new class extends Component {
      */
     public function startSession(): void
     {
+        $validated = $this->validate(['room' => ['nullable', 'string', 'max:80']]);
+
         $session = Auth::user()->surveillanceSessions()->create([
             'name' => __('Night of :date', ['date' => now()->format('M j')]),
+            'room' => trim($validated['room']) !== '' ? trim($validated['room']) : null,
         ]);
 
         $this->redirectRoute('surveillance.capture', $session);
@@ -56,14 +74,27 @@ new class extends Component {
         </div>
 
         <div class="flex items-center gap-3">
+            <flux:button icon="chart-bar" href="{{ route('surveillance.trends') }}" data-test="trends-link">
+                {{ __('Trends') }}
+            </flux:button>
             <flux:button icon="map-pin" href="{{ route('surveillance.heatmap') }}" data-test="heatmap-link">
                 {{ __('Entry points') }}
             </flux:button>
-            <flux:button variant="primary" icon="video-camera" wire:click="startSession" data-test="start-session-button">
-                {{ __('Start a session') }}
-            </flux:button>
         </div>
     </div>
+
+    <form wire:submit="startSession" class="mt-4 flex flex-wrap items-end gap-3">
+        <flux:input
+            wire:model="room"
+            :label="__('Room')"
+            :placeholder="__('Kitchen')"
+            class="max-w-52"
+            data-test="session-room"
+        />
+        <flux:button type="submit" variant="primary" icon="video-camera" data-test="start-session-button">
+            {{ __('Start a session') }}
+        </flux:button>
+    </form>
 
     <flux:separator class="my-6" />
 
@@ -73,6 +104,7 @@ new class extends Component {
         <flux:table>
             <flux:table.columns>
                 <flux:table.column>{{ __('Session') }}</flux:table.column>
+                <flux:table.column>{{ __('Room') }}</flux:table.column>
                 <flux:table.column>{{ __('Status') }}</flux:table.column>
                 <flux:table.column>{{ __('Tracks') }}</flux:table.column>
                 <flux:table.column>{{ __('Started') }}</flux:table.column>
@@ -89,6 +121,7 @@ new class extends Component {
                                 <flux:link href="{{ route('surveillance.capture', $session) }}">{{ $session->name }}</flux:link>
                             @endif
                         </flux:table.cell>
+                        <flux:table.cell>{{ $session->room ?? '—' }}</flux:table.cell>
                         <flux:table.cell>
                             <flux:badge size="sm" :color="match ($session->status) {
                                 \App\Enums\SurveillanceSessionStatus::Pending => 'zinc',

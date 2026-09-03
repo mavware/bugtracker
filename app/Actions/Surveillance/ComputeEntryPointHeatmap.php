@@ -5,14 +5,16 @@ namespace App\Actions\Surveillance;
 use App\Enums\SurveillanceSessionStatus;
 use App\Models\SurveillanceSession;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 
 class ComputeEntryPointHeatmap
 {
     /**
-     * Aggregate confirmed track endpoints from all of the user's completed
-     * sessions into entry/exit zones projected onto a single backdrop frame.
-     * Sessions may have been recorded at different resolutions, so endpoints
-     * are scaled into the backdrop session's frame before clustering.
+     * Aggregate confirmed track endpoints from the user's finished sessions into
+     * entry/exit zones projected onto a single backdrop frame. Sessions may have
+     * been recorded at different resolutions, so endpoints are scaled into the
+     * backdrop session's frame before clustering. Pass a room to compare only
+     * sessions recorded with the camera in the same place.
      *
      * @return array{
      *     session_count: int,
@@ -22,12 +24,13 @@ class ComputeEntryPointHeatmap
      *     exit_zones: array<int, array{edge: string, from: int, to: int, center: array{0: int, 1: int}, count: int}>,
      * }
      */
-    public function handle(User $user): array
+    public function handle(User $user, ?string $room = null): array
     {
         $sessions = $user->surveillanceSessions()
-            ->where('status', SurveillanceSessionStatus::Completed)
+            ->whereIn('status', [SurveillanceSessionStatus::Completed, SurveillanceSessionStatus::Aborted])
             ->whereNotNull('frame_width')
             ->whereNotNull('frame_height')
+            ->when($room !== null, fn (Builder $query) => $query->where('room', $room))
             ->orderByDesc('started_at')
             ->get();
 

@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Surveillance\ComputeEntryPointHeatmap;
+use App\Enums\SurveillanceSessionStatus;
 use App\Models\BugTrack;
 use App\Models\SurveillanceSession;
 use App\Models\User;
@@ -35,7 +36,35 @@ test('it aggregates entry and exit zones across completed sessions at different 
         ->and($heatmap['exit_zones'][0]['count'])->toBe(2);
 });
 
-test('it excludes dismissed tracks and sessions that are not completed', function () {
+test('it scopes the aggregate to one room so nights shot from different spots are not merged', function () {
+    $user = User::factory()->create();
+    $kitchen = SurveillanceSession::factory()->for($user)->completed()->create(['room' => 'Kitchen']);
+    $bathroom = SurveillanceSession::factory()->for($user)->completed()->create(['room' => 'Bathroom']);
+    BugTrack::factory()->for($kitchen, 'session')->create([
+        'points' => [[0, 5, 360], [2000, 640, 715]],
+        'point_count' => 2,
+    ]);
+    BugTrack::factory()->count(3)->for($bathroom, 'session')->create();
+
+    $heatmap = app(ComputeEntryPointHeatmap::class)->handle($user, 'Kitchen');
+
+    expect($heatmap['session_count'])->toBe(1)
+        ->and($heatmap['track_count'])->toBe(1)
+        ->and($heatmap['backdrop']->id)->toBe($kitchen->id)
+        ->and($heatmap['entry_zones'][0]['edge'])->toBe('left');
+});
+
+test('it includes aborted nights, whose sightings are still real', function () {
+    $user = User::factory()->create();
+    $aborted = SurveillanceSession::factory()->for($user)->completed()->create([
+        'status' => SurveillanceSessionStatus::Aborted,
+    ]);
+    BugTrack::factory()->for($aborted, 'session')->create();
+
+    expect(app(ComputeEntryPointHeatmap::class)->handle($user)['track_count'])->toBe(1);
+});
+
+test('it excludes dismissed tracks and sessions that are not finished', function () {
     $user = User::factory()->create();
     $completed = SurveillanceSession::factory()->for($user)->completed()->create();
     BugTrack::factory()->for($completed, 'session')->create();

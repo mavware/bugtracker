@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Storage;
  * @property int $id
  * @property int $user_id
  * @property string $name
+ * @property string|null $room
  * @property SurveillanceSessionStatus $status
  * @property Carbon|null $started_at
  * @property Carbon|null $ended_at
@@ -28,7 +29,7 @@ use Illuminate\Support\Facades\Storage;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'status', 'started_at', 'ended_at', 'last_heartbeat_at', 'reference_image_path', 'frame_width', 'frame_height', 'settings', 'analytics'])]
+#[Fillable(['name', 'room', 'status', 'started_at', 'ended_at', 'last_heartbeat_at', 'reference_image_path', 'frame_width', 'frame_height', 'settings', 'analytics'])]
 class SurveillanceSession extends Model
 {
     /** @use HasFactory<SurveillanceSessionFactory> */
