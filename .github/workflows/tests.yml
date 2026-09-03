@@ -137,5 +137,10 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
+      # Vitest boots Vite in serve mode, and laravel-vite-plugin refuses to leave
+      # its build path whenever CI is set — a guard meant for HMR servers, not for
+      # a test run. The bypass is the plugin's own escape hatch for this.
       - name: Run tests
         run: npm test
+        env:
+          LARAVEL_BYPASS_ENV_CHECK: '1'
