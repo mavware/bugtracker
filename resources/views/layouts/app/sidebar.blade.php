@@ -15,12 +15,32 @@
                     <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
                         {{ __('Dashboard') }}
                     </flux:sidebar.item>
-                    @if (auth()->user()?->is_admin)
-                        <flux:sidebar.item icon="shield-check" :href="route('admin.index')" :current="request()->routeIs('admin.*')">
-                            {{ __('Administration') }}
-                        </flux:sidebar.item>
-                    @endif
                 </flux:sidebar.group>
+
+                @if (auth()->user()?->is_admin)
+                    <flux:sidebar.group
+                        expandable
+                        icon="shield-check"
+                        :heading="__('Administration')"
+                        :expanded="request()->routeIs('admin.*')"
+                    >
+                        <flux:sidebar.item icon="squares-2x2" :href="route('admin.index')" :current="request()->routeIs('admin.index')">
+                            {{ __('Overview') }}
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="users" :href="route('admin.users')" :current="request()->routeIs('admin.users')">
+                            {{ __('Users') }}
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="video-camera" :href="route('admin.sessions')" :current="request()->routeIs('admin.sessions')">
+                            {{ __('Sessions') }}
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="home-modern" :href="route('admin.rooms')" :current="request()->routeIs('admin.rooms')">
+                            {{ __('Rooms') }}
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="briefcase" :href="route('admin.customers')" :current="request()->routeIs('admin.customers')">
+                            {{ __('Customers') }}
+                        </flux:sidebar.item>
+                    </flux:sidebar.group>
+                @endif
             </flux:sidebar.nav>
 
             <flux:spacer />

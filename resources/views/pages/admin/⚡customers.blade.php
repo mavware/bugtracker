@@ -108,10 +108,6 @@ new #[Title('Admin · Customers')] class extends Component {
         <flux:button href="{{ route('dashboard') }}" icon="arrow-left">{{ __('Dashboard') }}</flux:button>
     </div>
 
-    <div class="mt-6">
-        <x-admin.nav />
-    </div>
-
     <flux:input
         wire:model.live.debounce.300ms="search"
         icon="magnifying-glass"

@@ -87,10 +87,6 @@ new #[Title('Admin · Rooms')] class extends Component {
         <flux:button href="{{ route('dashboard') }}" icon="arrow-left">{{ __('Dashboard') }}</flux:button>
     </div>
 
-    <div class="mt-6">
-        <x-admin.nav />
-    </div>
-
     @if ($this->roomGroups->isEmpty())
         <flux:text class="mt-6">{{ __('No sessions have been given a room label yet.') }}</flux:text>
     @else

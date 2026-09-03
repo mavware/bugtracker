@@ -38,10 +38,6 @@ new #[Title('Admin')] class extends Component {
         <flux:button href="{{ route('dashboard') }}" icon="arrow-left">{{ __('Dashboard') }}</flux:button>
     </div>
 
-    <div class="mt-6">
-        <x-admin.nav />
-    </div>
-
     <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         @foreach ([
             ['label' => __('Users'), 'value' => $this->totals['users'], 'note' => trans_choice(':count admin|:count admins', $this->totals['admins'], ['count' => $this->totals['admins']])],

@@ -20,14 +20,26 @@ test('an admin gets in', function (string $route) {
         ->assertOk();
 })->with(['admin.index', 'admin.users', 'admin.sessions', 'admin.rooms', 'admin.customers']);
 
-test('only admins are offered the administration link', function () {
-    $this->actingAs(User::factory()->admin()->create())
-        ->get(route('dashboard'))
-        ->assertSee('Administration');
+test('the administration panel offers every section to an admin', function () {
+    $response = $this->actingAs(User::factory()->admin()->create())->get(route('dashboard'));
 
-    $this->actingAs(User::factory()->create())
-        ->get(route('dashboard'))
-        ->assertDontSee('Administration');
+    $response->assertSee('Administration');
+
+    foreach (['admin.index', 'admin.users', 'admin.sessions', 'admin.rooms', 'admin.customers'] as $route) {
+        $response->assertSee(route($route));
+    }
+});
+
+// Asserting on the URLs rather than the labels: "Rooms" and "Customers" are also
+// the user's own pages, so the words appear on the dashboard either way.
+test('no part of the administration panel reaches an ordinary account', function () {
+    $response = $this->actingAs(User::factory()->create())->get(route('dashboard'));
+
+    $response->assertDontSee('Administration');
+
+    foreach (['admin.index', 'admin.users', 'admin.sessions', 'admin.rooms', 'admin.customers'] as $route) {
+        $response->assertDontSee(route($route));
+    }
 });
 
 test('being an admin does not open another account\'s recordings', function () {
