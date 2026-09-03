@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import {
     buildReferenceForm,
     calibrationOutcome,
+    cameraCheckLabel,
     DIM_MESSAGE,
     formatClock,
     overlayBoxes,
@@ -110,6 +111,16 @@ describe('wakeLockMessage', () => {
     test('falls back to system power settings for anything else', () => {
         expect(wakeLockMessage('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)')).toContain('system power settings');
         expect(wakeLockMessage()).toContain('system power settings');
+    });
+});
+
+describe('cameraCheckLabel', () => {
+    test('offers to open the preview while it is closed', () => {
+        expect(cameraCheckLabel(false)).toBe('Check camera');
+    });
+
+    test('offers to close the preview while it is open', () => {
+        expect(cameraCheckLabel(true)).toBe('Stop camera');
     });
 });
 

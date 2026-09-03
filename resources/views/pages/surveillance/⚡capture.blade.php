@@ -51,6 +51,9 @@ new #[Title('Capture')] class extends Component {
         </div>
 
         <div class="flex items-center gap-2">
+            <flux:button variant="subtle" icon="camera" data-capture="check" data-test="check-camera-button">
+                <span data-capture="check-label">{{ __('Check camera') }}</span>
+            </flux:button>
             <flux:button variant="primary" icon="play" data-capture="start" data-test="start-capture-button">
                 {{ __('Start watching') }}
             </flux:button>

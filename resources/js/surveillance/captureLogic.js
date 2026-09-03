@@ -37,6 +37,20 @@ export function countdownMessage(secondsLeft) {
 }
 
 /**
+ * The night's own camera does not open until the checklist is accepted, which
+ * leaves nowhere to aim the device beforehand: the preview is black until the
+ * five-second countdown has already begun. The camera check opens the same
+ * preview on its own, watching nothing and measuring nothing, purely so the
+ * framing can be settled first.
+ */
+export const CAMERA_CHECK_MESSAGE = 'Camera check — aim the device, then start watching.';
+
+/** A toggle's label says what the next press does, not what the camera is doing. */
+export function cameraCheckLabel(previewing) {
+    return previewing ? 'Stop camera' : 'Check camera';
+}
+
+/**
  * What to say when the screen wake lock could not be taken. Naming the actual
  * setting matters here: this banner is read on the device itself, in a dark room,
  * by someone who has to fix it now or lose the night. Menu paths are kept to one

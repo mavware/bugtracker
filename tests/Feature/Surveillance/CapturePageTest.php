@@ -4,6 +4,9 @@ use App\Models\SurveillanceSession;
 use App\Models\User;
 use Livewire\Livewire;
 
+// The check-label span is asserted alongside the buttons because capture.js
+// rewrites it to toggle the preview: if Flux's button markup ever swallows it,
+// the toggle silently stops updating and nothing else would catch it.
 test('the owner can view the capture page for a pending session', function () {
     $user = User::factory()->create();
     $session = SurveillanceSession::factory()->for($user)->create();
@@ -12,6 +15,9 @@ test('the owner can view the capture page for a pending session', function () {
         |> (fn ($x) => str_replace('/', '\/', $x))
         |> (fn ($x) => $this->actingAs($user)->get(route('surveillance.capture', $session))->assertOk()->assertSee(
             'data-test="start-capture-button"',
+            false
+        )->assertSee('data-test="check-camera-button"', false)->assertSee(
+            'data-capture="check-label"',
             false
         )->assertSee('data-test="end-session-button"', false)->assertSee(
             'data-test="abort-session-button"',

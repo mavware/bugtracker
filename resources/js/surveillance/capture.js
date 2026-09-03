@@ -3,6 +3,8 @@ import { calibrate } from './brightness.js';
 import {
     buildReferenceForm,
     calibrationOutcome,
+    CAMERA_CHECK_MESSAGE,
+    cameraCheckLabel,
     countdownMessage,
     formatClock,
     LEAVE_ROOM_SECONDS,
@@ -29,6 +31,8 @@ function initCaptureApp(root) {
         video: el('video'),
         overlay: el('overlay'),
         startButton: el('start'),
+        checkButton: el('check'),
+        checkLabel: el('check-label'),
         endButton: el('end'),
         abortButton: el('abort'),
         banner: el('banner'),
@@ -49,6 +53,7 @@ function initCaptureApp(root) {
         uploader: null,
         wakeLock: new WakeLock(() => showBanner(wakeLockMessage(navigator.userAgent))),
         running: false,
+        previewing: false,
         sessionStartTime: null,
         loopTimer: null,
     };
@@ -57,6 +62,13 @@ function initCaptureApp(root) {
         // A refused camera prompt or a failed upload must leave the button usable,
         // otherwise the only way to try again is reloading the page.
         ui.startButton.removeAttribute('disabled');
+        setState('Error');
+        showBanner(String(error));
+    }));
+    ui.checkButton.addEventListener('click', () => toggleCameraCheck().catch((error) => {
+        // Same reasoning as the start button: a refused prompt must not leave the
+        // page stuck believing a preview is open.
+        stopCameraCheck();
         setState('Error');
         showBanner(String(error));
     }));
@@ -108,12 +120,51 @@ function initCaptureApp(root) {
         ui.banner.classList.add('hidden');
     }
 
+    /**
+     * Open the preview on its own so the device can be aimed before a night is
+     * committed to. Nothing is measured, uploaded or recorded here — it is the
+     * same camera the night uses, held open until the user is happy or presses
+     * start.
+     */
+    async function toggleCameraCheck() {
+        if (app.previewing) {
+            stopCameraCheck();
+            setState('Idle');
+
+            return;
+        }
+
+        setState('Starting camera…');
+
+        await app.camera.start();
+
+        app.previewing = true;
+        ui.checkLabel.textContent = cameraCheckLabel(true);
+        setState(CAMERA_CHECK_MESSAGE);
+    }
+
+    /** Close the preview stream, leaving the status line to the caller. */
+    function stopCameraCheck() {
+        if (!app.previewing) {
+            return;
+        }
+
+        app.camera.stop();
+        app.previewing = false;
+        ui.checkLabel.textContent = cameraCheckLabel(false);
+    }
+
     async function startNight() {
         // Asked before the camera opens: the light has to be on before calibration
         // measures the scene, and a user who backs out should not have been filmed.
         if (!window.confirm(PREFLIGHT_MESSAGE)) {
             return;
         }
+
+        // A preview holds a stream of its own. Close it before the night opens the
+        // camera, or getUserMedia hands back a second one and the first keeps the
+        // device — and its recording light — running for the rest of the night.
+        stopCameraCheck();
 
         ui.startButton.setAttribute('disabled', 'disabled');
         setState('Starting camera…');
@@ -178,6 +229,7 @@ function initCaptureApp(root) {
         setNavigationLocked(true);
         ui.setupHelp.classList.add('hidden');
         ui.startButton.classList.add('hidden');
+        ui.checkButton.classList.add('hidden');
         ui.endButton.classList.remove('hidden');
         ui.abortButton.classList.remove('hidden');
         setState('Watching');

@@ -86,6 +86,7 @@ function mountPage() {
     document.body.innerHTML = `
         <nav data-app-nav>sidebar</nav>
         <section id="capture-app" data-config='${JSON.stringify(config)}'>
+            <button data-capture="check"><span data-capture="check-label">Check camera</span></button>
             <button data-capture="start">Start watching</button>
             <button data-capture="end" class="hidden">End night</button>
             <button data-capture="abort" class="hidden">Discard night</button>
@@ -192,6 +193,75 @@ describe('capture page', () => {
         expect(options.headers['X-CSRF-TOKEN']).toBe('test-csrf-token');
         expect(options.body.get('frame_width')).toBe('1280');
         expect(options.body.get('settings[procWidth]')).toBe('320');
+    });
+
+    test('the camera check opens the preview without starting a night', async () => {
+        el('check').click();
+        await settle();
+
+        expect(stubs.cameraStart).toHaveBeenCalled();
+        expect(window.confirm).not.toHaveBeenCalled();
+        expect(stubs.calibrate).not.toHaveBeenCalled();
+        expect(fetch).not.toHaveBeenCalled();
+        expect(el('check-label').textContent).toBe('Stop camera');
+        expect(el('state').textContent).toContain('aim the device');
+    });
+
+    test('the camera check closes the preview again when pressed a second time', async () => {
+        el('check').click();
+        await settle();
+        el('check').click();
+        await settle();
+
+        expect(stubs.cameraStop).toHaveBeenCalledTimes(1);
+        expect(el('check-label').textContent).toBe('Check camera');
+        expect(el('state').textContent).toBe('Idle');
+    });
+
+    /**
+     * Two live streams would leave the check's tracks — and the device's recording
+     * light — running all night behind the one the night is actually watching.
+     */
+    test('starting a night closes an open camera check first', async () => {
+        el('check').click();
+        await settle();
+
+        await startWatching();
+
+        expect(stubs.cameraStop).toHaveBeenCalledTimes(1);
+        expect(stubs.cameraStart).toHaveBeenCalledTimes(2);
+        expect(stubs.cameraStop.mock.invocationCallOrder[0])
+            .toBeLessThan(stubs.cameraStart.mock.invocationCallOrder[1]);
+        expect(el('state').textContent).toBe('Watching');
+    });
+
+    test('backing out of the checklist leaves an open camera check alone', async () => {
+        el('check').click();
+        await settle();
+
+        window.confirm = vi.fn(() => false);
+        el('start').click();
+        await settle();
+
+        expect(stubs.cameraStop).not.toHaveBeenCalled();
+        expect(el('check-label').textContent).toBe('Stop camera');
+    });
+
+    test('the camera check makes way once the night is under way', async () => {
+        await startWatching();
+
+        expect(el('check').classList.contains('hidden')).toBe(true);
+    });
+
+    test('a refused camera leaves the check button usable', async () => {
+        stubs.cameraStart.mockRejectedValue(new Error('Permission denied'));
+
+        el('check').click();
+        await settle();
+
+        expect(el('state').textContent).toBe('Error');
+        expect(el('banner').textContent).toContain('Permission denied');
+        expect(el('check-label').textContent).toBe('Check camera');
     });
 
     test('the room checklist is put in front of the user before the camera opens', async () => {
