@@ -1,8 +1,10 @@
 <?php
 
+use App\Enums\SurveillanceSessionStatus;
 use App\Models\Customer;
 use App\Models\SurveillanceSession;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -22,6 +24,21 @@ new class extends Component {
 
     /** Whose property this is, when watching on someone else's behalf. */
     public string $customer = '';
+
+    /** Matches a session name, its room, or the customer it belongs to. */
+    public string $search = '';
+
+    public string $status = '';
+
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedStatus(): void
+    {
+        $this->resetPage();
+    }
 
     public function mount(): void
     {
@@ -43,9 +60,27 @@ new class extends Component {
         return Auth::user()->surveillanceSessions()
             ->with('customer')
             ->withCount('tracks')
+            ->when($this->status !== '', fn (Builder $query) => $query->where('status', $this->status))
+            ->when($this->search !== '', fn (Builder $query) => $query->where(
+                fn (Builder $search) => $search
+                    ->where('name', 'like', "%{$this->search}%")
+                    ->orWhere('room', 'like', "%{$this->search}%")
+                    ->orWhereHas('customer', fn (Builder $customer) => $customer->where('name', 'like', "%{$this->search}%"))
+            ))
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->paginate(15);
+    }
+
+    public function filtersActive(): bool
+    {
+        return $this->search !== '' || $this->status !== '';
+    }
+
+    public function clearFilters(): void
+    {
+        $this->reset('search', 'status');
+        $this->resetPage();
     }
 
     /**
@@ -146,8 +181,36 @@ new class extends Component {
 
     <flux:separator class="my-6" />
 
+    @if ($this->sessions->total() > 0 || $this->filtersActive())
+        <div class="mb-4 flex flex-wrap items-center gap-3">
+            <flux:input
+                wire:model.live.debounce.300ms="search"
+                icon="magnifying-glass"
+                size="sm"
+                :placeholder="__('Search by night, room or customer')"
+                class="max-w-xs flex-1"
+                data-test="session-search"
+            />
+            <flux:select wire:model.live="status" size="sm" class="max-w-40" data-test="status-filter">
+                <flux:select.option value="">{{ __('Any status') }}</flux:select.option>
+                @foreach (SurveillanceSessionStatus::cases() as $case)
+                    <flux:select.option value="{{ $case->value }}">{{ ucfirst($case->value) }}</flux:select.option>
+                @endforeach
+            </flux:select>
+            @if ($this->filtersActive())
+                <flux:button size="sm" variant="subtle" wire:click="clearFilters" data-test="clear-filters-button">
+                    {{ __('Clear') }}
+                </flux:button>
+            @endif
+        </div>
+    @endif
+
     @if ($this->sessions->isEmpty())
-        <flux:text>{{ __('No sessions yet. Point a camera at the room and start one.') }}</flux:text>
+        <flux:text>
+            {{ $this->filtersActive()
+                ? __('No sessions match that search.')
+                : __('No sessions yet. Point a camera at the room and start one.') }}
+        </flux:text>
     @else
         <flux:table>
             <flux:table.columns>

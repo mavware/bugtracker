@@ -65,6 +65,86 @@ test('a session cannot be filed under another user\'s customer', function () {
     expect(SurveillanceSession::count())->toBe(0);
 });
 
+test('the list can be searched by night, room or customer', function (string $term) {
+    $user = User::factory()->create();
+    $customer = Customer::factory()->for($user)->create(['name' => 'The Alvarez house']);
+    SurveillanceSession::factory()->for($user)->create([
+        'name' => 'Night of Sep 2',
+        'room' => 'Kitchen',
+        'customer_id' => $customer->id,
+    ]);
+    SurveillanceSession::factory()->for($user)->create([
+        'name' => 'Night of Aug 30',
+        'room' => 'Garage',
+        'customer_id' => null,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('surveillance.sessions')
+        ->set('search', $term)
+        ->assertSee('Night of Sep 2')
+        ->assertDontSee('Night of Aug 30');
+})->with([
+    'by name' => 'Sep 2',
+    'by room' => 'Kitchen',
+    'by customer' => 'Alvarez',
+]);
+
+test('a search never reaches another account\'s sessions', function () {
+    $user = User::factory()->create();
+    SurveillanceSession::factory()->create(['name' => 'Someone elses Kitchen night', 'room' => 'Kitchen']);
+
+    Livewire::actingAs($user)
+        ->test('surveillance.sessions')
+        ->set('search', 'Kitchen')
+        ->assertDontSee('Someone elses Kitchen night')
+        ->assertSee('No sessions match that search');
+});
+
+test('the list can be filtered by status', function () {
+    $user = User::factory()->create();
+    SurveillanceSession::factory()->for($user)->active()->create(['name' => 'Recording tonight']);
+    SurveillanceSession::factory()->for($user)->completed()->create(['name' => 'Finished last week']);
+
+    Livewire::actingAs($user)
+        ->test('surveillance.sessions')
+        ->set('status', SurveillanceSessionStatus::Active->value)
+        ->assertSee('Recording tonight')
+        ->assertDontSee('Finished last week');
+});
+
+test('searching returns to the first page', function () {
+    $user = User::factory()->create();
+
+    foreach (range(1, 16) as $index) {
+        SurveillanceSession::factory()->for($user)->create([
+            'name' => 'Night '.str_pad((string) $index, 2, '0', STR_PAD_LEFT),
+            'created_at' => now()->addMinutes($index),
+        ]);
+    }
+
+    $component = Livewire::actingAs($user)
+        ->test('surveillance.sessions')
+        ->set('paginators.page', 2)
+        ->set('search', 'Night');
+
+    expect($component->instance()->sessions->currentPage())->toBe(1);
+});
+
+test('clearing the filters brings every session back', function () {
+    $user = User::factory()->create();
+    SurveillanceSession::factory()->for($user)->create(['name' => 'Night of Sep 2']);
+    SurveillanceSession::factory()->for($user)->create(['name' => 'Night of Aug 30']);
+
+    Livewire::actingAs($user)
+        ->test('surveillance.sessions')
+        ->set('search', 'Sep')
+        ->assertDontSee('Night of Aug 30')
+        ->call('clearFilters')
+        ->assertSet('search', '')
+        ->assertSee('Night of Aug 30');
+});
+
 test('the list is paginated, newest first', function () {
     $user = User::factory()->create();
 
