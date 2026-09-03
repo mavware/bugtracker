@@ -127,7 +127,7 @@ $posts = $responses['posts']->throw()->json();
 
 ## Fake HTTP Requests in Tests
 
-Use `Http::fake()` for external integrations and use `Http::preventStrayRequests()` when an unexpected real request should fail the test. Also test timeouts, connection failures, and error responses that the application handles.
+Use `Http::fake()` for external integrations, and use `Http::preventStrayRequests()` when an unexpected real request should fail the test. Also test timeouts, connection failures, and error responses that the application handles.
 
 ```php
 it('syncs a user from the API', function () {

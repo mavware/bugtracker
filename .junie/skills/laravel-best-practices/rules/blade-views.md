@@ -20,7 +20,7 @@ Use a Blade component when a reusable interface benefits from explicit props, an
 
 ## Share Compatible View Data with a View Composer
 
-Use a view composer to centralize data needed whenever one or more named Blade views are rendered. Keep the composer compatible with every view it targets and avoid broad wildcards when views require different data shapes. A view composer runs when Laravel renders the matching view; it does not supply data to JSON, streamed, or other non-view responses.
+Use a view composer to centralize data needed whenever one or more named Blade views are rendered. Keep the composer compatible with every view it targets, and avoid broad wildcards when views require different data shapes. A view composer runs when Laravel renders the matching view; it does not supply data to JSON, streamed, or other non-view responses.
 
 ## Return Blade Fragments for Partial Rendering
 

@@ -46,7 +46,7 @@ public function boot(): void
 
 By default, accessing an unloaded relationship then throws a `LazyLoadingViolationException`. Applications can customize violation handling with `handleLazyLoadingViolationUsing()`.
 
-## Select Only Necessary Columns
+## Select Only Needed Columns
 
 Select only the columns the operation needs when omitting large text, binary, or JSON columns provides a meaningful benefit.
 
@@ -64,7 +64,7 @@ $posts = Post::select('id', 'title', 'user_id', 'created_at')
     ->get();
 ```
 
-When limiting selected columns, retain every key that Eloquent needs for matching. A `belongsTo` relationship needs its foreign key on the parent query and the owner's key on the related query. A `hasMany` relationship needs the parent's local key and the related model's foreign key.
+When limiting selected columns, retain every key Eloquent needs for matching. A `belongsTo` relationship needs its foreign key on the parent query and the owner's key on the related query. A `hasMany` relationship needs the parent's local key and the related model's foreign key.
 
 ## Process Large Data Sets Incrementally
 

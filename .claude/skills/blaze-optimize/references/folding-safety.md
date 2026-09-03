@@ -24,7 +24,7 @@ The component must NOT internally access any of these. Search the component file
 | Cache | `Cache::`, `cache(` |
 | App state | `app()->`, `resolve(`, `App::` |
 
-**If ANY of these are found inside the component, do NOT fold it.** The compiler strategy is enough.
+**If ANY of these are found inside the component, do NOT fold it.** The compile strategy is sufficient.
 
 Exception: If global state is used ONLY in a small section, use `@unblaze` to exclude that section:
 
@@ -83,7 +83,7 @@ Blaze automatically aborts folding when a dynamic attribute matches a `@props` n
 
 ### 3. Slot analysis
 
-**Default slot** — Slots are replaced with placeholders during folding and restored afterward. They are treated as pass-through by default. This is safe for most cases:
+**Default slot** — Slots are replaced with placeholders during folding and restored afterwards. They are treated as pass-through by default. This is safe for most cases:
 ```blade
 <x-button>{{ $dynamicLabel }}</x-button>
 ```
