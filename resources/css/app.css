@@ -23,9 +23,17 @@
     --color-zinc-900: #171717;
     --color-zinc-950: #0a0a0a;
 
-    --color-accent: var(--color-neutral-800);
-    --color-accent-content: var(--color-neutral-800);
-    --color-accent-foreground: var(--color-white);
+    /* Amber, following <flux:accent color="amber">. The foreground is a near-black
+       amber rather than white because no amber light enough to read as amber has
+       enough contrast behind white text.
+
+       accent-content is amber-700 rather than Flux's amber-600: it colours text on
+       the page background, and amber-600 on white is only 3.19:1, under the 4.5:1
+       AA bar. amber-700 reaches 5.02:1, and lifts the white logo glyph on its tile
+       by the same margin. */
+    --color-accent: var(--color-amber-400);
+    --color-accent-content: var(--color-amber-700);
+    --color-accent-foreground: var(--color-amber-950);
 
     /* Welcome page hero: a dashed bug trail that appears to crawl along its path. */
     --animate-trail: trail 6s linear infinite;
@@ -43,9 +51,9 @@
 
 @layer theme {
     .dark {
-        --color-accent: var(--color-white);
-        --color-accent-content: var(--color-white);
-        --color-accent-foreground: var(--color-neutral-800);
+        --color-accent: var(--color-amber-400);
+        --color-accent-content: var(--color-amber-400);
+        --color-accent-foreground: var(--color-amber-950);
     }
 }
 
@@ -68,10 +76,13 @@
     @apply  !mb-0 !leading-tight;
 }
 
+/* The ring offset has to match the page background, not the accent. It read as
+   accent-foreground only while that happened to be white/zinc-800; with an amber
+   accent the offset would draw a dark halo around every focused field. */
 input:focus[data-flux-control],
 textarea:focus[data-flux-control],
 select:focus[data-flux-control] {
-    @apply outline-hidden ring-2 ring-accent ring-offset-2 ring-offset-accent-foreground;
+    @apply outline-hidden ring-2 ring-accent ring-offset-2 ring-offset-white dark:ring-offset-zinc-800;
 }
 
 /* \[:where(&)\]:size-4 {
