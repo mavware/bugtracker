@@ -16,7 +16,7 @@ test('rooms are grouped per owner and property', function () {
     $groups = Livewire::actingAs($admin)->test('pages::admin.rooms')->instance()->roomGroups;
 
     expect($groups)->toHaveCount(2)
-        ->and($groups->pluck('sessions_count')->sort()->values()->all())->toBe([1, 2])
+        ->and($groups->pluck('sessionsCount')->sort()->values()->all())->toBe([1, 2])
         ->and($groups->pluck('customer')->filter()->all())->toContain('The Alvarez house');
 });
 
@@ -29,7 +29,7 @@ test('renaming a room only touches that owner and property\'s sessions', functio
     $otherUsersRoom = SurveillanceSession::factory()->create(['room' => 'Kitchan']);
 
     $component = Livewire::actingAs($admin)->test('pages::admin.rooms');
-    $key = $component->instance()->roomGroups->firstWhere('customer_id', $customer->id)['key'];
+    $key = $component->instance()->roomGroups->firstWhere('customerId', $customer->id)->key;
 
     $component
         ->call('startRename', $key)
@@ -47,7 +47,7 @@ test('a renamed room needs a name', function () {
     $session = SurveillanceSession::factory()->create(['room' => 'Kitchen']);
 
     $component = Livewire::actingAs($admin)->test('pages::admin.rooms');
-    $key = $component->instance()->roomGroups->firstWhere('room', 'Kitchen')['key'];
+    $key = $component->instance()->roomGroups->firstWhere('room', 'Kitchen')->key;
 
     $component
         ->call('startRename', $key)
@@ -63,7 +63,7 @@ test('clearing a room label keeps the sessions', function () {
     $session = SurveillanceSession::factory()->create(['room' => 'Kitchen']);
 
     $component = Livewire::actingAs($admin)->test('pages::admin.rooms');
-    $key = $component->instance()->roomGroups->firstWhere('room', 'Kitchen')['key'];
+    $key = $component->instance()->roomGroups->firstWhere('room', 'Kitchen')->key;
 
     $component->call('clearRoom', $key);
 

@@ -4,32 +4,32 @@ use App\Actions\Surveillance\RoomLabel;
 use App\Actions\Surveillance\RoomLabels;
 use Flux\Flux;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Admin · Rooms')] class extends Component {
+new #[Title('Rooms')] class extends Component {
     public ?string $editingKey = null;
 
     public string $roomName = '';
 
     /**
-     * Every room label on the site, across all accounts.
+     * Only this account's labels, so a key from anyone else's room simply is not
+     * found here and the lookup 404s.
      *
      * @return Collection<int, RoomLabel>
      */
     #[Computed]
     public function roomGroups(): Collection
     {
-        return app(RoomLabels::class)->groups();
+        return app(RoomLabels::class)->groups(Auth::user());
     }
 
     public function startRename(string $key): void
     {
-        $group = $this->group($key);
-
         $this->editingKey = $key;
-        $this->roomName = $group->room;
+        $this->roomName = $this->group($key)->room;
         $this->resetValidation();
     }
 
@@ -82,24 +82,26 @@ new #[Title('Admin · Rooms')] class extends Component {
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
             <flux:heading size="xl">{{ __('Rooms') }}</flux:heading>
-            <flux:text class="mt-2">{{ __('Room labels in use, grouped by who recorded them and where.') }}</flux:text>
+            <flux:text class="mt-2">{{ __('The room labels on your nights. Renaming one updates every night that carries it.') }}</flux:text>
         </div>
         <flux:button href="{{ route('dashboard') }}" icon="arrow-left">{{ __('Dashboard') }}</flux:button>
     </div>
 
-    <div class="mt-6">
-        <x-admin.nav />
-    </div>
+    @php($showCustomer = $this->roomGroups->contains(fn (RoomLabel $group) => $group->customer !== null))
 
     @if ($this->roomGroups->isEmpty())
-        <flux:text class="mt-6">{{ __('No sessions have been given a room label yet.') }}</flux:text>
+        <flux:callout icon="map-pin" class="mt-6">
+            <flux:callout.heading>{{ __('No room labels yet') }}</flux:callout.heading>
+            <flux:callout.text>{{ __('Name the room when you start a session and it will show up here, ready to correct.') }}</flux:callout.text>
+        </flux:callout>
     @else
         <flux:table class="mt-6">
             <flux:table.columns>
                 <flux:table.column>{{ __('Room') }}</flux:table.column>
-                <flux:table.column>{{ __('Owner') }}</flux:table.column>
-                <flux:table.column>{{ __('Customer') }}</flux:table.column>
-                <flux:table.column>{{ __('Sessions') }}</flux:table.column>
+                @if ($showCustomer)
+                    <flux:table.column>{{ __('Customer') }}</flux:table.column>
+                @endif
+                <flux:table.column>{{ __('Nights') }}</flux:table.column>
                 <flux:table.column></flux:table.column>
             </flux:table.columns>
 
@@ -121,8 +123,9 @@ new #[Title('Admin · Rooms')] class extends Component {
                                 {{ $group->room }}
                             @endif
                         </flux:table.cell>
-                        <flux:table.cell>{{ $group->owner }}</flux:table.cell>
-                        <flux:table.cell>{{ $group->customer ?? '—' }}</flux:table.cell>
+                        @if ($showCustomer)
+                            <flux:table.cell>{{ $group->customer ?? '—' }}</flux:table.cell>
+                        @endif
                         <flux:table.cell>{{ $group->sessionsCount }}</flux:table.cell>
                         <flux:table.cell>
                             <div class="flex justify-end gap-2">
@@ -138,7 +141,7 @@ new #[Title('Admin · Rooms')] class extends Component {
                                     variant="danger"
                                     icon="x-mark"
                                     wire:click="clearRoom('{{ $group->key }}')"
-                                    wire:confirm="{{ __('Remove this room label from :count sessions? The recordings are kept.', ['count' => $group->sessionsCount]) }}"
+                                    wire:confirm="{{ __('Remove this label from :count nights? The recordings are kept.', ['count' => $group->sessionsCount]) }}"
                                     data-test="clear-room-button"
                                 />
                             </div>
@@ -147,5 +150,9 @@ new #[Title('Admin · Rooms')] class extends Component {
                 @endforeach
             </flux:table.rows>
         </flux:table>
+
+        <flux:text class="mt-4 text-sm">
+            {{ __('Renaming onto a label you already use merges the two, which is how a typo gets cleaned up. Labels are kept separate per customer, so the same room name in two properties stays two rooms.') }}
+        </flux:text>
     @endif
 </section>

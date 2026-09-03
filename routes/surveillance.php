@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('surveillance/customers', 'pages::surveillance.customers')->name('surveillance.customers');
     Route::livewire('surveillance/heatmap', 'pages::surveillance.heatmap')->name('surveillance.heatmap');
+    Route::livewire('surveillance/rooms', 'pages::surveillance.rooms')->name('surveillance.rooms');
     Route::livewire('surveillance/trends', 'pages::surveillance.trends')->name('surveillance.trends');
     Route::livewire('surveillance/{session}/capture', 'pages::surveillance.capture')->name('surveillance.capture');
     Route::livewire('surveillance/{session}/report', 'pages::surveillance.report')->name('surveillance.report');

@@ -2,14 +2,18 @@
 
 use App\Models\Customer;
 use App\Models\SurveillanceSession;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 new class extends Component {
+    use WithPagination;
+
     /**
      * Which room the camera is watching. Grouping nights by room keeps the entry
      * point map honest — it only makes sense to merge nights shot from one spot.
@@ -31,17 +35,17 @@ new class extends Component {
     }
 
     /**
-     * @return Collection<int, SurveillanceSession>
+     * @return LengthAwarePaginator<int, SurveillanceSession>
      */
     #[Computed]
-    public function sessions(): Collection
+    public function sessions(): LengthAwarePaginator
     {
         return Auth::user()->surveillanceSessions()
             ->with('customer')
             ->withCount('tracks')
             ->orderByDesc('created_at')
             ->orderByDesc('id')
-            ->get();
+            ->paginate(15);
     }
 
     /**
@@ -87,6 +91,12 @@ new class extends Component {
         $session->delete();
 
         unset($this->sessions);
+
+        // Emptying the last page would otherwise strand the user on a blank one.
+        if ($this->sessions->isEmpty() && $this->sessions->currentPage() > 1) {
+            $this->resetPage();
+            unset($this->sessions);
+        }
     }
 }; ?>
 
@@ -106,6 +116,9 @@ new class extends Component {
             </flux:button>
             <flux:button icon="map-pin" href="{{ route('surveillance.heatmap') }}" data-test="heatmap-link">
                 {{ __('Entry points') }}
+            </flux:button>
+            <flux:button icon="home-modern" href="{{ route('surveillance.rooms') }}" data-test="rooms-link">
+                {{ __('Rooms') }}
             </flux:button>
         </div>
     </div>
@@ -187,5 +200,9 @@ new class extends Component {
                 @endforeach
             </flux:table.rows>
         </flux:table>
+
+        @if ($this->sessions->hasPages())
+            <div class="mt-4">{{ $this->sessions->links() }}</div>
+        @endif
     @endif
 </section>
