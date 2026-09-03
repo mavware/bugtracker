@@ -5,4 +5,5 @@ Before planning or editing, find the row whose globs match the file's path and r
 | Applies to | Rule file |
 | --- | --- |
 | app/Actions/Surveillance/** | .ai/rules/actions-surveillance.md |
+| app/Http/Middleware/** | .ai/rules/middleware.md |
 | app/Http/Controllers/Surveillance/** | .ai/rules/surveillance.md |

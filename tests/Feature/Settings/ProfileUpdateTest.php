@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\SurveillanceSession;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
 test('profile page is displayed', function () {
@@ -58,6 +60,23 @@ test('user can delete their account', function () {
 
     expect($user->fresh())->toBeNull();
     expect(auth()->check())->toBeFalse();
+});
+
+test('deleting an account takes its recorded frames off disk with it', function () {
+    Storage::fake('local');
+    $user = User::factory()->create();
+    $session = SurveillanceSession::factory()->for($user)->completed()->create();
+    Storage::disk('local')->put("surveillance/{$session->id}/reference.jpg", 'jpeg');
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::settings.delete-user-modal')
+        ->set('password', 'password')
+        ->call('deleteUser')
+        ->assertHasNoErrors();
+
+    expect(SurveillanceSession::find($session->id))->toBeNull();
+    Storage::disk('local')->assertMissing("surveillance/{$session->id}/reference.jpg");
 });
 
 test('correct password must be provided to delete account', function () {
