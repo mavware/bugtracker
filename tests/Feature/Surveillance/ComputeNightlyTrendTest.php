@@ -43,6 +43,46 @@ test('it merges sessions from the same night and ignores dismissed tracks and un
         ->and($trend['nights'][0])->toMatchArray(['date' => '2026-09-01', 'count' => 3, 'session_count' => 2]);
 });
 
+test('a session begun after midnight belongs to the evening it started, not the next day', function () {
+    $user = User::factory()->create();
+    $evening = SurveillanceSession::factory()->for($user)->completed()->create(['started_at' => Carbon::parse('2026-09-01 22:00')]);
+    $afterMidnight = SurveillanceSession::factory()->for($user)->completed()->create(['started_at' => Carbon::parse('2026-09-02 00:30')]);
+    BugTrack::factory()->count(2)->for($evening, 'session')->create();
+    BugTrack::factory()->count(3)->for($afterMidnight, 'session')->create();
+
+    $trend = app(ComputeNightlyTrend::class)->handle($user);
+
+    expect($trend['nights'])->toHaveCount(1)
+        ->and($trend['nights'][0])->toMatchArray([
+            'date' => '2026-09-01',
+            'label' => 'Sep 1',
+            'count' => 5,
+            'session_count' => 2,
+        ]);
+});
+
+test('the night rolls over in the morning, not at midnight', function () {
+    $user = User::factory()->create();
+    $lastNight = SurveillanceSession::factory()->for($user)->completed()->create(['started_at' => Carbon::parse('2026-09-02 05:59')]);
+    $thatEvening = SurveillanceSession::factory()->for($user)->completed()->create(['started_at' => Carbon::parse('2026-09-02 06:00')]);
+    BugTrack::factory()->for($lastNight, 'session')->create();
+    BugTrack::factory()->for($thatEvening, 'session')->create();
+
+    $trend = app(ComputeNightlyTrend::class)->handle($user);
+
+    expect(array_column($trend['nights'], 'date'))->toBe(['2026-09-01', '2026-09-02']);
+});
+
+test('an intervention made during the day comes after a night that ran into that morning', function () {
+    $user = User::factory()->create();
+    SurveillanceSession::factory()->for($user)->completed()->create(['started_at' => Carbon::parse('2026-09-02 01:00')]);
+    Intervention::factory()->for($user)->create(['performed_on' => '2026-09-02', 'description' => 'Baited in the morning']);
+
+    $trend = app(ComputeNightlyTrend::class)->handle($user);
+
+    expect($trend['interventions'][0]['position'])->toBe(1);
+});
+
 test('a night the user discarded is left out of the trend', function () {
     $user = User::factory()->create();
     $kept = SurveillanceSession::factory()->for($user)->completed()->create([

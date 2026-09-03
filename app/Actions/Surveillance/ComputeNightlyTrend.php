@@ -17,7 +17,8 @@ class ComputeNightlyTrend
      * Only completed nights count. A night the user discarded is Aborted, which
      * means "this was set up wrong, do not read anything into it".
      *
-     * Nights are grouped by the calendar date the session started, matching the
+     * Nights are grouped by SurveillanceSession::nightDate(), so a session begun
+     * after midnight counts towards the evening it started, matching the
      * "Night of ..." naming used when a session is created.
      *
      * @return array{
@@ -43,11 +44,12 @@ class ComputeNightlyTrend
         $nights = [];
 
         foreach ($sessions as $session) {
-            $date = $session->started_at->toDateString();
+            $night = $session->nightDate();
+            $date = $night->toDateString();
 
             $nights[$date] ??= [
                 'date' => $date,
-                'label' => $session->started_at->format('M j'),
+                'label' => $night->format('M j'),
                 'count' => 0,
                 'session_count' => 0,
             ];

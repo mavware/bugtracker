@@ -4,6 +4,7 @@ use App\Enums\SurveillanceSessionStatus;
 use App\Models\Customer;
 use App\Models\SurveillanceSession;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
@@ -34,6 +35,15 @@ test('starting a session creates a pending session and redirects to capture', fu
     $session = SurveillanceSession::first();
     expect($session->user_id)->toBe($user->id)
         ->and($session->status)->toBe(SurveillanceSessionStatus::Pending);
+});
+
+test('a session started after midnight is named for the evening it began', function () {
+    $this->travelTo(Carbon::parse('2026-09-02 00:30'));
+    $user = User::factory()->create();
+
+    Livewire::actingAs($user)->test('surveillance.sessions')->call('startSession');
+
+    expect(SurveillanceSession::first()->name)->toBe('Night of Sep 1');
 });
 
 test('starting a session files it under the chosen customer and room', function () {

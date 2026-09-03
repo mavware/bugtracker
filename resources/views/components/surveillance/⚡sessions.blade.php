@@ -106,7 +106,7 @@ new class extends Component {
         ]);
 
         $session = Auth::user()->surveillanceSessions()->create([
-            'name' => __('Night of :date', ['date' => now()->format('M j')]),
+            'name' => __('Night of :date', ['date' => SurveillanceSession::nightDateFor(now())->format('M j')]),
             'room' => trim($validated['room']) !== '' ? trim($validated['room']) : null,
             'customer_id' => $validated['customer'] !== '' ? (int) $validated['customer'] : null,
         ]);

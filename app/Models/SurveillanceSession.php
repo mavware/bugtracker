@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\SurveillanceSessionStatus;
 use Database\Factories\SurveillanceSessionFactory;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -35,6 +36,13 @@ class SurveillanceSession extends Model
 {
     /** @use HasFactory<SurveillanceSessionFactory> */
     use HasFactory;
+
+    /**
+     * A night runs until this hour of the following morning. Without the shift a
+     * recording begun at 00:30 would fall on the next calendar day, splitting one
+     * night across two bars on the trend and disagreeing with its own name.
+     */
+    public const NIGHT_BOUNDARY_HOUR = 6;
 
     /**
      * Get the attributes that should be cast.
@@ -82,6 +90,21 @@ class SurveillanceSession extends Model
     public function tracks(): HasMany
     {
         return $this->hasMany(BugTrack::class);
+    }
+
+    /**
+     * The night this session belongs to: the evening it began, even when the clock
+     * had already rolled past midnight. Every grouping and every "Night of ..."
+     * name must come from here so they agree with each other.
+     */
+    public static function nightDateFor(DateTimeInterface $moment): Carbon
+    {
+        return Carbon::instance($moment)->subHours(self::NIGHT_BOUNDARY_HOUR)->startOfDay();
+    }
+
+    public function nightDate(): ?Carbon
+    {
+        return $this->started_at !== null ? self::nightDateFor($this->started_at) : null;
     }
 
     public function storageDirectory(): string
