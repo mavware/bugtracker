@@ -10,8 +10,10 @@ use Illuminate\Database\Eloquent\Builder;
 class ComputeEntryPointHeatmap
 {
     /**
-     * Aggregate confirmed track endpoints from the user's finished sessions into
-     * entry/exit zones projected onto a single backdrop frame. Sessions may have
+     * Aggregate confirmed track endpoints from the user's completed sessions into
+     * entry/exit zones projected onto a single backdrop frame. Nights the user
+     * discarded (Aborted) are left out — a bad camera angle would drag the zones
+     * towards wherever it happened to be pointing. Sessions may have
      * been recorded at different resolutions, so endpoints are scaled into the
      * backdrop session's frame before clustering. Pass a customer and/or room to
      * compare only sessions recorded with the camera in the same place — merging
@@ -28,7 +30,7 @@ class ComputeEntryPointHeatmap
     public function handle(User $user, ?string $room = null, ?int $customerId = null): array
     {
         $sessions = $user->surveillanceSessions()
-            ->whereIn('status', [SurveillanceSessionStatus::Completed, SurveillanceSessionStatus::Aborted])
+            ->where('status', SurveillanceSessionStatus::Completed)
             ->whereNotNull('frame_width')
             ->whereNotNull('frame_height')
             ->when($customerId !== null, fn (Builder $query) => $query->where('customer_id', $customerId))

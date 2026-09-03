@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\SurveillanceSessionStatus;
 use App\Models\BugTrack;
 use App\Models\SurveillanceSession;
 use App\Models\User;
@@ -16,6 +17,27 @@ test('the report renders the data island and sightings for a finished session', 
         ->assertSee('id="report-data"', false)
         ->assertSee('"referenceImageUrl"', false)
         ->assertSee(__('Sightings'));
+});
+
+test('a discarded night says why it is missing from the trends', function () {
+    $user = User::factory()->create();
+    $session = SurveillanceSession::factory()->for($user)->completed()->create([
+        'status' => SurveillanceSessionStatus::Aborted,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('surveillance.report', $session))
+        ->assertSee('You discarded this night')
+        ->assertSee('left out of trends and entry points');
+});
+
+test('a completed night carries no discarded notice', function () {
+    $user = User::factory()->create();
+    $session = SurveillanceSession::factory()->for($user)->completed()->create();
+
+    $this->actingAs($user)
+        ->get(route('surveillance.report', $session))
+        ->assertDontSee('You discarded this night');
 });
 
 test('the report computes analytics lazily when missing', function () {

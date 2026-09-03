@@ -1,5 +1,6 @@
 import { Camera } from './camera.js';
 import { calibrate } from './brightness.js';
+import { buildReferenceForm, calibrationOutcome, formatClock, overlayBoxes } from './captureLogic.js';
 import { Detector, DEFAULT_PARAMS } from './detector.js';
 import { Tracker } from './tracker.js';
 import { Uploader } from './uploader.js';
@@ -20,6 +21,7 @@ function initCaptureApp(root) {
         overlay: el('overlay'),
         startButton: el('start'),
         endButton: el('end'),
+        abortButton: el('abort'),
         banner: el('banner'),
         state: el('state'),
         elapsed: el('elapsed'),
@@ -41,8 +43,21 @@ function initCaptureApp(root) {
         loopTimer: null,
     };
 
-    ui.startButton.addEventListener('click', () => startNight().catch((error) => showBanner(String(error))));
+    ui.startButton.addEventListener('click', () => startNight().catch((error) => {
+        // A refused camera prompt or a failed upload must leave the button usable,
+        // otherwise the only way to try again is reloading the page.
+        ui.startButton.removeAttribute('disabled');
+        setState('Error');
+        showBanner(String(error));
+    }));
     ui.endButton.addEventListener('click', () => endNight(false));
+    ui.abortButton.addEventListener('click', () => {
+        // Discarding is for a night set up wrong — a bad angle, a light left on —
+        // whose sightings would otherwise skew the trend and the entry point map.
+        if (window.confirm('Discard this night? It stays in your list, with its report, but is left out of trends and entry points.')) {
+            endNight(true);
+        }
+    });
     window.addEventListener('pagehide', () => {
         if (app.running) {
             app.uploader.flush({ keepalive: true });
@@ -68,19 +83,20 @@ function initCaptureApp(root) {
         const calibration = await calibrate(app.camera);
         ui.brightness.textContent = `${Math.round(calibration.meanLuminance)} / 255`;
 
-        if (calibration.tooDark) {
+        const outcome = calibrationOutcome(calibration);
+
+        if (outcome.banner !== null) {
+            showBanner(outcome.banner);
+        } else {
+            hideBanner();
+        }
+
+        if (outcome.blocked) {
             setState('Too dark');
             ui.startButton.removeAttribute('disabled');
-            showBanner('The scene is pitch black — the camera cannot see anything. Add a nightlight or dim lamp, then start again.');
             app.camera.stop();
 
             return;
-        }
-
-        if (calibration.dim) {
-            showBanner('The scene is very dim. Detection will run, but a small extra light source would improve it.');
-        } else {
-            hideBanner();
         }
 
         const settings = { ...DEFAULT_PARAMS, diffThreshold: calibration.diffThreshold };
@@ -118,6 +134,7 @@ function initCaptureApp(root) {
         app.running = true;
         ui.startButton.classList.add('hidden');
         ui.endButton.classList.remove('hidden');
+        ui.abortButton.classList.remove('hidden');
         setState('Watching');
 
         const intervalMs = 1000 / settings.processFps;
@@ -126,15 +143,12 @@ function initCaptureApp(root) {
     }
 
     async function uploadReference(settings) {
-        const blob = await app.camera.captureReferenceJpeg();
-        const form = new FormData();
-        form.append('image', blob, 'reference.jpg');
-        form.append('frame_width', app.camera.frameWidth);
-        form.append('frame_height', app.camera.frameHeight);
-
-        for (const [key, value] of Object.entries(settings)) {
-            form.append(`settings[${key}]`, value);
-        }
+        const form = buildReferenceForm({
+            blob: await app.camera.captureReferenceJpeg(),
+            frameWidth: app.camera.frameWidth,
+            frameHeight: app.camera.frameHeight,
+            settings,
+        });
 
         const response = await fetch(config.routes.reference, {
             method: 'POST',
@@ -175,19 +189,18 @@ function initCaptureApp(root) {
             return;
         }
 
-        const scaleX = canvas.width / app.camera.procCanvas.width;
-        const scaleY = canvas.height / app.camera.procCanvas.height;
-
         ctx.strokeStyle = '#4ade80';
         ctx.lineWidth = 2;
 
-        for (const blob of blobs) {
-            ctx.strokeRect(
-                (blob.box.x - 2) * scaleX,
-                (blob.box.y - 2) * scaleY,
-                (blob.box.width + 4) * scaleX,
-                (blob.box.height + 4) * scaleY,
-            );
+        const boxes = overlayBoxes(blobs, {
+            canvasWidth: canvas.width,
+            canvasHeight: canvas.height,
+            procWidth: app.camera.procCanvas.width,
+            procHeight: app.camera.procCanvas.height,
+        });
+
+        for (const box of boxes) {
+            ctx.strokeRect(box.x, box.y, box.width, box.height);
         }
     }
 
@@ -196,11 +209,7 @@ function initCaptureApp(root) {
             return;
         }
 
-        const totalSeconds = Math.floor((Date.now() - app.sessionStartTime) / 1000);
-        const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
-        const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
-        const seconds = String(totalSeconds % 60).padStart(2, '0');
-        ui.elapsed.textContent = `${hours}:${minutes}:${seconds}`;
+        ui.elapsed.textContent = formatClock(Date.now() - app.sessionStartTime);
     }
 
     async function endNight(aborted) {

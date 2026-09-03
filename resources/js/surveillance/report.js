@@ -1,3 +1,4 @@
+import { formatClock } from './captureLogic.js';
 import { Replay } from './replay.js';
 
 const root = document.getElementById('report-app');
@@ -37,7 +38,7 @@ async function initReport(root) {
 
         replay.onFrame = (fraction) => {
             scrub.value = Math.round(fraction * 1000);
-            clock.textContent = formatOffset(replay.playheadMs);
+            clock.textContent = formatClock(replay.playheadMs);
             if (!replay.playing) {
                 playButton.textContent = 'Replay';
             }
@@ -73,7 +74,7 @@ async function initReport(root) {
         replay.pause();
         playButton.textContent = 'Replay';
         replay.seek(Number(scrub.value) / 1000);
-        clock.textContent = formatOffset(replay.playheadMs);
+        clock.textContent = formatClock(replay.playheadMs);
     });
 
     trailsToggle.addEventListener('change', () => {
@@ -110,13 +111,4 @@ function loadImage(url) {
         image.onerror = () => resolve(null);
         image.src = url;
     });
-}
-
-function formatOffset(ms) {
-    const totalSeconds = Math.floor(ms / 1000);
-    const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
-    const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
-    const seconds = String(totalSeconds % 60).padStart(2, '0');
-
-    return `${hours}:${minutes}:${seconds}`;
 }

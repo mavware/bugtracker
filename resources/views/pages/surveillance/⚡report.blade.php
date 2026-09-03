@@ -84,6 +84,15 @@ new #[Title('Report')] class extends Component {
             <flux:button href="{{ route('dashboard') }}" icon="arrow-left">{{ __('Dashboard') }}</flux:button>
         </div>
 
+        @if ($session->status === \App\Enums\SurveillanceSessionStatus::Aborted)
+            <flux:callout icon="x-circle" class="mt-6" data-test="discarded-notice">
+                <flux:callout.heading>{{ __('You discarded this night') }}</flux:callout.heading>
+                <flux:callout.text>
+                    {{ __('Everything it caught is still here, but it is left out of trends and entry points so a bad setup does not skew them.') }}
+                </flux:callout.text>
+            </flux:callout>
+        @endif
+
         @php($analytics = $session->analytics ?? [])
 
         <div class="mt-6 grid gap-4 sm:grid-cols-3">

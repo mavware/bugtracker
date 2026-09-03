@@ -57,6 +57,9 @@ new #[Title('Capture')] class extends Component {
             <flux:button variant="danger" icon="stop" data-capture="end" data-test="end-session-button" class="hidden">
                 {{ __('End night') }}
             </flux:button>
+            <flux:button variant="subtle" icon="x-circle" data-capture="abort" data-test="abort-session-button" class="hidden">
+                {{ __('Discard night') }}
+            </flux:button>
         </div>
     </div>
 

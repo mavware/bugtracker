@@ -14,6 +14,9 @@ class ComputeNightlyTrend
      * Count confirmed sightings per recorded night, with the user's interventions
      * positioned along the same timeline so their effect on the counts is visible.
      *
+     * Only completed nights count. A night the user discarded is Aborted, which
+     * means "this was set up wrong, do not read anything into it".
+     *
      * Nights are grouped by the calendar date the session started, matching the
      * "Night of ..." naming used when a session is created.
      *
@@ -29,7 +32,7 @@ class ComputeNightlyTrend
     public function handle(User $user, ?string $room = null, ?int $customerId = null): array
     {
         $sessions = $user->surveillanceSessions()
-            ->whereIn('status', [SurveillanceSessionStatus::Completed, SurveillanceSessionStatus::Aborted])
+            ->where('status', SurveillanceSessionStatus::Completed)
             ->whereNotNull('started_at')
             ->when($customerId !== null, fn (Builder $query) => $query->where('customer_id', $customerId))
             ->when($room !== null, fn (Builder $query) => $query->where('room', $room))

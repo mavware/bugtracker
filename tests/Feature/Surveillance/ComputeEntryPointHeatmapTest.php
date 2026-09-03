@@ -73,14 +73,17 @@ test('it scopes the aggregate to one customer so two properties are not projecte
         ->and($heatmap['backdrop']->id)->toBe($alvarezNight->id);
 });
 
-test('it includes aborted nights, whose sightings are still real', function () {
+test('a night the user discarded is left out of the map', function () {
     $user = User::factory()->create();
-    $aborted = SurveillanceSession::factory()->for($user)->completed()->create([
+    $discarded = SurveillanceSession::factory()->for($user)->completed()->create([
         'status' => SurveillanceSessionStatus::Aborted,
     ]);
-    BugTrack::factory()->for($aborted, 'session')->create();
+    BugTrack::factory()->count(3)->for($discarded, 'session')->create();
 
-    expect(app(ComputeEntryPointHeatmap::class)->handle($user)['track_count'])->toBe(1);
+    $heatmap = app(ComputeEntryPointHeatmap::class)->handle($user);
+
+    expect($heatmap['session_count'])->toBe(0)
+        ->and($heatmap['track_count'])->toBe(0);
 });
 
 test('it excludes dismissed tracks and sessions that are not finished', function () {

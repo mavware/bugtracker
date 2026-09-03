@@ -43,17 +43,23 @@ test('it merges sessions from the same night and ignores dismissed tracks and un
         ->and($trend['nights'][0])->toMatchArray(['date' => '2026-09-01', 'count' => 3, 'session_count' => 2]);
 });
 
-test('it counts nights from aborted sessions too', function () {
+test('a night the user discarded is left out of the trend', function () {
     $user = User::factory()->create();
-    $aborted = SurveillanceSession::factory()->for($user)->completed()->create([
-        'status' => SurveillanceSessionStatus::Aborted,
+    $kept = SurveillanceSession::factory()->for($user)->completed()->create([
         'started_at' => Carbon::parse('2026-09-01 23:00'),
     ]);
-    BugTrack::factory()->count(2)->for($aborted, 'session')->create();
+    $discarded = SurveillanceSession::factory()->for($user)->completed()->create([
+        'status' => SurveillanceSessionStatus::Aborted,
+        'started_at' => Carbon::parse('2026-09-02 23:00'),
+    ]);
+    BugTrack::factory()->for($kept, 'session')->create();
+    BugTrack::factory()->count(9)->for($discarded, 'session')->create();
 
     $trend = app(ComputeNightlyTrend::class)->handle($user);
 
-    expect($trend['total_sightings'])->toBe(2);
+    expect($trend['nights'])->toHaveCount(1)
+        ->and($trend['nights'][0]['date'])->toBe('2026-09-01')
+        ->and($trend['total_sightings'])->toBe(1);
 });
 
 test('it scopes nights to a room when one is given', function () {
