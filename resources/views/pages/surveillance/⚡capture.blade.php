@@ -22,22 +22,22 @@ new #[Title('Capture')] class extends Component {
     }
 
     /**
-     * @return array<string, mixed>
+     * Everything the capture script needs, and nothing it does not: the page is
+     * the only source of these, so an unread key is dead weight in the markup.
+     * After ending the night the script follows the report_url the server returns
+     * rather than a route handed over up front.
+     *
+     * @return array{csrfToken: string, routes: array{reference: string, tracks: string, heartbeat: string, end: string}}
      */
     public function captureConfig(): array
     {
         return [
             'csrfToken' => csrf_token(),
-            'sessionId' => $this->session->id,
-            'sessionName' => $this->session->name,
-            'status' => $this->session->status->value,
             'routes' => [
                 'reference' => route('surveillance.reference.store', $this->session),
                 'tracks' => route('surveillance.tracks.store', $this->session),
                 'heartbeat' => route('surveillance.heartbeat', $this->session),
                 'end' => route('surveillance.end', $this->session),
-                'report' => route('surveillance.report', $this->session),
-                'index' => route('dashboard'),
             ],
         ];
     }
