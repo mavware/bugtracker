@@ -26,6 +26,19 @@
     --color-accent: var(--color-neutral-800);
     --color-accent-content: var(--color-neutral-800);
     --color-accent-foreground: var(--color-white);
+
+    /* Welcome page hero: a dashed bug trail that appears to crawl along its path. */
+    --animate-trail: trail 6s linear infinite;
+
+    @keyframes trail {
+        from {
+            stroke-dashoffset: 120;
+        }
+
+        to {
+            stroke-dashoffset: 0;
+        }
+    }
 }
 
 @layer theme {
