@@ -2,6 +2,7 @@
 
 namespace App\Actions\Surveillance;
 
+use App\Models\BugTrack;
 use App\Models\SurveillanceSession;
 
 class ComputeSessionAnalytics
@@ -36,7 +37,7 @@ class ComputeSessionAnalytics
         $session->update([
             'analytics' => [
                 'track_count' => $tracks->count(),
-                'total_points' => (int) $tracks->sum('point_count'),
+                'total_points' => $tracks->sum(fn (BugTrack $track) => $track->point_count),
                 'duration_ms' => $session->started_at !== null && $session->ended_at !== null
                     ? max(0, (int) $session->started_at->diffInMilliseconds($session->ended_at))
                     : 0,

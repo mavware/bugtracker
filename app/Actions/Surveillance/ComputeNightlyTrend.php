@@ -45,6 +45,11 @@ class ComputeNightlyTrend
 
         foreach ($sessions as $session) {
             $night = $session->nightDate();
+
+            if ($night === null) {
+                continue;
+            }
+
             $date = $night->toDateString();
 
             $nights[$date] ??= [
@@ -54,7 +59,7 @@ class ComputeNightlyTrend
                 'session_count' => 0,
             ];
 
-            $nights[$date]['count'] += (int) $session->getAttribute('confirmed_tracks_count');
+            $nights[$date]['count'] += (int) $session->confirmed_tracks_count;
             $nights[$date]['session_count']++;
         }
 
@@ -88,13 +93,22 @@ class ComputeNightlyTrend
      */
     public function rooms(User $user, ?int $customerId = null): array
     {
-        return $user->surveillanceSessions()
+        $rooms = [];
+
+        $sessions = $user->surveillanceSessions()
             ->whereNotNull('room')
             ->when($customerId !== null, fn (Builder $query) => $query->where('customer_id', $customerId))
             ->distinct()
             ->orderBy('room')
-            ->pluck('room')
-            ->all();
+            ->get(['room']);
+
+        foreach ($sessions as $session) {
+            if ($session->room !== null) {
+                $rooms[] = $session->room;
+            }
+        }
+
+        return $rooms;
     }
 
     /**

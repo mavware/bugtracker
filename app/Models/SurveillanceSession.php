@@ -30,6 +30,8 @@ use Illuminate\Support\Facades\Storage;
  * @property array<string, mixed>|null $analytics
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property-read int|null $confirmed_tracks_count Only loaded by queries that withCount() the confirmed tracks.
+ * @property-read int|null $sessions_count Only loaded by queries that group sessions and count each group.
  */
 #[Fillable(['customer_id', 'name', 'room', 'status', 'started_at', 'ended_at', 'last_heartbeat_at', 'reference_image_path', 'frame_width', 'frame_height', 'settings', 'analytics'])]
 class SurveillanceSession extends Model

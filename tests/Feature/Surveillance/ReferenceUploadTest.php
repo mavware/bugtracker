@@ -31,6 +31,20 @@ test('storing the reference frame activates the session', function () {
     Storage::disk('local')->assertExists($session->reference_image_path);
 });
 
+test('omitting settings leaves the session without any', function () {
+    Storage::fake('local');
+    $user = User::factory()->create();
+    $session = SurveillanceSession::factory()->for($user)->create();
+
+    $this->actingAs($user)->postJson(route('surveillance.reference.store', $session), [
+        'image' => UploadedFile::fake()->image('reference.jpg', 1280, 720),
+        'frame_width' => 1280,
+        'frame_height' => 720,
+    ])->assertOk();
+
+    expect($session->refresh()->settings)->toBeNull();
+});
+
 test('reference upload rejects a missing image and out-of-range dimensions', function () {
     $user = User::factory()->create();
     $session = SurveillanceSession::factory()->for($user)->create();

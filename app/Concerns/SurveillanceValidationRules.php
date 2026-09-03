@@ -3,9 +3,25 @@
 namespace App\Concerns;
 
 use App\Models\SurveillanceSession;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\ValidatedInput;
 
 trait SurveillanceValidationRules
 {
+    /**
+     * Validate the request and hand back the validated payload as a container of
+     * typed accessors. The capture page posts deeply nested track data, and
+     * reading it back through `integer()`/`string()` keeps the ingestion path
+     * from working with untyped values.
+     *
+     * @param  array<string, array<int, string>>  $rules
+     */
+    protected function validatedInput(Request $request, array $rules): ValidatedInput
+    {
+        return Validator::make($request->all(), $rules)->safe();
+    }
+
     /**
      * Get the validation rules for storing a session's reference frame.
      *

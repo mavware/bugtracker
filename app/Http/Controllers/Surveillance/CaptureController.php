@@ -27,15 +27,15 @@ class CaptureController extends Controller
             return response()->json(['message' => 'Session is already finished.'], 409);
         }
 
-        $validated = $request->validate($this->referenceRules());
+        $validated = $this->validatedInput($request, $this->referenceRules());
 
         $path = $request->file('image')->storeAs($session->storageDirectory(), 'reference.jpg', 'local');
 
         $session->update([
             'reference_image_path' => $path,
-            'frame_width' => $validated['frame_width'],
-            'frame_height' => $validated['frame_height'],
-            'settings' => $validated['settings'] ?? null,
+            'frame_width' => $validated->integer('frame_width'),
+            'frame_height' => $validated->integer('frame_height'),
+            'settings' => $validated->has('settings') ? $validated->array('settings') : null,
             'status' => SurveillanceSessionStatus::Active,
             'started_at' => now(),
             'last_heartbeat_at' => now(),
@@ -55,40 +55,49 @@ class CaptureController extends Controller
             return response()->json(['message' => 'Session is not active.'], 409);
         }
 
-        $validated = $request->validate($this->trackBatchRules($session));
+        $validated = $this->validatedInput($request, $this->trackBatchRules($session));
 
         $existing = $session->tracks()
-            ->whereIn('client_track_id', array_column($validated['tracks'], 'client_track_id'))
+            ->whereIn('client_track_id', $validated->collect('tracks')->pluck('client_track_id'))
             ->pluck('client_track_id')
             ->all();
+
+        $width = $session->frame_width ?? 0;
+        $height = $session->frame_height ?? 0;
 
         $accepted = [];
         $duplicate = [];
 
-        foreach ($validated['tracks'] as $track) {
-            if (in_array($track['client_track_id'], $existing, true)) {
-                $duplicate[] = $track['client_track_id'];
+        foreach ($validated->collect('tracks')->keys() as $index) {
+            $clientTrackId = $validated->string("tracks.$index.client_track_id")->toString();
+
+            if (in_array($clientTrackId, $existing, true)) {
+                $duplicate[] = $clientTrackId;
 
                 continue;
             }
 
-            $points = $track['points'];
-            $first = $points[0];
-            $last = end($points);
+            $points = $validated->array("tracks.$index.points");
+            $first = "tracks.$index.points.".array_key_first($points);
+            $last = "tracks.$index.points.".array_key_last($points);
 
             $session->tracks()->create([
-                'client_track_id' => $track['client_track_id'],
-                'start_offset_ms' => $track['start_offset_ms'],
-                'end_offset_ms' => $track['end_offset_ms'],
+                'client_track_id' => $clientTrackId,
+                'start_offset_ms' => $validated->integer("tracks.$index.start_offset_ms"),
+                'end_offset_ms' => $validated->integer("tracks.$index.end_offset_ms"),
                 'point_count' => count($points),
                 'points' => $points,
-                'entry_edge' => ComputeSessionAnalytics::classifyEdge([$first[1], $first[2]], $session->frame_width, $session->frame_height),
-                'exit_edge' => ComputeSessionAnalytics::classifyEdge([$last[1], $last[2]], $session->frame_width, $session->frame_height),
-                'start_crop_path' => $this->storeCrop($session, $track, 'start'),
-                'end_crop_path' => $this->storeCrop($session, $track, 'end'),
+                'entry_edge' => ComputeSessionAnalytics::classifyEdge(
+                    [$validated->integer("$first.1"), $validated->integer("$first.2")], $width, $height
+                ),
+                'exit_edge' => ComputeSessionAnalytics::classifyEdge(
+                    [$validated->integer("$last.1"), $validated->integer("$last.2")], $width, $height
+                ),
+                'start_crop_path' => $this->storeCrop($session, $clientTrackId, $validated->string("tracks.$index.start_crop")->toString(), 'start'),
+                'end_crop_path' => $this->storeCrop($session, $clientTrackId, $validated->string("tracks.$index.end_crop")->toString(), 'end'),
             ]);
 
-            $accepted[] = $track['client_track_id'];
+            $accepted[] = $clientTrackId;
         }
 
         return response()->json(['accepted' => $accepted, 'duplicate' => $duplicate]);
@@ -117,13 +126,13 @@ class CaptureController extends Controller
             return response()->json(['message' => 'Session is already finished.'], 409);
         }
 
-        $validated = $request->validate($this->endRules());
+        $validated = $this->validatedInput($request, $this->endRules());
 
         $session->update([
-            'status' => ($validated['aborted'] ?? false)
+            'status' => $validated->boolean('aborted')
                 ? SurveillanceSessionStatus::Aborted
                 : SurveillanceSessionStatus::Completed,
-            'ended_at' => ($session->started_at ?? now())->addMilliseconds($validated['ended_at_offset_ms']),
+            'ended_at' => ($session->started_at ?? now())->addMilliseconds($validated->integer('ended_at_offset_ms')),
         ]);
 
         $analytics->handle($session);
@@ -136,14 +145,10 @@ class CaptureController extends Controller
 
     /**
      * Decode and persist an inline base64 JPEG crop, rejecting oversized or invalid payloads.
-     *
-     * @param  array<string, mixed>  $track
      */
-    private function storeCrop(SurveillanceSession $session, array $track, string $position): ?string
+    private function storeCrop(SurveillanceSession $session, string $clientTrackId, string $encoded, string $position): ?string
     {
-        $encoded = $track[$position.'_crop'] ?? null;
-
-        if ($encoded === null) {
+        if ($encoded === '') {
             return null;
         }
 
@@ -153,7 +158,7 @@ class CaptureController extends Controller
             return null;
         }
 
-        $path = $session->storageDirectory()."/crops/{$track['client_track_id']}-$position.jpg";
+        $path = $session->storageDirectory()."/crops/$clientTrackId-$position.jpg";
 
         Storage::disk('local')->put($path, $binary);
 

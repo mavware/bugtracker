@@ -115,6 +115,22 @@ test('an invalid crop payload is discarded but the track is still stored', funct
         ->and($track->start_crop_path)->toBeNull();
 });
 
+test('a track posted without crops is stored with no crop paths', function () {
+    Storage::fake('local');
+    $user = User::factory()->create();
+    $session = SurveillanceSession::factory()->for($user)->active()->create();
+
+    $this->actingAs($user)->postJson(route('surveillance.tracks.store', $session), [
+        'tracks' => [validTrackPayload()],
+    ])->assertOk();
+
+    $track = $session->tracks()->first();
+    expect($track)->not->toBeNull()
+        ->and($track->start_crop_path)->toBeNull()
+        ->and($track->end_crop_path)->toBeNull();
+    Storage::disk('local')->assertMissing("surveillance/$session->id/crops");
+});
+
 test('track ingestion returns 409 when the session is not active', function (SurveillanceSessionStatus $status) {
     $user = User::factory()->create();
     $session = SurveillanceSession::factory()->for($user)->create(['status' => $status]);

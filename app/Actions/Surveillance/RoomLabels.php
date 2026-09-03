@@ -21,33 +21,39 @@ class RoomLabels
      */
     public function groups(?User $user = null): Collection
     {
-        $groups = SurveillanceSession::query()
+        $query = SurveillanceSession::query()
             ->whereNotNull('room')
-            ->when($user !== null, fn (Builder $query) => $query->where('user_id', $user->id))
             ->selectRaw('user_id, customer_id, room, COUNT(*) as sessions_count')
             ->groupBy('user_id', 'customer_id', 'room')
-            ->orderBy('room')
-            ->get();
+            ->orderBy('room');
+
+        if ($user !== null) {
+            $query->where('user_id', $user->id);
+        }
+
+        $groups = $query->get();
 
         $owners = $user !== null
             ? collect([$user->id => $user->email])
-            : User::whereIn('id', $groups->pluck('user_id')->unique())->pluck('email', 'id');
+            : User::whereIn('id', $groups->pluck('user_id')->unique())
+                ->get(['id', 'email'])
+                ->mapWithKeys(fn (User $owner) => [$owner->id => $owner->email]);
 
-        $customers = Customer::whereIn('id', $groups->pluck('customer_id')->filter()->unique())->pluck('name', 'id');
+        $customers = Customer::whereIn('id', $groups->pluck('customer_id')->filter()->unique())
+            ->get(['id', 'name'])
+            ->mapWithKeys(fn (Customer $customer) => [$customer->id => $customer->name]);
 
         $labels = [];
 
         foreach ($groups as $group) {
-            $customerId = $group->customer_id !== null ? (int) $group->customer_id : null;
-
             $labels[] = new RoomLabel(
-                key: self::keyFor((int) $group->user_id, $customerId, (string) $group->room),
-                userId: (int) $group->user_id,
-                customerId: $customerId,
-                owner: (string) ($owners[$group->user_id] ?? '—'),
-                customer: $customerId !== null ? (string) ($customers[$customerId] ?? '—') : null,
-                room: (string) $group->room,
-                sessionsCount: (int) $group->getAttribute('sessions_count'),
+                key: self::keyFor($group->user_id, $group->customer_id, $group->room ?? ''),
+                userId: $group->user_id,
+                customerId: $group->customer_id,
+                owner: $owners[$group->user_id] ?? '—',
+                customer: $group->customer_id !== null ? ($customers[$group->customer_id] ?? '—') : null,
+                room: $group->room ?? '',
+                sessionsCount: $group->sessions_count ?? 0,
             );
         }
 
