@@ -9,7 +9,10 @@ use App\Models\SurveillanceSession;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 
-test('it counts confirmed sightings per night and reports the headline nights', function () {
+test(
+/**
+ * @throws Exception
+ */ 'it counts confirmed sightings per night and reports the headline nights', function () {
     $user = User::factory()->create();
     $first = SurveillanceSession::factory()->for($user)->completed()->create(['started_at' => Carbon::parse('2026-09-01 23:00')]);
     $second = SurveillanceSession::factory()->for($user)->completed()->create(['started_at' => Carbon::parse('2026-09-02 23:00')]);
@@ -27,7 +30,10 @@ test('it counts confirmed sightings per night and reports the headline nights', 
         ->and($trend['previous']['date'])->toBe('2026-09-01');
 });
 
-test('it merges sessions from the same night and ignores dismissed tracks and unfinished sessions', function () {
+test(
+/**
+ * @throws Exception
+ */ 'it merges sessions from the same night and ignores dismissed tracks and unfinished sessions', function () {
     $user = User::factory()->create();
     $early = SurveillanceSession::factory()->for($user)->completed()->create(['started_at' => Carbon::parse('2026-09-01 21:00')]);
     $late = SurveillanceSession::factory()->for($user)->completed()->create(['started_at' => Carbon::parse('2026-09-01 23:30')]);
@@ -43,7 +49,10 @@ test('it merges sessions from the same night and ignores dismissed tracks and un
         ->and($trend['nights'][0])->toMatchArray(['date' => '2026-09-01', 'count' => 3, 'session_count' => 2]);
 });
 
-test('a session begun after midnight belongs to the evening it started, not the next day', function () {
+test(
+/**
+ * @throws Exception
+ */ 'a session begun after midnight belongs to the evening it started, not the next day', function () {
     $user = User::factory()->create();
     $evening = SurveillanceSession::factory()->for($user)->completed()->create(['started_at' => Carbon::parse('2026-09-01 22:00')]);
     $afterMidnight = SurveillanceSession::factory()->for($user)->completed()->create(['started_at' => Carbon::parse('2026-09-02 00:30')]);
@@ -61,7 +70,10 @@ test('a session begun after midnight belongs to the evening it started, not the 
         ]);
 });
 
-test('the night rolls over in the morning, not at midnight', function () {
+test(
+/**
+ * @throws Exception
+ */ 'the night rolls over in the morning, not at midnight', function () {
     $user = User::factory()->create();
     $lastNight = SurveillanceSession::factory()->for($user)->completed()->create(['started_at' => Carbon::parse('2026-09-02 05:59')]);
     $thatEvening = SurveillanceSession::factory()->for($user)->completed()->create(['started_at' => Carbon::parse('2026-09-02 06:00')]);
@@ -73,7 +85,10 @@ test('the night rolls over in the morning, not at midnight', function () {
     expect(array_column($trend['nights'], 'date'))->toBe(['2026-09-01', '2026-09-02']);
 });
 
-test('an intervention made during the day comes after a night that ran into that morning', function () {
+test(
+/**
+ * @throws Exception
+ */ 'an intervention made during the day comes after a night that ran into that morning', function () {
     $user = User::factory()->create();
     SurveillanceSession::factory()->for($user)->completed()->create(['started_at' => Carbon::parse('2026-09-02 01:00')]);
     Intervention::factory()->for($user)->create(['performed_on' => '2026-09-02', 'description' => 'Baited in the morning']);
@@ -83,7 +98,10 @@ test('an intervention made during the day comes after a night that ran into that
     expect($trend['interventions'][0]['position'])->toBe(1);
 });
 
-test('a night the user discarded is left out of the trend', function () {
+test(
+/**
+ * @throws Exception
+ */ 'a night the user discarded is left out of the trend', function () {
     $user = User::factory()->create();
     $kept = SurveillanceSession::factory()->for($user)->completed()->create([
         'started_at' => Carbon::parse('2026-09-01 23:00'),
@@ -102,7 +120,10 @@ test('a night the user discarded is left out of the trend', function () {
         ->and($trend['total_sightings'])->toBe(1);
 });
 
-test('it scopes nights to a room when one is given', function () {
+test(
+/**
+ * @throws Exception
+ */ 'it scopes nights to a room when one is given', function () {
     $user = User::factory()->create();
     $kitchen = SurveillanceSession::factory()->for($user)->completed()->create(['room' => 'Kitchen', 'started_at' => Carbon::parse('2026-09-01 23:00')]);
     $bathroom = SurveillanceSession::factory()->for($user)->completed()->create(['room' => 'Bathroom', 'started_at' => Carbon::parse('2026-09-02 23:00')]);
@@ -115,7 +136,10 @@ test('it scopes nights to a room when one is given', function () {
         ->and($trend['total_sightings'])->toBe(2);
 });
 
-test('it positions interventions by how many recorded nights came before them', function () {
+test(
+/**
+ * @throws Exception
+ */ 'it positions interventions by how many recorded nights came before them', function () {
     $user = User::factory()->create();
     foreach (['2026-09-01 23:00', '2026-09-03 23:00'] as $startedAt) {
         SurveillanceSession::factory()->for($user)->completed()->create(['started_at' => Carbon::parse($startedAt)]);
@@ -131,7 +155,10 @@ test('it positions interventions by how many recorded nights came before them', 
         ->and($trend['interventions'][1]['description'])->toBe('Between the nights');
 });
 
-test('a room filter keeps that room\'s interventions and the ones that apply everywhere', function () {
+test(
+/**
+ * @throws Exception
+ */ 'a room filter keeps that room\'s interventions and the ones that apply everywhere', function () {
     $user = User::factory()->create();
     Intervention::factory()->for($user)->create(['room' => 'Kitchen', 'performed_on' => '2026-09-01', 'description' => 'Kitchen bait']);
     Intervention::factory()->for($user)->create(['room' => null, 'performed_on' => '2026-09-02', 'description' => 'Sealed the front door']);
@@ -143,7 +170,10 @@ test('a room filter keeps that room\'s interventions and the ones that apply eve
         ->toBe(['Kitchen bait', 'Sealed the front door']);
 });
 
-test('it scopes nights to a customer so one property\'s counts are not mixed with another\'s', function () {
+test(
+/**
+ * @throws Exception
+ */ 'it scopes nights to a customer so one property\'s counts are not mixed with another\'s', function () {
     $user = User::factory()->create();
     $alvarez = Customer::factory()->for($user)->create();
     $brody = Customer::factory()->for($user)->create();
@@ -164,7 +194,10 @@ test('it scopes nights to a customer so one property\'s counts are not mixed wit
         ->and($trend['total_sightings'])->toBe(2);
 });
 
-test('a customer filter shows only that property\'s interventions, since baiting one house says nothing about another', function () {
+test(
+/**
+ * @throws Exception
+ */ 'a customer filter shows only that property\'s interventions, since baiting one house says nothing about another', function () {
     $user = User::factory()->create();
     $alvarez = Customer::factory()->for($user)->create();
     Intervention::factory()->for($user)->create(['customer_id' => $alvarez->id, 'performed_on' => '2026-09-01', 'description' => 'Baited the Alvarez kitchen']);
@@ -186,7 +219,10 @@ test('it lists only the rooms recorded for the given customer', function () {
         ->and(app(ComputeNightlyTrend::class)->rooms($user))->toBe(['Garage', 'Kitchen']);
 });
 
-test('it reports an empty trend and ignores other users\' nights', function () {
+test(
+/**
+ * @throws Exception
+ */ 'it reports an empty trend and ignores other users\' nights', function () {
     $user = User::factory()->create();
     $otherSession = SurveillanceSession::factory()->completed()->create();
     BugTrack::factory()->for($otherSession, 'session')->create();
