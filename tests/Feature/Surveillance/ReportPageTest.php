@@ -80,6 +80,28 @@ test('the reference image streams for the owner', function () {
         ->assertOk();
 });
 
+// These URLs are keyed by id, so a browser that kept a copy would show a deleted
+// session's photo against whichever session is handed that id next.
+test('session images are never stored by the browser', function (string $route) {
+    Storage::fake('local');
+    $user = User::factory()->create();
+    $session = SurveillanceSession::factory()->for($user)->completed()->create();
+    $track = BugTrack::factory()->for($session, 'session')->create([
+        'start_crop_path' => "surveillance/$session->id/crops/t1-start.jpg",
+    ]);
+    Storage::disk('local')->put($session->reference_image_path, 'jpeg-bytes');
+    Storage::disk('local')->put($track->start_crop_path, 'jpeg-bytes');
+
+    $url = $route === 'reference'
+        ? route('surveillance.reference.show', $session)
+        : route('surveillance.crop.show', [$session, $track, 'start']);
+
+    $this->actingAs($user)
+        ->get($url)
+        ->assertOk()
+        ->assertHeader('Cache-Control', 'no-store, private');
+})->with(['reference', 'crop']);
+
 test('the reference image returns 403 for another user and 404 when missing', function () {
     Storage::fake('local');
     $session = SurveillanceSession::factory()->completed()->create();

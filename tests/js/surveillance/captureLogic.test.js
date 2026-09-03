@@ -6,6 +6,7 @@ import {
     formatClock,
     overlayBoxes,
     TOO_DARK_MESSAGE,
+    wakeLockMessage,
 } from '../../../resources/js/surveillance/captureLogic.js';
 
 describe('calibrationOutcome', () => {
@@ -86,6 +87,29 @@ describe('overlayBoxes', () => {
 
     test('handles a frame with nothing moving in it', () => {
         expect(overlayBoxes([], { canvasWidth: 320, canvasHeight: 180, procWidth: 320, procHeight: 180 })).toEqual([]);
+    });
+});
+
+describe('wakeLockMessage', () => {
+    // Read on the device itself, in a dark room, by someone who must fix it now:
+    // it has to name the setting, not just say the lock failed.
+    test('names the iOS setting, and Low Power Mode which blocks the lock by itself', () => {
+        const message = wakeLockMessage('Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15');
+
+        expect(message).toContain('Auto-Lock');
+        expect(message).toContain('Low Power Mode');
+    });
+
+    test('names the Android setting', () => {
+        const message = wakeLockMessage('Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36');
+
+        expect(message).toContain('Screen timeout');
+        expect(message).not.toContain('Auto-Lock');
+    });
+
+    test('falls back to system power settings for anything else', () => {
+        expect(wakeLockMessage('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)')).toContain('system power settings');
+        expect(wakeLockMessage()).toContain('system power settings');
     });
 });
 

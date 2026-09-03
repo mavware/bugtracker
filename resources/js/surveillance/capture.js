@@ -1,6 +1,15 @@
 import { Camera } from './camera.js';
 import { calibrate } from './brightness.js';
-import { buildReferenceForm, calibrationOutcome, formatClock, overlayBoxes } from './captureLogic.js';
+import {
+    buildReferenceForm,
+    calibrationOutcome,
+    countdownMessage,
+    formatClock,
+    LEAVE_ROOM_SECONDS,
+    overlayBoxes,
+    PREFLIGHT_MESSAGE,
+    wakeLockMessage,
+} from './captureLogic.js';
 import { Detector, DEFAULT_PARAMS } from './detector.js';
 import { Tracker } from './tracker.js';
 import { Uploader } from './uploader.js';
@@ -30,6 +39,7 @@ function initCaptureApp(root) {
         queueDepth: el('queue-depth'),
         brightness: el('brightness'),
         debugToggle: el('debug-toggle'),
+        setupHelp: el('setup-help'),
     };
 
     const app = {
@@ -37,7 +47,7 @@ function initCaptureApp(root) {
         detector: null,
         tracker: null,
         uploader: null,
-        wakeLock: new WakeLock(() => showBanner('Screen wake lock is unavailable — disable auto-lock manually so the device stays on.')),
+        wakeLock: new WakeLock(() => showBanner(wakeLockMessage(navigator.userAgent))),
         running: false,
         sessionStartTime: null,
         loopTimer: null,
@@ -74,10 +84,18 @@ function initCaptureApp(root) {
     }
 
     async function startNight() {
+        // Asked before the camera opens: the light has to be on before calibration
+        // measures the scene, and a user who backs out should not have been filmed.
+        if (!window.confirm(PREFLIGHT_MESSAGE)) {
+            return;
+        }
+
         ui.startButton.setAttribute('disabled', 'disabled');
         setState('Starting camera…');
 
         await app.camera.start();
+
+        await countdownToLeave();
 
         setState('Calibrating (3s)…');
         const calibration = await calibrate(app.camera);
@@ -132,6 +150,7 @@ function initCaptureApp(root) {
         await app.wakeLock.acquire();
 
         app.running = true;
+        ui.setupHelp.classList.add('hidden');
         ui.startButton.classList.add('hidden');
         ui.endButton.classList.remove('hidden');
         ui.abortButton.classList.remove('hidden');
@@ -140,6 +159,19 @@ function initCaptureApp(root) {
         const intervalMs = 1000 / settings.processFps;
         app.loopTimer = setInterval(processFrame, intervalMs);
         setInterval(updateElapsed, 1000);
+    }
+
+    /**
+     * Hold the camera open but idle while the user walks out, counting down on the
+     * status line. Nothing is measured until this finishes, so the reference photo,
+     * the background model and the noise floor all describe an empty room.
+     */
+    async function countdownToLeave() {
+        for (let secondsLeft = LEAVE_ROOM_SECONDS; secondsLeft > 0; secondsLeft--) {
+            setState(countdownMessage(secondsLeft));
+
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
     }
 
     async function uploadReference(settings) {

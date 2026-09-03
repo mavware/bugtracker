@@ -4,6 +4,7 @@
 // buttons, and check what reaches the network. The camera, uploader, wake lock
 // and calibration are stubbed; the detector and tracker are the real ones.
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { LEAVE_ROOM_SECONDS } from '../../../resources/js/surveillance/captureLogic.js';
 
 const stubs = vi.hoisted(() => ({
     cameraStart: vi.fn(async () => {}),
@@ -58,7 +59,13 @@ vi.mock('../../../resources/js/surveillance/uploader.js', () => ({
 
 vi.mock('../../../resources/js/surveillance/wakeLock.js', () => ({
     WakeLock: class {
+        /** Hold on to the callback so a test can fire the unsupported path. */
+        constructor(onUnsupported) {
+            stubs.wakeLockUnsupported = onUnsupported;
+        }
+
         acquire = stubs.wakeAcquire;
+
         release = stubs.wakeRelease;
     },
 }));
@@ -90,6 +97,7 @@ function mountPage() {
             <span data-capture="queue-depth"></span>
             <span data-capture="brightness"></span>
             <input type="checkbox" data-capture="debug-toggle" checked />
+            <div data-capture="setup-help">If the screen keeps sleeping…</div>
         </section>
     `;
 
@@ -137,9 +145,10 @@ describe('capture page', () => {
         vi.unstubAllGlobals();
     });
 
+    /** Click start and sit through the leave-the-room countdown. */
     async function startWatching() {
         el('start').click();
-        await settle();
+        await vi.advanceTimersByTimeAsync(LEAVE_ROOM_SECONDS * 1000);
     }
 
     test('starting a night uploads the reference frame and begins watching', async () => {
@@ -157,6 +166,67 @@ describe('capture page', () => {
         expect(options.headers['X-CSRF-TOKEN']).toBe('test-csrf-token');
         expect(options.body.get('frame_width')).toBe('1280');
         expect(options.body.get('settings[procWidth]')).toBe('320');
+    });
+
+    test('the room checklist is put in front of the user before the camera opens', async () => {
+        el('start').click();
+        await settle();
+
+        const [message] = window.confirm.mock.calls[0];
+        expect(message).toContain('Turn on a light');
+        expect(message).toContain('Turn off fans');
+        expect(message).toContain('changing colour reads as movement');
+    });
+
+    test('backing out of the checklist starts nothing and leaves the button usable', async () => {
+        window.confirm = vi.fn(() => false);
+
+        await startWatching();
+
+        expect(stubs.cameraStart).not.toHaveBeenCalled();
+        expect(stubs.calibrate).not.toHaveBeenCalled();
+        expect(fetch).not.toHaveBeenCalled();
+        expect(el('start').hasAttribute('disabled')).toBe(false);
+        expect(el('state').textContent).toBe('');
+    });
+
+    test('nothing is measured until the user has had five seconds to leave', async () => {
+        el('start').click();
+        await settle();
+
+        // The preview is live so the room can be framed, but the scene is untouched.
+        expect(stubs.cameraStart).toHaveBeenCalled();
+        expect(el('state').textContent).toBe('Leave the room — starting in 5…');
+        expect(stubs.calibrate).not.toHaveBeenCalled();
+
+        await vi.advanceTimersByTimeAsync(3000);
+
+        expect(el('state').textContent).toBe('Leave the room — starting in 2…');
+        expect(stubs.calibrate).not.toHaveBeenCalled();
+        expect(stubs.captureReferenceJpeg).not.toHaveBeenCalled();
+        expect(fetch).not.toHaveBeenCalled();
+
+        await vi.advanceTimersByTimeAsync(2000);
+
+        expect(stubs.calibrate).toHaveBeenCalled();
+        expect(el('state').textContent).toBe('Watching');
+    });
+
+    test('a device that will not hold its screen on says which setting to change', async () => {
+        await startWatching();
+
+        stubs.wakeLockUnsupported();
+
+        expect(el('banner').classList.contains('hidden')).toBe(false);
+        expect(el('banner').textContent).toContain('would not keep its screen on');
+    });
+
+    test('the setup advice makes way once the night is under way', async () => {
+        expect(el('setup-help').classList.contains('hidden')).toBe(false);
+
+        await startWatching();
+
+        expect(el('setup-help').classList.contains('hidden')).toBe(true);
     });
 
     test('the end and discard buttons only appear once watching', async () => {
@@ -239,8 +309,8 @@ describe('capture page', () => {
     });
 
     test('backing out of the discard prompt leaves the night running', async () => {
-        window.confirm = vi.fn(() => false);
         await startWatching();
+        window.confirm = vi.fn(() => false);
 
         el('abort').click();
         await settle();

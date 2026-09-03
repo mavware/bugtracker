@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /*
@@ -14,8 +15,15 @@ use Tests\TestCase;
 |
 */
 
+/*
+ * The local disk is faked for every feature test. Deleting a SurveillanceSession
+ * fires a hook that removes storage/app/private/surveillance/{id}, and the test
+ * database numbers its sessions from 1, so a single unfaked delete would wipe a
+ * real recording off the developer's machine.
+ */
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
+    ->beforeEach(fn () => Storage::fake('local'))
     ->in('Feature');
 
 /*
