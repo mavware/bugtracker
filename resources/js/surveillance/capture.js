@@ -11,6 +11,7 @@ import {
     overlayBoxes,
     PREFLIGHT_MESSAGE,
     wakeLockMessage,
+    watchingState,
 } from './captureLogic.js';
 import { Detector, DEFAULT_PARAMS } from './detector.js';
 import { Tracker } from './tracker.js';
@@ -232,7 +233,7 @@ function initCaptureApp(root) {
         ui.checkButton.classList.add('hidden');
         ui.endButton.classList.remove('hidden');
         ui.abortButton.classList.remove('hidden');
-        setState('Watching');
+        setState(watchingState(false));
 
         const intervalMs = 1000 / settings.processFps;
         app.loopTimer = setInterval(processFrame, intervalMs);
@@ -281,6 +282,7 @@ function initCaptureApp(root) {
         app.tracker.update(blobs);
 
         ui.liveCount.textContent = app.tracker.active.length;
+        setState(watchingState(app.detector.largeMotion));
         drawOverlay(blobs);
     }
 
@@ -296,6 +298,16 @@ function initCaptureApp(root) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         if (!ui.debugToggle.checked) {
+            return;
+        }
+
+        // A dropped frame gets a red border instead of boxes: the person standing
+        // in shot is being ignored, not missed.
+        if (app.detector.largeMotion) {
+            ctx.strokeStyle = '#f87171';
+            ctx.lineWidth = 6;
+            ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
             return;
         }
 

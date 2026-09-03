@@ -50,6 +50,20 @@ export function cameraCheckLabel(previewing) {
     return previewing ? 'Stop camera' : 'Check camera';
 }
 
+export const WATCHING_MESSAGE = 'Watching';
+
+export const LARGE_MOTION_MESSAGE = 'Watching — ignoring something too large to be a bug';
+
+/**
+ * The status line while a night runs. When the detector drops a frame for
+ * holding a person or a pet, the page says so: a room full of movement that
+ * reports nothing looks broken otherwise, and the absence of a flurry of
+ * sightings is the whole point.
+ */
+export function watchingState(largeMotion) {
+    return largeMotion ? LARGE_MOTION_MESSAGE : WATCHING_MESSAGE;
+}
+
 /**
  * What to say when the screen wake lock could not be taken. Naming the actual
  * setting matters here: this banner is read on the device itself, in a dark room,

@@ -4,7 +4,8 @@
 // buttons, and check what reaches the network. The camera, uploader, wake lock
 // and calibration are stubbed; the detector and tracker are the real ones.
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { LEAVE_ROOM_SECONDS } from '../../../resources/js/surveillance/captureLogic.js';
+import { LARGE_MOTION_MESSAGE, LEAVE_ROOM_SECONDS } from '../../../resources/js/surveillance/captureLogic.js';
+import { makeFrame, paintRect } from '../helpers.js';
 
 const stubs = vi.hoisted(() => ({
     cameraStart: vi.fn(async () => {}),
@@ -478,6 +479,25 @@ describe('capture page', () => {
 
         await vi.advanceTimersByTimeAsync(1000);
         expect(stubs.grabProcessedFrame.mock.calls.length).toBe(framesWhileWatching);
+    });
+
+    test('a person walking into shot is ignored rather than tracked as a swarm', async () => {
+        stubs.grabProcessedFrame.mockImplementation(() => makeFrame(64, 64, 200));
+        await startWatching();
+        await vi.advanceTimersByTimeAsync(1000);
+
+        // A 40×40 dark patch is 1600 changed pixels: past the production limit of
+        // five roaches at maxArea, however many fragments a body breaks into.
+        stubs.grabProcessedFrame.mockImplementation(() => paintRect(makeFrame(64, 64, 200), 0, 0, 40, 40, 100));
+        await vi.advanceTimersByTimeAsync(1000);
+
+        expect(el('state').textContent).toBe(LARGE_MOTION_MESSAGE);
+        expect(stubs.uploaderEnqueue).not.toHaveBeenCalled();
+
+        stubs.grabProcessedFrame.mockImplementation(() => makeFrame(64, 64, 200));
+        await vi.advanceTimersByTimeAsync(1000);
+
+        expect(el('state').textContent).toBe('Watching');
     });
 
     test('closing the tab mid-night is challenged first', async () => {

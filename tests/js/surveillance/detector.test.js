@@ -66,6 +66,39 @@ describe('Detector', () => {
         expect(fussy.detect(sceneWithBlob(2, 2, 3, 3))).toEqual([]);
     });
 
+    test('drops the whole frame when far more of it moves than a few roaches could account for', () => {
+        // A person is not one oversized blob but many roach-sized fragments, so the
+        // small patch here would survive the per-blob limits on its own.
+        const wary = new Detector({ maxArea: 9, maxChangedArea: 30 });
+        wary.detect(emptyScene());
+
+        const frame = paintRect(sceneWithBlob(0, 0, 6, 6), 9, 9, 2, 2, 100);
+
+        expect(wary.detect(frame)).toEqual([]);
+        expect(wary.largeMotion).toBe(true);
+    });
+
+    test('reports the roach again once the large thing has left', () => {
+        const wary = new Detector({ maxArea: 9, maxChangedArea: 30 });
+        wary.detect(emptyScene());
+        wary.detect(paintRect(sceneWithBlob(0, 0, 6, 6), 9, 9, 2, 2, 100));
+
+        expect(wary.detect(sceneWithBlob(9, 9, 2, 2))).toHaveLength(1);
+        expect(wary.largeMotion).toBe(false);
+    });
+
+    test('keeps absorbing a large thing that stays put, so detection resumes around it', () => {
+        const wary = new Detector({ maxArea: 9, maxChangedArea: 30 });
+        wary.detect(emptyScene());
+
+        for (let frame = 0; frame < 80; frame++) {
+            wary.detect(sceneWithBlob(0, 0, 6, 6));
+        }
+
+        expect(wary.largeMotion).toBe(false);
+        expect(wary.detect(paintRect(sceneWithBlob(0, 0, 6, 6), 9, 9, 2, 2, 100))).toHaveLength(1);
+    });
+
     test('discards long thin shapes, which are shadows and edges rather than bugs', () => {
         detector.detect(emptyScene());
 
@@ -113,6 +146,8 @@ describe('Detector', () => {
     test('re-seeds the background after a reset', () => {
         detector.detect(emptyScene());
         detector.reset();
+
+        expect(detector.largeMotion).toBe(false);
 
         expect(detector.detect(sceneWithBlob(2, 2, 3, 3))).toEqual([]);
         expect(detector.detect(sceneWithBlob(2, 2, 3, 3))).toEqual([]);

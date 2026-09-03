@@ -5,9 +5,11 @@ import {
     cameraCheckLabel,
     DIM_MESSAGE,
     formatClock,
+    LARGE_MOTION_MESSAGE,
     overlayBoxes,
     TOO_DARK_MESSAGE,
     wakeLockMessage,
+    watchingState,
 } from '../../../resources/js/surveillance/captureLogic.js';
 
 describe('calibrationOutcome', () => {
@@ -121,6 +123,17 @@ describe('cameraCheckLabel', () => {
 
     test('offers to close the preview while it is open', () => {
         expect(cameraCheckLabel(true)).toBe('Stop camera');
+    });
+});
+
+describe('watchingState', () => {
+    test('reads as plain watching while the room is quiet', () => {
+        expect(watchingState(false)).toBe('Watching');
+    });
+
+    test('says a large thing is being ignored, so silence does not look like a fault', () => {
+        expect(watchingState(true)).toBe(LARGE_MOTION_MESSAGE);
+        expect(LARGE_MOTION_MESSAGE).toContain('ignoring');
     });
 });
 
