@@ -42,7 +42,7 @@ class SurveillanceSession extends Model
      * recording begun at 00:30 would fall on the next calendar day, splitting one
      * night across two bars on the trend and disagreeing with its own name.
      */
-    public const NIGHT_BOUNDARY_HOUR = 6;
+    public const int NIGHT_BOUNDARY_HOUR = 6;
 
     /**
      * Get the attributes that should be cast.

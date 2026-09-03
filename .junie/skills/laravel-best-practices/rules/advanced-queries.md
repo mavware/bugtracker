@@ -76,7 +76,7 @@ $query->whereIn('company_id', Company::where('name', 'like', $term)->select('id'
 
 ## Measure Two Simple Queries Against One Complex Query
 
-Two targeted queries can outperform one complex correlated subquery or join when the first query is highly selective. They also add a database round trip, can transfer a large identifier list, and do not provide a single-query consistency snapshot. Decide from query plans and production-like measurements.
+Two targeted queries can outperform one complex correlated subquery or join when the first query is highly selective. They also add a database round trip, can transfer a large identifier list, and do not provide a single-query consistency snapshot. Decide on query plans and production-like measurements.
 
 ## Design Composite Indexes for the Query
 

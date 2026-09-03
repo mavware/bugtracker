@@ -49,7 +49,7 @@ test('reference upload returns 403 for a session owned by another user', functio
     $session = SurveillanceSession::factory()->create();
 
     $this->actingAs(User::factory()->create())
-        ->postJson(route('surveillance.reference.store', $session), [])
+        ->postJson(route('surveillance.reference.store', $session))
         ->assertForbidden();
 });
 
@@ -68,6 +68,6 @@ test('reference upload returns 409 for a finished session', function () {
 test('reference upload returns 401 for guests', function () {
     $session = SurveillanceSession::factory()->create();
 
-    $this->postJson(route('surveillance.reference.store', $session), [])
+    $this->postJson(route('surveillance.reference.store', $session))
         ->assertUnauthorized();
 });

@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
 test('profile page is displayed', function () {
-    $this->actingAs($user = User::factory()->create());
+    $this->actingAs(User::factory()->create());
 
     $this->get(route('profile.edit'))->assertOk();
 });
@@ -76,7 +76,7 @@ test('deleting an account takes its recorded frames off disk with it', function 
         ->assertHasNoErrors();
 
     expect(SurveillanceSession::find($session->id))->toBeNull();
-    Storage::disk('local')->assertMissing("surveillance/{$session->id}/reference.jpg");
+    Storage::disk('local')->assertMissing("surveillance/$session->id/reference.jpg");
 });
 
 test('correct password must be provided to delete account', function () {

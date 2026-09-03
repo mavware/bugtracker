@@ -76,6 +76,6 @@ test('removing a customer keeps their recorded nights', function () {
         ->test('pages::admin.customers')
         ->call('deleteCustomer', $customer->id);
 
-    expect(Customer::find($customer->id))->toBeNull()
+    expect(Customer::query()->find($customer->id))->toBeNull()
         ->and($session->refresh()->customer_id)->toBeNull();
 });

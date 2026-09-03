@@ -2,7 +2,7 @@
 
 ## Define Precise Relationship Types
 
-Define the relationship that matches the database association, and declare its concrete return type.
+Define the relationship that matches the database association and declare its concrete return type.
 
 ```php
 public function comments(): HasMany

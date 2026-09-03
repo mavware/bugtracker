@@ -86,7 +86,7 @@ test('removing a customer keeps their recorded nights and un-groups them', funct
         ->test('pages::surveillance.customers')
         ->call('deleteCustomer', $customer->id);
 
-    expect(Customer::find($customer->id))->toBeNull()
+    expect(Customer::query()->find($customer->id))->toBeNull()
         ->and($session->refresh()->customer_id)->toBeNull();
 });
 

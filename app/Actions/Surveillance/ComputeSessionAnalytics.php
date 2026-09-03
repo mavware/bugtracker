@@ -6,7 +6,7 @@ use App\Models\SurveillanceSession;
 
 class ComputeSessionAnalytics
 {
-    private const EDGE_BINS = 10;
+    private const int EDGE_BINS = 10;
 
     /**
      * Aggregate the session's tracks into the analytics summary stored on the session.

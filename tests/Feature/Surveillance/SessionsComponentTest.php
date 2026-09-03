@@ -14,8 +14,8 @@ test('guests are redirected to the login page', function () {
 
 test('the dashboard lists only the current user\'s sessions', function () {
     $user = User::factory()->create();
-    $own = SurveillanceSession::factory()->for($user)->create(['name' => 'My kitchen watch']);
-    $other = SurveillanceSession::factory()->create(['name' => 'Someone else\'s watch']);
+    SurveillanceSession::factory()->for($user)->create(['name' => 'My kitchen watch']);
+    SurveillanceSession::factory()->create(['name' => 'Someone else\'s watch']);
 
     $this->actingAs($user)
         ->get(route('dashboard'))
@@ -185,7 +185,7 @@ test('emptying the last page falls back rather than stranding the user on a blan
         SurveillanceSession::factory()->for($user)->create(['created_at' => now()->addMinutes($index)]);
     }
 
-    $oldest = SurveillanceSession::where('user_id', $user->id)->orderBy('created_at')->first();
+    $oldest = SurveillanceSession::where('user_id', $user->id)->oldest()->first();
 
     $component = Livewire::actingAs($user)
         ->test('surveillance.sessions')

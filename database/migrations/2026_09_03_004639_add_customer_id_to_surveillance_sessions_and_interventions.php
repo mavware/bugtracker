@@ -11,7 +11,7 @@ return new class extends Migration
      *
      * Removing a customer must not destroy the nights recorded at their property —
      * a cascade here would also bypass the model hook that cleans up stored frames,
-     * orphaning them on disk. Sessions are un-grouped instead.
+     * orphaning them on disk. Sessions are ungrouped instead.
      */
     public function up(): void
     {

@@ -13,18 +13,18 @@ test('registration screen can be rendered', function () {
 });
 
 test(
-/**
- * @throws JsonException
- */ 'new users can register', function () {
-    $response = $this->post(route('register.store'), [
-        'name' => 'John Doe',
-        'email' => 'test@example.com',
-        'password' => 'password',
-        'password_confirmation' => 'password',
-    ]);
+    /**
+     * @throws JsonException
+     */ 'new users can register', function () {
+        $response = $this->post(route('register.store'), [
+            'name' => 'John Doe',
+            'email' => 'test@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
 
-    $response->assertSessionHasNoErrors()
-        ->assertRedirect(route('dashboard', absolute: false));
+        $response->assertSessionHasNoErrors()
+            ->assertRedirect(route('dashboard', absolute: false));
 
-    $this->assertAuthenticated();
-});
+        $this->assertAuthenticated();
+    });

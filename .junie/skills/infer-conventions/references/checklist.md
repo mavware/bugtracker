@@ -19,15 +19,15 @@ Each item gives the fork, then a hint (a grep or dir to spot which side the app 
 
 ## B. Controllers & routing
 
-5. Controller shape: invokable single-action (`__invoke`) vs resource controllers vs plain multi-method.
+5. Controller shape: invokable single-action (`__invoke`) vs. resource controllers vs plain multi-method.
    - Hint: grep `__invoke` in controllers; `Route::resource` / `apiResource` vs verb routes.
-6. Business-logic location (architecture): fat controllers vs delegated to Actions / Services / Jobs.
+6. Business-logic location (architecture): fat controllers vs. delegated to Actions / Services / Jobs.
    - Hint: read a few controller methods; `ls app/Actions app/Services`.
 7. Route handler style: closures in `routes/*.php` vs controller classes.
    - Hint: count `function ()` vs `::class` in `routes/web.php`, `routes/api.php`.
 8. Middleware assignment: route/group `->middleware()` vs controller `HasMiddleware::middleware()` vs `#[Middleware]` attribute.
    - Hint: grep `implements HasMiddleware`, `#[Middleware(` in controllers vs `->middleware(` in routes.
-9. Route model binding: implicit (type-hinted models) vs explicit `Route::bind` vs manual `findOrFail`.
+9. Route model binding: implicit (type-hinted models) vs. explicit `Route::bind` vs manual `findOrFail`.
    - Hint: typed model params in signatures vs `findOrFail(` in controllers; grep `Route::bind`.
 10. Rate limiting: named `RateLimiter::for()` + `throttle:name` vs inline `throttle:60,1`.
     - Hint: grep `RateLimiter::for` in providers vs `throttle:` in route files.

@@ -12,6 +12,10 @@ use Illuminate\Support\Carbon;
 test(
 /**
  * @throws Exception
+ */ /**
+ * @throws Exception
+ */ /**
+ * @throws Exception
  */ 'it counts confirmed sightings per night and reports the headline nights', function () {
     $user = User::factory()->create();
     $first = SurveillanceSession::factory()->for($user)->completed()->create(['started_at' => Carbon::parse('2026-09-01 23:00')]);
@@ -33,6 +37,8 @@ test(
 test(
 /**
  * @throws Exception
+ */ /**
+ * @throws Exception
  */ 'it merges sessions from the same night and ignores dismissed tracks and unfinished sessions', function () {
     $user = User::factory()->create();
     $early = SurveillanceSession::factory()->for($user)->completed()->create(['started_at' => Carbon::parse('2026-09-01 21:00')]);
@@ -51,6 +57,8 @@ test(
 
 test(
 /**
+ * @throws Exception
+ */ /**
  * @throws Exception
  */ 'a session begun after midnight belongs to the evening it started, not the next day', function () {
     $user = User::factory()->create();
@@ -72,6 +80,8 @@ test(
 
 test(
 /**
+ * @throws Exception
+ */ /**
  * @throws Exception
  */ 'the night rolls over in the morning, not at midnight', function () {
     $user = User::factory()->create();
@@ -101,6 +111,8 @@ test(
 test(
 /**
  * @throws Exception
+ */ /**
+ * @throws Exception
  */ 'a night the user discarded is left out of the trend', function () {
     $user = User::factory()->create();
     $kept = SurveillanceSession::factory()->for($user)->completed()->create([
@@ -123,6 +135,8 @@ test(
 test(
 /**
  * @throws Exception
+ */ /**
+ * @throws Exception
  */ 'it scopes nights to a room when one is given', function () {
     $user = User::factory()->create();
     $kitchen = SurveillanceSession::factory()->for($user)->completed()->create(['room' => 'Kitchen', 'started_at' => Carbon::parse('2026-09-01 23:00')]);
@@ -138,6 +152,8 @@ test(
 
 test(
 /**
+ * @throws Exception
+ */ /**
  * @throws Exception
  */ 'it positions interventions by how many recorded nights came before them', function () {
     $user = User::factory()->create();
@@ -158,6 +174,8 @@ test(
 test(
 /**
  * @throws Exception
+ */ /**
+ * @throws Exception
  */ 'a room filter keeps that room\'s interventions and the ones that apply everywhere', function () {
     $user = User::factory()->create();
     Intervention::factory()->for($user)->create(['room' => 'Kitchen', 'performed_on' => '2026-09-01', 'description' => 'Kitchen bait']);
@@ -172,6 +190,8 @@ test(
 
 test(
 /**
+ * @throws Exception
+ */ /**
  * @throws Exception
  */ 'it scopes nights to a customer so one property\'s counts are not mixed with another\'s', function () {
     $user = User::factory()->create();
@@ -197,6 +217,8 @@ test(
 test(
 /**
  * @throws Exception
+ */ /**
+ * @throws Exception
  */ 'a customer filter shows only that property\'s interventions, since baiting one house says nothing about another', function () {
     $user = User::factory()->create();
     $alvarez = Customer::factory()->for($user)->create();
@@ -221,6 +243,8 @@ test('it lists only the rooms recorded for the given customer', function () {
 
 test(
 /**
+ * @throws Exception
+ */ /**
  * @throws Exception
  */ 'it reports an empty trend and ignores other users\' nights', function () {
     $user = User::factory()->create();

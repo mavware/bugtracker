@@ -29,7 +29,7 @@ class InvoicePaid extends Notification implements ShouldQueue
 
 ## Dispatch Queued Notifications After Commit
 
-A queued notification sent inside a database transaction can run before the transaction commits. Call `afterCommit()` on the queued notification, or enable the queue connection's `after_commit` option, when its delivery depends on committed data. This setting has no scheduling effect on a synchronous notification.
+A queued notification sent inside a database transaction can run before the transaction commits. Call `afterCommit()` on the queued notification or enable the queue connection's `after_commit` option, when its delivery depends on committed data. This setting has no scheduling effect on a synchronous notification.
 
 ```php
 $user->notify((new InvoicePaid($invoice))->afterCommit());

@@ -29,7 +29,7 @@ An HTTP test shows that the endpoint performs authorization. It cannot identify 
 
 - Assert the complete matrix of the permissions against the policy or the gate. A failure then names the rule that is not correct.
 - Write one HTTP test for one refused role, which shows that the endpoint calls the authorization.
-- Use the helper of the project that asserts the ability and the arguments of the gate, if such a helper exists.
+- Use the helper of the project that asserts the ability and the arguments of the gate if such a helper exists.
 
 ## Testing Validation
 

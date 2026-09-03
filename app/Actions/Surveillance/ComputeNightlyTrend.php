@@ -38,7 +38,7 @@ class ComputeNightlyTrend
             ->when($customerId !== null, fn (Builder $query) => $query->where('customer_id', $customerId))
             ->when($room !== null, fn (Builder $query) => $query->where('room', $room))
             ->withCount(['tracks as confirmed_tracks_count' => $this->onlyConfirmed(...)])
-            ->orderBy('started_at')
+            ->oldest('started_at')
             ->get();
 
         $nights = [];
@@ -116,7 +116,7 @@ class ComputeNightlyTrend
             ->when($room !== null, fn (Builder $query) => $query->where(
                 fn (Builder $scoped) => $scoped->where('room', $room)->orWhereNull('room')
             ))
-            ->orderBy('performed_on')
+            ->oldest('performed_on')
             ->orderBy('id')
             ->get();
 

@@ -84,7 +84,7 @@ $this->app->bind(PaymentGateway::class, StripeGateway::class);
 
 ## Specify a Deterministic Sort Order
 
-Without an explicit `ORDER BY`, row order is undefined. Choose an order that matches the feature, and add a unique tie-breaker when stable pagination matters.
+Without an explicit `ORDER BY`, row order is undefined. Choose an order that matches the feature and add a unique tie-breaker when stable pagination matters.
 
 Unspecified order:
 

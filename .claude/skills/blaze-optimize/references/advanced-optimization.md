@@ -137,7 +137,7 @@ Apply memoization and folding using the same rules as Option A.
 
 After applying optimizations, identify components that are close to qualifying for a higher optimization level but are blocked by a small issue. Present these refactors to the user and APPLY them unless the user declines. Do not just list them and wait — tell the user what you're going to do and do it.
 
-Only suggest refactors that are straightforward and have a clear payoff. Do not refactor components that are rarely used or where compile is already sufficient.
+Only suggest refactoring that is straightforward and has a clear payoff. Do not refactor components that are rarely used or where compile is already sufficient.
 
 **Slots blocking memoization** — High-volume components rendered many times with the same props but using a simple slot that could be a prop instead. Refactor the component to accept a `label`/`text` prop, update ALL callers, then switch from fold/compile to memo:
 
@@ -149,7 +149,7 @@ Only suggest refactors that are straightforward and have a clear payoff. Do not 
 <x-badge color="green" label="Active" />
 ```
 
-When applying this refactor: grep for ALL callers, update every one, update the component, and change the strategy to `memo: true`.
+When applying this refactor: grep for ALL callers, update everyone, update the component, and change the strategy to `memo: true`.
 
 **Global state blocking folding** — Components used in loops that would be good folding candidates, but contain a section that accesses global state. Extract the stateful part with `@unblaze`:
 

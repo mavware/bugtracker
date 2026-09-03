@@ -97,7 +97,7 @@ class CaptureController extends Controller
     /**
      * Record that the capture page is still alive.
      */
-    public function heartbeat(Request $request, SurveillanceSession $session): JsonResponse
+    public function heartbeat(SurveillanceSession $session): JsonResponse
     {
         Gate::authorize('update', $session);
 
