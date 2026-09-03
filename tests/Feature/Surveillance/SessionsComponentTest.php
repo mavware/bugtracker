@@ -200,14 +200,14 @@ test('deleting a session removes its rows and stored files', function () {
     Storage::fake('local');
     $user = User::factory()->create();
     $session = SurveillanceSession::factory()->for($user)->completed()->create();
-    Storage::disk('local')->put("surveillance/{$session->id}/reference.jpg", 'jpeg');
+    Storage::disk('local')->put("surveillance/$session->id/reference.jpg", 'jpeg');
 
     Livewire::actingAs($user)
         ->test('surveillance.sessions')
         ->call('deleteSession', $session->id);
 
     expect(SurveillanceSession::find($session->id))->toBeNull();
-    Storage::disk('local')->assertMissing("surveillance/{$session->id}/reference.jpg");
+    Storage::disk('local')->assertMissing("surveillance/$session->id/reference.jpg");
 });
 
 test('deleting another user\'s session is forbidden', function () {

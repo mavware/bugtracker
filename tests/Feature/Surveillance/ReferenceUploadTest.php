@@ -27,7 +27,7 @@ test('storing the reference frame activates the session', function () {
         ->and($session->frame_width)->toBe(1280)
         ->and($session->frame_height)->toBe(720)
         ->and($session->settings)->toBe(['process_fps' => 6, 'diff_threshold' => 22])
-        ->and($session->reference_image_path)->toBe("surveillance/{$session->id}/reference.jpg");
+        ->and($session->reference_image_path)->toBe("surveillance/$session->id/reference.jpg");
     Storage::disk('local')->assertExists($session->reference_image_path);
 });
 

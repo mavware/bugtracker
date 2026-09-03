@@ -153,7 +153,7 @@ class CaptureController extends Controller
             return null;
         }
 
-        $path = $session->storageDirectory()."/crops/{$track['client_track_id']}-{$position}.jpg";
+        $path = $session->storageDirectory()."/crops/{$track['client_track_id']}-$position.jpg";
 
         Storage::disk('local')->put($path, $binary);
 

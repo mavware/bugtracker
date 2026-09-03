@@ -60,12 +60,12 @@ test('deleting a session removes its stored images', function () {
     Storage::fake('local');
     $admin = User::factory()->admin()->create();
     $session = SurveillanceSession::factory()->completed()->create();
-    Storage::disk('local')->put("surveillance/{$session->id}/reference.jpg", 'jpeg');
+    Storage::disk('local')->put("surveillance/$session->id/reference.jpg", 'jpeg');
 
     Livewire::actingAs($admin)
         ->test('pages::admin.sessions')
         ->call('deleteSession', $session->id);
 
     expect(SurveillanceSession::find($session->id))->toBeNull();
-    Storage::disk('local')->assertMissing("surveillance/{$session->id}/reference.jpg");
+    Storage::disk('local')->assertMissing("surveillance/$session->id/reference.jpg");
 });

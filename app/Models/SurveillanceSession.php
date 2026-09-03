@@ -109,6 +109,6 @@ class SurveillanceSession extends Model
 
     public function storageDirectory(): string
     {
-        return "surveillance/{$this->id}";
+        return "surveillance/$this->id";
     }
 }

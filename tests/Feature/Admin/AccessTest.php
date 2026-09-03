@@ -45,7 +45,7 @@ test('no part of the administration panel reaches an ordinary account', function
 test('being an admin does not open another account\'s recordings', function () {
     Storage::fake('local');
     $session = SurveillanceSession::factory()->completed()->create();
-    Storage::disk('local')->put("surveillance/{$session->id}/reference.jpg", 'jpeg');
+    Storage::disk('local')->put("surveillance/$session->id/reference.jpg", 'jpeg');
 
     $this->actingAs(User::factory()->admin()->create())
         ->get(route('surveillance.reference.show', $session))

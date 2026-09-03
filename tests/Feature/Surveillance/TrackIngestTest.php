@@ -48,8 +48,8 @@ test('a batch of tracks is stored with edges classified and crops persisted', fu
         ->and($track->points)->toBe([[1000, 5, 360], [2000, 400, 380], [3000, 1275, 400]])
         ->and($track->entry_edge)->toBe('left')
         ->and($track->exit_edge)->toBe('right')
-        ->and($track->start_crop_path)->toBe("surveillance/{$session->id}/crops/track-1-start.jpg")
-        ->and($track->end_crop_path)->toBe("surveillance/{$session->id}/crops/track-1-end.jpg");
+        ->and($track->start_crop_path)->toBe("surveillance/$session->id/crops/track-1-start.jpg")
+        ->and($track->end_crop_path)->toBe("surveillance/$session->id/crops/track-1-end.jpg");
     Storage::disk('local')->assertExists($track->start_crop_path);
     Storage::disk('local')->assertExists($track->end_crop_path);
 });

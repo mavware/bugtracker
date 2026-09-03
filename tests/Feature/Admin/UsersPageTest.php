@@ -61,7 +61,7 @@ test('deleting a user removes their sessions, customers and stored frames', func
     $member = User::factory()->create();
     $customer = Customer::factory()->for($member)->create();
     $session = SurveillanceSession::factory()->for($member)->completed()->create(['customer_id' => $customer->id]);
-    Storage::disk('local')->put("surveillance/{$session->id}/reference.jpg", 'jpeg');
+    Storage::disk('local')->put("surveillance/$session->id/reference.jpg", 'jpeg');
 
     Livewire::actingAs($admin)
         ->test('pages::admin.users')
@@ -70,7 +70,7 @@ test('deleting a user removes their sessions, customers and stored frames', func
     expect(User::find($member->id))->toBeNull()
         ->and(SurveillanceSession::find($session->id))->toBeNull()
         ->and(Customer::find($customer->id))->toBeNull();
-    Storage::disk('local')->assertMissing("surveillance/{$session->id}/reference.jpg");
+    Storage::disk('local')->assertMissing("surveillance/$session->id/reference.jpg");
 });
 
 test('another account\'s sessions are untouched when one user is deleted', function () {

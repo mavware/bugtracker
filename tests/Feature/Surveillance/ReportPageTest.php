@@ -109,7 +109,7 @@ test('a stored crop streams for the owner', function () {
     $user = User::factory()->create();
     $session = SurveillanceSession::factory()->for($user)->completed()->create();
     $track = BugTrack::factory()->for($session, 'session')->create([
-        'start_crop_path' => "surveillance/{$session->id}/crops/t1-start.jpg",
+        'start_crop_path' => "surveillance/$session->id/crops/t1-start.jpg",
     ]);
     Storage::disk('local')->put($track->start_crop_path, 'jpeg-bytes');
 

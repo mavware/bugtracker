@@ -66,7 +66,7 @@ test('deleting an account takes its recorded frames off disk with it', function 
     Storage::fake('local');
     $user = User::factory()->create();
     $session = SurveillanceSession::factory()->for($user)->completed()->create();
-    Storage::disk('local')->put("surveillance/{$session->id}/reference.jpg", 'jpeg');
+    Storage::disk('local')->put("surveillance/$session->id/reference.jpg", 'jpeg');
 
     $this->actingAs($user);
 

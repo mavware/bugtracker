@@ -30,7 +30,7 @@ class PromoteUser extends Command
         $user = User::where('email', $email)->first();
 
         if ($user === null) {
-            $this->error("No user with the email {$email}.");
+            $this->error("No user with the email $email.");
 
             return self::FAILURE;
         }
@@ -41,8 +41,8 @@ class PromoteUser extends Command
         $user->save();
 
         $this->info($demoting
-            ? "{$user->email} is no longer a site admin."
-            : "{$user->email} is now a site admin.");
+            ? "$user->email is no longer a site admin."
+            : "$user->email is now a site admin.");
 
         return self::SUCCESS;
     }
