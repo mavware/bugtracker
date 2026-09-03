@@ -5,6 +5,7 @@ use App\Http\Controllers\Surveillance\ImageController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::livewire('surveillance/customers', 'pages::surveillance.customers')->name('surveillance.customers');
     Route::livewire('surveillance/heatmap', 'pages::surveillance.heatmap')->name('surveillance.heatmap');
     Route::livewire('surveillance/trends', 'pages::surveillance.trends')->name('surveillance.trends');
     Route::livewire('surveillance/{session}/capture', 'pages::surveillance.capture')->name('surveillance.capture');

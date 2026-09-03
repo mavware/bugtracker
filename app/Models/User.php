@@ -29,7 +29,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'room', 'performed_on', 'description'])]
+#[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
@@ -63,6 +63,14 @@ class User extends Authenticatable implements PasskeyUser
     public function interventions(): HasMany
     {
         return $this->hasMany(Intervention::class);
+    }
+
+    /**
+     * @return HasMany<Customer, $this>
+     */
+    public function customers(): HasMany
+    {
+        return $this->hasMany(Customer::class);
     }
 
     /**

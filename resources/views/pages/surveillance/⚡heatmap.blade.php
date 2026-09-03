@@ -2,6 +2,8 @@
 
 use App\Actions\Surveillance\ComputeEntryPointHeatmap;
 use App\Actions\Surveillance\ComputeNightlyTrend;
+use App\Models\Customer;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -9,6 +11,10 @@ use Livewire\Attributes\Url;
 use Livewire\Component;
 
 new #[Title('Entry points')] class extends Component {
+    /** Empty means every customer, which only makes sense for a single property. */
+    #[Url]
+    public string $customer = '';
+
     /** Empty means every room, which only makes sense if the camera never moved. */
     #[Url]
     public string $room = '';
@@ -19,7 +25,11 @@ new #[Title('Entry points')] class extends Component {
     #[Computed]
     public function heatmap(): array
     {
-        return app(ComputeEntryPointHeatmap::class)->handle(Auth::user(), $this->room !== '' ? $this->room : null);
+        return app(ComputeEntryPointHeatmap::class)->handle(
+            Auth::user(),
+            $this->room !== '' ? $this->room : null,
+            $this->customer !== '' ? (int) $this->customer : null,
+        );
     }
 
     /**
@@ -28,7 +38,27 @@ new #[Title('Entry points')] class extends Component {
     #[Computed]
     public function rooms(): array
     {
-        return app(ComputeNightlyTrend::class)->rooms(Auth::user());
+        return app(ComputeNightlyTrend::class)->rooms(
+            Auth::user(),
+            $this->customer !== '' ? (int) $this->customer : null,
+        );
+    }
+
+    /**
+     * @return Collection<int, Customer>
+     */
+    #[Computed]
+    public function customers(): Collection
+    {
+        return Auth::user()->customers()->orderBy('name')->get();
+    }
+
+    /**
+     * Rooms belong to a property, so switching customer clears a stale room filter.
+     */
+    public function updatedCustomer(): void
+    {
+        $this->room = '';
     }
 
     /**
@@ -57,6 +87,14 @@ new #[Title('Entry points')] class extends Component {
             <flux:text class="mt-2">{{ __('Where bugs enter and leave the frame, aggregated across every completed night.') }}</flux:text>
         </div>
         <div class="flex items-center gap-3">
+            @if ($this->customers->isNotEmpty())
+                <flux:select wire:model.live="customer" size="sm" class="max-w-48" data-test="customer-filter">
+                    <flux:select.option value="">{{ __('All customers') }}</flux:select.option>
+                    @foreach ($this->customers as $customerOption)
+                        <flux:select.option value="{{ $customerOption->id }}">{{ $customerOption->name }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+            @endif
             @if ($this->rooms !== [])
                 <flux:select wire:model.live="room" size="sm" class="max-w-44" data-test="room-filter">
                     <flux:select.option value="">{{ __('All rooms') }}</flux:select.option>
@@ -111,9 +149,13 @@ new #[Title('Entry points')] class extends Component {
             </div>
 
             <flux:text class="mt-4 text-sm">
-                {{ $this->room !== ''
-                    ? __('Showing nights recorded in :room. The backdrop is that room\'s most recent reference photo; nights shot at a different resolution are scaled to match.', ['room' => $this->room])
-                    : __('Showing every room at once, which only makes sense if the camera never moved. Pick a room above to compare nights shot from one spot.') }}
+                @if ($this->customers->isNotEmpty() && $this->customer === '')
+                    {{ __('Showing every customer at once, which merges unrelated properties onto one backdrop. Pick a customer above.') }}
+                @elseif ($this->room !== '')
+                    {{ __('Showing nights recorded in :room. The backdrop is that room\'s most recent reference photo; nights shot at a different resolution are scaled to match.', ['room' => $this->room]) }}
+                @else
+                    {{ __('Showing every room at once, which only makes sense if the camera never moved. Pick a room above to compare nights shot from one spot.') }}
+                @endif
             </flux:text>
         </div>
 

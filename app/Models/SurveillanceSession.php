@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Storage;
 /**
  * @property int $id
  * @property int $user_id
+ * @property int|null $customer_id
  * @property string $name
  * @property string|null $room
  * @property SurveillanceSessionStatus $status
@@ -29,7 +30,7 @@ use Illuminate\Support\Facades\Storage;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'room', 'status', 'started_at', 'ended_at', 'last_heartbeat_at', 'reference_image_path', 'frame_width', 'frame_height', 'settings', 'analytics'])]
+#[Fillable(['customer_id', 'name', 'room', 'status', 'started_at', 'ended_at', 'last_heartbeat_at', 'reference_image_path', 'frame_width', 'frame_height', 'settings', 'analytics'])]
 class SurveillanceSession extends Model
 {
     /** @use HasFactory<SurveillanceSessionFactory> */
@@ -65,6 +66,14 @@ class SurveillanceSession extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * @return BelongsTo<Customer, $this>
+     */
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
     }
 
     /**

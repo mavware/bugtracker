@@ -13,8 +13,9 @@ class ComputeEntryPointHeatmap
      * Aggregate confirmed track endpoints from the user's finished sessions into
      * entry/exit zones projected onto a single backdrop frame. Sessions may have
      * been recorded at different resolutions, so endpoints are scaled into the
-     * backdrop session's frame before clustering. Pass a room to compare only
-     * sessions recorded with the camera in the same place.
+     * backdrop session's frame before clustering. Pass a customer and/or room to
+     * compare only sessions recorded with the camera in the same place — merging
+     * two properties, or two rooms, projects unrelated frames onto one backdrop.
      *
      * @return array{
      *     session_count: int,
@@ -24,12 +25,13 @@ class ComputeEntryPointHeatmap
      *     exit_zones: array<int, array{edge: string, from: int, to: int, center: array{0: int, 1: int}, count: int}>,
      * }
      */
-    public function handle(User $user, ?string $room = null): array
+    public function handle(User $user, ?string $room = null, ?int $customerId = null): array
     {
         $sessions = $user->surveillanceSessions()
             ->whereIn('status', [SurveillanceSessionStatus::Completed, SurveillanceSessionStatus::Aborted])
             ->whereNotNull('frame_width')
             ->whereNotNull('frame_height')
+            ->when($customerId !== null, fn (Builder $query) => $query->where('customer_id', $customerId))
             ->when($room !== null, fn (Builder $query) => $query->where('room', $room))
             ->orderByDesc('started_at')
             ->get();

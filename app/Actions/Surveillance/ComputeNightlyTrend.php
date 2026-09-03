@@ -26,11 +26,12 @@ class ComputeNightlyTrend
      *     previous: array{date: string, label: string, count: int, session_count: int}|null,
      * }
      */
-    public function handle(User $user, ?string $room = null): array
+    public function handle(User $user, ?string $room = null, ?int $customerId = null): array
     {
         $sessions = $user->surveillanceSessions()
             ->whereIn('status', [SurveillanceSessionStatus::Completed, SurveillanceSessionStatus::Aborted])
             ->whereNotNull('started_at')
+            ->when($customerId !== null, fn (Builder $query) => $query->where('customer_id', $customerId))
             ->when($room !== null, fn (Builder $query) => $query->where('room', $room))
             ->withCount(['tracks as confirmed_tracks_count' => $this->onlyConfirmed(...)])
             ->orderBy('started_at')
@@ -57,7 +58,7 @@ class ComputeNightlyTrend
 
         return [
             'nights' => $nights,
-            'interventions' => $this->positionInterventions($user, $room, $nights),
+            'interventions' => $this->positionInterventions($user, $room, $customerId, $nights),
             'total_sightings' => array_sum(array_column($nights, 'count')),
             'busiest' => $this->busiestNight($nights),
             'latest' => $nights !== [] ? $nights[count($nights) - 1] : null,
@@ -80,10 +81,11 @@ class ComputeNightlyTrend
      *
      * @return array<int, string>
      */
-    public function rooms(User $user): array
+    public function rooms(User $user, ?int $customerId = null): array
     {
         return $user->surveillanceSessions()
             ->whereNotNull('room')
+            ->when($customerId !== null, fn (Builder $query) => $query->where('customer_id', $customerId))
             ->distinct()
             ->orderBy('room')
             ->pluck('room')
@@ -95,12 +97,17 @@ class ComputeNightlyTrend
      * recorded nights that came before it, so the marker sits in the gap just
      * ahead of the first night it could have affected.
      *
+     * A room filter keeps interventions with no room, since something like sealing
+     * a front door plausibly affects every room of one home. A customer filter does
+     * not: baiting one property says nothing about another.
+     *
      * @param  array<int, array{date: string, label: string, count: int, session_count: int}>  $nights
      * @return array<int, array{id: int, performed_on: string, label: string, description: string, marker: int, position: int}>
      */
-    private function positionInterventions(User $user, ?string $room, array $nights): array
+    private function positionInterventions(User $user, ?string $room, ?int $customerId, array $nights): array
     {
         $interventions = $user->interventions()
+            ->when($customerId !== null, fn (Builder $query) => $query->where('customer_id', $customerId))
             ->when($room !== null, fn (Builder $query) => $query->where(
                 fn (Builder $scoped) => $scoped->where('room', $room)->orWhereNull('room')
             ))

@@ -1,7 +1,9 @@
 <?php
 
 use App\Actions\Surveillance\ComputeNightlyTrend;
+use App\Models\Customer;
 use Flux\Flux;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -9,6 +11,10 @@ use Livewire\Attributes\Url;
 use Livewire\Component;
 
 new #[Title('Trends')] class extends Component {
+    /** Empty means every customer. */
+    #[Url]
+    public string $customer = '';
+
     /** Empty means every room. */
     #[Url]
     public string $room = '';
@@ -28,7 +34,7 @@ new #[Title('Trends')] class extends Component {
     #[Computed]
     public function trend(): array
     {
-        return app(ComputeNightlyTrend::class)->handle(Auth::user(), $this->room !== '' ? $this->room : null);
+        return app(ComputeNightlyTrend::class)->handle(Auth::user(), $this->selectedRoom(), $this->selectedCustomerId());
     }
 
     /**
@@ -37,7 +43,34 @@ new #[Title('Trends')] class extends Component {
     #[Computed]
     public function rooms(): array
     {
-        return app(ComputeNightlyTrend::class)->rooms(Auth::user());
+        return app(ComputeNightlyTrend::class)->rooms(Auth::user(), $this->selectedCustomerId());
+    }
+
+    /**
+     * @return Collection<int, Customer>
+     */
+    #[Computed]
+    public function customers(): Collection
+    {
+        return Auth::user()->customers()->orderBy('name')->get();
+    }
+
+    /**
+     * Rooms belong to a property, so switching customer clears a stale room filter.
+     */
+    public function updatedCustomer(): void
+    {
+        $this->room = '';
+    }
+
+    private function selectedCustomerId(): ?int
+    {
+        return $this->customer !== '' ? (int) $this->customer : null;
+    }
+
+    private function selectedRoom(): ?string
+    {
+        return $this->room !== '' ? $this->room : null;
     }
 
     /**
@@ -52,7 +85,8 @@ new #[Title('Trends')] class extends Component {
         ]);
 
         Auth::user()->interventions()->create([
-            'room' => $this->room !== '' ? $this->room : null,
+            'customer_id' => $this->selectedCustomerId(),
+            'room' => $this->selectedRoom(),
             'performed_on' => $validated['performedOn'],
             'description' => $validated['description'],
         ]);
@@ -183,6 +217,14 @@ new #[Title('Trends')] class extends Component {
             <flux:text class="mt-2">{{ __('Sightings per night, and whether what you did about them worked.') }}</flux:text>
         </div>
         <div class="flex items-center gap-3">
+            @if ($this->customers->isNotEmpty())
+                <flux:select wire:model.live="customer" size="sm" class="max-w-48" data-test="customer-filter">
+                    <flux:select.option value="">{{ __('All customers') }}</flux:select.option>
+                    @foreach ($this->customers as $customerOption)
+                        <flux:select.option value="{{ $customerOption->id }}">{{ $customerOption->name }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+            @endif
             @if ($this->rooms !== [])
                 <flux:select wire:model.live="room" size="sm" class="max-w-44" data-test="room-filter">
                     <flux:select.option value="">{{ __('All rooms') }}</flux:select.option>
@@ -336,9 +378,16 @@ new #[Title('Trends')] class extends Component {
     @endif
 
     <flux:heading size="lg" class="mt-8">{{ __('What you did about it') }}</flux:heading>
+    @php
+        $scope = collect([
+            $this->customer !== '' ? $this->customers->firstWhere('id', (int) $this->customer)?->name : null,
+            $this->room !== '' ? $this->room : null,
+        ])->filter()->implode(' · ');
+    @endphp
+
     <flux:text class="mt-1 text-sm">
-        {{ $this->room !== ''
-            ? __('Actions recorded for :room, plus any that apply everywhere.', ['room' => $this->room])
+        {{ $scope !== ''
+            ? __('Recorded against :scope. New ones are filed there too.', ['scope' => $scope])
             : __('Bait, sealed gaps, clean-ups. Each one is numbered on the chart so you can see what happened after it.') }}
     </flux:text>
 

@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\SurveillanceSessionStatus;
+use App\Models\Customer;
 use App\Models\SurveillanceSession;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
@@ -33,6 +34,35 @@ test('starting a session creates a pending session and redirects to capture', fu
     $session = SurveillanceSession::first();
     expect($session->user_id)->toBe($user->id)
         ->and($session->status)->toBe(SurveillanceSessionStatus::Pending);
+});
+
+test('starting a session files it under the chosen customer and room', function () {
+    $user = User::factory()->create();
+    $customer = Customer::factory()->for($user)->create();
+
+    Livewire::actingAs($user)
+        ->test('surveillance.sessions')
+        ->set('customer', (string) $customer->id)
+        ->set('room', 'Kitchen')
+        ->call('startSession')
+        ->assertHasNoErrors();
+
+    $session = SurveillanceSession::first();
+    expect($session->customer_id)->toBe($customer->id)
+        ->and($session->room)->toBe('Kitchen');
+});
+
+test('a session cannot be filed under another user\'s customer', function () {
+    $user = User::factory()->create();
+    $foreignCustomer = Customer::factory()->create();
+
+    Livewire::actingAs($user)
+        ->test('surveillance.sessions')
+        ->set('customer', (string) $foreignCustomer->id)
+        ->call('startSession')
+        ->assertHasErrors('customer');
+
+    expect(SurveillanceSession::count())->toBe(0);
 });
 
 test('deleting a session removes its rows and stored files', function () {

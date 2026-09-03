@@ -3,6 +3,7 @@
 use App\Actions\Surveillance\ComputeNightlyTrend;
 use App\Enums\SurveillanceSessionStatus;
 use App\Models\BugTrack;
+use App\Models\Customer;
 use App\Models\Intervention;
 use App\Models\SurveillanceSession;
 use App\Models\User;
@@ -94,6 +95,49 @@ test('a room filter keeps that room\'s interventions and the ones that apply eve
 
     expect(array_column($trend['interventions'], 'description'))
         ->toBe(['Kitchen bait', 'Sealed the front door']);
+});
+
+test('it scopes nights to a customer so one property\'s counts are not mixed with another\'s', function () {
+    $user = User::factory()->create();
+    $alvarez = Customer::factory()->for($user)->create();
+    $brody = Customer::factory()->for($user)->create();
+    $alvarezNight = SurveillanceSession::factory()->for($user)->completed()->create([
+        'customer_id' => $alvarez->id,
+        'started_at' => Carbon::parse('2026-09-01 23:00'),
+    ]);
+    $brodyNight = SurveillanceSession::factory()->for($user)->completed()->create([
+        'customer_id' => $brody->id,
+        'started_at' => Carbon::parse('2026-09-01 23:00'),
+    ]);
+    BugTrack::factory()->count(2)->for($alvarezNight, 'session')->create();
+    BugTrack::factory()->count(9)->for($brodyNight, 'session')->create();
+
+    $trend = app(ComputeNightlyTrend::class)->handle($user, null, $alvarez->id);
+
+    expect($trend['nights'])->toHaveCount(1)
+        ->and($trend['total_sightings'])->toBe(2);
+});
+
+test('a customer filter shows only that property\'s interventions, since baiting one house says nothing about another', function () {
+    $user = User::factory()->create();
+    $alvarez = Customer::factory()->for($user)->create();
+    Intervention::factory()->for($user)->create(['customer_id' => $alvarez->id, 'performed_on' => '2026-09-01', 'description' => 'Baited the Alvarez kitchen']);
+    Intervention::factory()->for($user)->create(['customer_id' => null, 'performed_on' => '2026-09-02', 'description' => 'Unassigned action']);
+    Intervention::factory()->for($user)->create(['customer_id' => Customer::factory()->for($user)->create()->id, 'performed_on' => '2026-09-03', 'description' => 'Baited a different house']);
+
+    $trend = app(ComputeNightlyTrend::class)->handle($user, null, $alvarez->id);
+
+    expect(array_column($trend['interventions'], 'description'))->toBe(['Baited the Alvarez kitchen']);
+});
+
+test('it lists only the rooms recorded for the given customer', function () {
+    $user = User::factory()->create();
+    $alvarez = Customer::factory()->for($user)->create();
+    SurveillanceSession::factory()->for($user)->create(['customer_id' => $alvarez->id, 'room' => 'Kitchen']);
+    SurveillanceSession::factory()->for($user)->create(['customer_id' => null, 'room' => 'Garage']);
+
+    expect(app(ComputeNightlyTrend::class)->rooms($user, $alvarez->id))->toBe(['Kitchen'])
+        ->and(app(ComputeNightlyTrend::class)->rooms($user))->toBe(['Garage', 'Kitchen']);
 });
 
 test('it reports an empty trend and ignores other users\' nights', function () {

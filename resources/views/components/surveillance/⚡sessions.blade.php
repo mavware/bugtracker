@@ -1,9 +1,11 @@
 <?php
 
+use App\Models\Customer;
 use App\Models\SurveillanceSession;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 
@@ -14,13 +16,18 @@ new class extends Component {
      */
     public string $room = '';
 
+    /** Whose property this is, when watching on someone else's behalf. */
+    public string $customer = '';
+
     public function mount(): void
     {
-        $this->room = (string) Auth::user()->surveillanceSessions()
-            ->whereNotNull('room')
+        $latest = Auth::user()->surveillanceSessions()
             ->orderByDesc('created_at')
             ->orderByDesc('id')
-            ->value('room');
+            ->first(['room', 'customer_id']);
+
+        $this->room = (string) $latest?->room;
+        $this->customer = (string) $latest?->customer_id;
     }
 
     /**
@@ -30,6 +37,7 @@ new class extends Component {
     public function sessions(): Collection
     {
         return Auth::user()->surveillanceSessions()
+            ->with('customer')
             ->withCount('tracks')
             ->orderByDesc('created_at')
             ->orderByDesc('id')
@@ -37,15 +45,31 @@ new class extends Component {
     }
 
     /**
+     * @return Collection<int, Customer>
+     */
+    #[Computed]
+    public function customers(): Collection
+    {
+        return Auth::user()->customers()->orderBy('name')->get();
+    }
+
+    /**
      * Create a pending session and send the user to the capture page.
      */
     public function startSession(): void
     {
-        $validated = $this->validate(['room' => ['nullable', 'string', 'max:80']]);
+        $validated = $this->validate([
+            'room' => ['nullable', 'string', 'max:80'],
+            'customer' => [
+                'nullable', 'integer',
+                Rule::exists('customers', 'id')->where('user_id', Auth::id()),
+            ],
+        ]);
 
         $session = Auth::user()->surveillanceSessions()->create([
             'name' => __('Night of :date', ['date' => now()->format('M j')]),
             'room' => trim($validated['room']) !== '' ? trim($validated['room']) : null,
+            'customer_id' => $validated['customer'] !== '' ? (int) $validated['customer'] : null,
         ]);
 
         $this->redirectRoute('surveillance.capture', $session);
@@ -74,6 +98,9 @@ new class extends Component {
         </div>
 
         <div class="flex items-center gap-3">
+            <flux:button icon="users" href="{{ route('surveillance.customers') }}" data-test="customers-link">
+                {{ __('Customers') }}
+            </flux:button>
             <flux:button icon="chart-bar" href="{{ route('surveillance.trends') }}" data-test="trends-link">
                 {{ __('Trends') }}
             </flux:button>
@@ -84,6 +111,14 @@ new class extends Component {
     </div>
 
     <form wire:submit="startSession" class="mt-4 flex flex-wrap items-end gap-3">
+        @if ($this->customers->isNotEmpty())
+            <flux:select wire:model="customer" :label="__('Customer')" class="max-w-52" data-test="session-customer">
+                <flux:select.option value="">{{ __('No customer') }}</flux:select.option>
+                @foreach ($this->customers as $customerOption)
+                    <flux:select.option value="{{ $customerOption->id }}">{{ $customerOption->name }}</flux:select.option>
+                @endforeach
+            </flux:select>
+        @endif
         <flux:input
             wire:model="room"
             :label="__('Room')"
@@ -104,6 +139,9 @@ new class extends Component {
         <flux:table>
             <flux:table.columns>
                 <flux:table.column>{{ __('Session') }}</flux:table.column>
+                @if ($this->customers->isNotEmpty())
+                    <flux:table.column>{{ __('Customer') }}</flux:table.column>
+                @endif
                 <flux:table.column>{{ __('Room') }}</flux:table.column>
                 <flux:table.column>{{ __('Status') }}</flux:table.column>
                 <flux:table.column>{{ __('Tracks') }}</flux:table.column>
@@ -121,6 +159,9 @@ new class extends Component {
                                 <flux:link href="{{ route('surveillance.capture', $session) }}">{{ $session->name }}</flux:link>
                             @endif
                         </flux:table.cell>
+                        @if ($this->customers->isNotEmpty())
+                            <flux:table.cell>{{ $session->customer?->name ?? '—' }}</flux:table.cell>
+                        @endif
                         <flux:table.cell>{{ $session->room ?? '—' }}</flux:table.cell>
                         <flux:table.cell>
                             <flux:badge size="sm" :color="match ($session->status) {

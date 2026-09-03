@@ -17,6 +17,7 @@ new class extends Component {
     public function session(): ?SurveillanceSession
     {
         return Auth::user()->surveillanceSessions()
+            ->with('customer')
             ->where('status', SurveillanceSessionStatus::Active)
             ->orderByDesc('started_at')
             ->orderByDesc('id')
@@ -65,7 +66,12 @@ new class extends Component {
                         <flux:text class="text-sm font-medium">{{ __('Recording now') }}</flux:text>
                     </div>
                     <flux:heading size="lg" class="mt-2">
-                        {{ $this->session->name }}@if ($this->session->room) <span class="text-zinc-400">&middot; {{ $this->session->room }}</span>@endif
+                        @if ($this->session->customer !== null)
+                            {{ $this->session->customer->name }} <span class="text-zinc-400">&middot; {{ $this->session->name }}</span>
+                        @else
+                            {{ $this->session->name }}
+                        @endif
+                        @if ($this->session->room) <span class="text-zinc-400">&middot; {{ $this->session->room }}</span>@endif
                     </flux:heading>
                     <flux:text class="mt-1 text-sm">
                         {{ __('Started :time', ['time' => $this->session->started_at?->format('H:i') ?? '—']) }}

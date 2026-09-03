@@ -3,6 +3,7 @@
 use App\Actions\Surveillance\ComputeEntryPointHeatmap;
 use App\Enums\SurveillanceSessionStatus;
 use App\Models\BugTrack;
+use App\Models\Customer;
 use App\Models\SurveillanceSession;
 use App\Models\User;
 
@@ -52,6 +53,24 @@ test('it scopes the aggregate to one room so nights shot from different spots ar
         ->and($heatmap['track_count'])->toBe(1)
         ->and($heatmap['backdrop']->id)->toBe($kitchen->id)
         ->and($heatmap['entry_zones'][0]['edge'])->toBe('left');
+});
+
+test('it scopes the aggregate to one customer so two properties are not projected onto one backdrop', function () {
+    $user = User::factory()->create();
+    $alvarez = Customer::factory()->for($user)->create();
+    $alvarezNight = SurveillanceSession::factory()->for($user)->completed()->create(['customer_id' => $alvarez->id]);
+    $otherNight = SurveillanceSession::factory()->for($user)->completed()->create();
+    BugTrack::factory()->for($alvarezNight, 'session')->create([
+        'points' => [[0, 5, 360], [2000, 640, 715]],
+        'point_count' => 2,
+    ]);
+    BugTrack::factory()->count(4)->for($otherNight, 'session')->create();
+
+    $heatmap = app(ComputeEntryPointHeatmap::class)->handle($user, null, $alvarez->id);
+
+    expect($heatmap['session_count'])->toBe(1)
+        ->and($heatmap['track_count'])->toBe(1)
+        ->and($heatmap['backdrop']->id)->toBe($alvarezNight->id);
 });
 
 test('it includes aborted nights, whose sightings are still real', function () {
