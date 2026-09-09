@@ -1,4 +1,4 @@
-// @bugtracker/surveillance — overnight bug surveillance from a browser camera.
+// @mavware/bug-surveillance — overnight bug surveillance from a browser camera.
 //
 // Detection and tracking run entirely in the browser; a night can be kept in the
 // browser's own IndexedDB store and reported on without any server at all. The
@@ -9,7 +9,7 @@
 
 // Seeing: the camera, calibration, and per-frame detection and tracking.
 export { Camera } from './camera.js';
-export { BRIGHTNESS_BLOCK, calibrate, toGrayscale } from './brightness.js';
+export { BRIGHTNESS_BLOCK, BRIGHTNESS_WARN, calibrate, toGrayscale } from './brightness.js';
 export { DEFAULT_PARAMS, Detector } from './detector.js';
 export { TRACKER_DEFAULTS, Tracker } from './tracker.js';
 export { WakeLock } from './wakeLock.js';

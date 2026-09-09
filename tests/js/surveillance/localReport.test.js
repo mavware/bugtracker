@@ -5,7 +5,7 @@
 // the store holds afterwards. Replay is stubbed (happy-dom has no 2d context);
 // reportControls and the night logic are the real ones.
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { buildLocalNight, InMemoryNightStore, localTrackFromClosed, referenceBlobKey } from '@bugtracker/surveillance';
+import { buildLocalNight, InMemoryNightStore, localTrackFromClosed, referenceBlobKey } from '@mavware/bug-surveillance';
 
 const stubs = vi.hoisted(() => ({
     store: null,
@@ -13,7 +13,7 @@ const stubs = vi.hoisted(() => ({
     claimNight: vi.fn(),
 }));
 
-vi.mock('@bugtracker/surveillance', async (importOriginal) => ({
+vi.mock('@mavware/bug-surveillance', async (importOriginal) => ({
     ...(await importOriginal()),
     openNightStore: vi.fn(async () => stubs.store),
 }));

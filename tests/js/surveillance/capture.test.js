@@ -4,7 +4,7 @@
 // buttons, and check what reaches the network. The camera, uploader, wake lock
 // and calibration are stubbed; the detector and tracker are the real ones.
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { LARGE_MOTION_MESSAGE, LEAVE_ROOM_SECONDS } from '@bugtracker/surveillance';
+import { LARGE_MOTION_MESSAGE, LEAVE_ROOM_SECONDS } from '@mavware/bug-surveillance';
 import { makeFrame, paintRect } from '../helpers.js';
 
 const stubs = vi.hoisted(() => ({
@@ -37,7 +37,7 @@ const stubs = vi.hoisted(() => ({
 
 // The library is mocked in part: the camera, calibration, wake lock and the
 // local sink are stubbed, while the detector, tracker and everything pure stay real.
-vi.mock('@bugtracker/surveillance', async (importOriginal) => ({
+vi.mock('@mavware/bug-surveillance', async (importOriginal) => ({
     ...(await importOriginal()),
     Camera: class {
         scale = 4;

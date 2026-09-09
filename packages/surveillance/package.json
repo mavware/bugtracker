@@ -1,17 +1,46 @@
 {
-    "name": "@bugtracker/surveillance",
+    "name": "@mavware/bug-surveillance",
     "version": "0.1.0",
     "description": "Overnight bug surveillance from a browser camera: detection, tracking, a local night store, analytics and replay, with no server required.",
+    "keywords": [
+        "camera",
+        "motion-detection",
+        "object-tracking",
+        "computer-vision",
+        "indexeddb",
+        "offline",
+        "pest-control",
+        "surveillance",
+        "browser"
+    ],
     "license": "MIT",
+    "author": "Michael <mlgreer1430@gmail.com>",
+    "homepage": "https://mavware.github.io/bugtracker/",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/mavware/bugtracker.git",
+        "directory": "packages/surveillance"
+    },
+    "bugs": {
+        "url": "https://github.com/mavware/bugtracker/issues"
+    },
     "type": "module",
     "sideEffects": false,
+    "types": "./src/index.d.ts",
     "exports": {
-        ".": "./src/index.js"
+        ".": {
+            "types": "./src/index.d.ts",
+            "default": "./src/index.js"
+        }
     },
     "files": [
         "src"
     ],
-    "engines": {
-        "node": ">=20"
+    "scripts": {
+        "typecheck": "npx --yes -p typescript@5 tsc -p tsconfig.json"
+    },
+    "publishConfig": {
+        "access": "public",
+        "provenance": true
     }
 }

@@ -4,11 +4,11 @@
 // a dismissed sighting drops out of the tiles and the replay, and a night the
 // browser does not hold says so.
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { buildLocalNight, InMemoryNightStore, localTrackFromClosed, referenceBlobKey } from '@bugtracker/surveillance';
+import { buildLocalNight, InMemoryNightStore, localTrackFromClosed, referenceBlobKey } from '@mavware/bug-surveillance';
 
 const stubs = vi.hoisted(() => ({ store: null, replays: [] }));
 
-vi.mock('@bugtracker/surveillance', async (importOriginal) => ({
+vi.mock('@mavware/bug-surveillance', async (importOriginal) => ({
     ...(await importOriginal()),
     openNightStore: vi.fn(async () => stubs.store),
 }));

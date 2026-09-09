@@ -2,7 +2,7 @@
 // page gets, what the reference-frame upload looks like, and what to say when
 // the login behind it expires. Everything else the page decides — calibration
 // outcomes, the countdown, the status line, the overlay boxes, the clock —
-// lives in @bugtracker/surveillance, so any consumer of the library gets it.
+// lives in @mavware/bug-surveillance, so any consumer of the library gets it.
 
 /**
  * Which night sink the page gets. A guest's night never leaves the device; a

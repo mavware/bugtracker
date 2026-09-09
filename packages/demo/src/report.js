@@ -12,7 +12,7 @@ import {
     sightingRows,
     statTiles,
     VOLATILE_STORE_MESSAGE,
-} from '@bugtracker/surveillance';
+} from '@mavware/bug-surveillance';
 import { INDEX_URL, nightIdFromSearch } from './links.js';
 
 const root = document.getElementById('report-app');

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { ClaimError, claimNight } from '../../../resources/js/surveillance/claimNight.js';
 import { CLAIM_AUTH_LOST_MESSAGE, IMPORT_CHUNK_SIZE } from '../../../resources/js/surveillance/claimLogic.js';
-import { buildLocalNight, InMemoryNightStore, localTrackFromClosed, referenceBlobKey } from '@bugtracker/surveillance';
+import { buildLocalNight, InMemoryNightStore, localTrackFromClosed, referenceBlobKey } from '@mavware/bug-surveillance';
 
 const IMPORT_URL = 'https://bugtracker.test/surveillance/import';
 

@@ -1,0 +1,64 @@
+name: release
+
+# Publishes @mavware/bug-surveillance to npm when a version tag is pushed:
+#
+#   npm version patch --workspace packages/surveillance
+#   git push && git push --tags
+#
+# Needs an NPM_TOKEN secret holding an npm automation token. The id-token
+# permission is what lets npm attach provenance, tying the published tarball to
+# this commit and this workflow run.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    name: publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check the tag matches the package version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          version=$(node -p "require('./packages/surveillance/package.json').version")
+          if [ "$tag" != "$version" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match package version $version." >&2
+            exit 1
+          fi
+
+      - name: Typecheck the published declarations
+        run: npm run typecheck --workspace packages/surveillance
+
+      - name: Test the library and the demo
+        run: npx vitest run packages
+
+      - name: Confirm what would ship
+        run: npm pack --dry-run --workspace packages/surveillance
+
+      - name: Publish
+        run: npm publish --workspace packages/surveillance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

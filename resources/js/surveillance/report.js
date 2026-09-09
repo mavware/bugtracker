@@ -1,4 +1,4 @@
-import { loadImage, mountReportControls } from '@bugtracker/surveillance';
+import { loadImage, mountReportControls } from '@mavware/bug-surveillance';
 
 const root = document.getElementById('report-app');
 

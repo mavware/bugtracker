@@ -1,6 +1,6 @@
 // The list of nights this browser holds, under the capture panel. Fills the
 // table from the night store and closes any night whose tab died.
-import { finalizeInterruptedNight, nightRows, openNightStore, VOLATILE_STORE_MESSAGE } from '@bugtracker/surveillance';
+import { finalizeInterruptedNight, nightRows, openNightStore, VOLATILE_STORE_MESSAGE } from '@mavware/bug-surveillance';
 import { REPORT_URL_TEMPLATE } from './links.js';
 
 const root = document.getElementById('local-nights');

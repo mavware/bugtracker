@@ -17,7 +17,7 @@ import {
     WakeLock,
     wakeLockMessage,
     watchingState,
-} from '@bugtracker/surveillance';
+} from '@mavware/bug-surveillance';
 import { AUTH_LOST_MESSAGE, captureMode, referenceStoreState } from './captureLogic.js';
 import { Uploader } from './uploader.js';
 

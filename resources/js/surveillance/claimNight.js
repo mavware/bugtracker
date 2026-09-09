@@ -2,7 +2,7 @@
 // and mark it claimed. Shared by the watch page, the local report and the
 // dashboard; the decisions (chunking, messages) live in claimLogic.js.
 import { buildImportChunks, bytesToBase64, importFailureMessage } from './claimLogic.js';
-import { referenceBlobKey } from '@bugtracker/surveillance';
+import { referenceBlobKey } from '@mavware/bug-surveillance';
 
 export class ClaimError extends Error {
     constructor(message, status) {

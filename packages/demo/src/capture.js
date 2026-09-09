@@ -1,6 +1,6 @@
 // The demo's capture page: the library's camera, detector and tracker wired to
 // the markup in index.html, with every night kept in this browser's own store.
-// This is the reference for wiring @bugtracker/surveillance into a page of
+// This is the reference for wiring @mavware/bug-surveillance into a page of
 // your own: the library decides, this file only plumbs.
 import {
     calibrate,
@@ -22,7 +22,7 @@ import {
     WakeLock,
     wakeLockMessage,
     watchingState,
-} from '@bugtracker/surveillance';
+} from '@mavware/bug-surveillance';
 import { REPORT_URL_TEMPLATE } from './links.js';
 
 const root = document.getElementById('capture-app');

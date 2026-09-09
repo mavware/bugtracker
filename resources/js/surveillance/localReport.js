@@ -15,7 +15,7 @@ import {
     VOLATILE_STORE_MESSAGE,
     mountReportControls,
     openNightStore,
-} from '@bugtracker/surveillance';
+} from '@mavware/bug-surveillance';
 
 const root = document.getElementById('report-app');
 

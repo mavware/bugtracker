@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { reportUrlFor } from '@bugtracker/surveillance';
+import { reportUrlFor } from '@mavware/bug-surveillance';
 import { INDEX_URL, nightIdFromSearch, REPORT_URL_TEMPLATE } from '../src/links.js';
 
 describe('demo links', () => {
