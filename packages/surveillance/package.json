@@ -1,6 +1,6 @@
 {
     "name": "@mavware/bug-surveillance",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Overnight bug surveillance from a browser camera: detection, tracking, a local night store, analytics and replay, with no server required.",
     "keywords": [
         "camera",
