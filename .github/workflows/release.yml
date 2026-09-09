@@ -26,12 +26,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '22'
           cache: npm
@@ -40,7 +40,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Skipped on a manual run, where the ref is a branch rather than a tag.
       - name: Check the tag matches the package version
+        if: startsWith(github.ref, 'refs/tags/')
         run: |
           tag="${GITHUB_REF_NAME#v}"
           version=$(node -p "require('./packages/surveillance/package.json').version")
@@ -52,8 +54,13 @@ jobs:
       - name: Typecheck the published declarations
         run: npm run typecheck --workspace packages/surveillance
 
-      - name: Test the library and the demo
-        run: npx vitest run packages
+      # Vitest boots Vite in serve mode, and laravel-vite-plugin refuses to leave
+      # its build path whenever CI is set — a guard meant for HMR servers, not for
+      # a test run. The bypass is the plugin's own escape hatch for this.
+      - name: Run tests
+        run: npm test
+        env:
+          LARAVEL_BYPASS_ENV_CHECK: '1'
 
       - name: Confirm what would ship
         run: npm pack --dry-run --workspace packages/surveillance
