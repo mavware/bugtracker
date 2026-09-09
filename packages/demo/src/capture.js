@@ -37,6 +37,7 @@ function initCaptureApp(root) {
     const ui = {
         video: el('video'),
         overlay: el('overlay'),
+        placeholder: el('placeholder'),
         startButton: el('start'),
         checkButton: el('check'),
         checkLabel: el('check-label'),
@@ -73,11 +74,13 @@ function initCaptureApp(root) {
         // only way to try again is reloading the page.
         ui.startButton.removeAttribute('disabled');
         showCameraCheck(true);
+        showCameraStage(false);
         setState('Error');
         showBanner(String(error));
     }));
     ui.checkButton.addEventListener('click', () => toggleCameraCheck().catch((error) => {
         stopCameraCheck();
+        showCameraStage(false);
         setState('Error');
         showBanner(String(error));
     }));
@@ -122,11 +125,24 @@ function initCaptureApp(root) {
         }
 
         setState('Starting camera…');
+        showCameraStage(true);
         await app.camera.start();
 
         app.previewing = true;
         ui.checkLabel.textContent = cameraCheckLabel(true);
         setState(CAMERA_CHECK_MESSAGE);
+    }
+
+    /**
+     * The stage holds either the sample room or the camera, never both: the video
+     * is what gives the stage its height, and an element with no stream collapses
+     * to a strip. Called around every camera start and stop that returns the page
+     * to idle — but not after a night ends, where the frozen last frame is the
+     * honest thing to leave on screen behind a failed end.
+     */
+    function showCameraStage(live) {
+        ui.placeholder.classList.toggle('hidden', live);
+        ui.video.classList.toggle('hidden', !live);
     }
 
     /**
@@ -145,6 +161,7 @@ function initCaptureApp(root) {
 
         app.camera.stop();
         app.previewing = false;
+        showCameraStage(false);
         ui.checkLabel.textContent = cameraCheckLabel(false);
     }
 
@@ -161,6 +178,7 @@ function initCaptureApp(root) {
         ui.startButton.setAttribute('disabled', 'disabled');
         showCameraCheck(false);
         setState('Starting camera…');
+        showCameraStage(true);
         await app.camera.start();
 
         await countdownToLeave();
@@ -182,6 +200,7 @@ function initCaptureApp(root) {
             ui.startButton.removeAttribute('disabled');
             showCameraCheck(true);
             app.camera.stop();
+            showCameraStage(false);
 
             return;
         }

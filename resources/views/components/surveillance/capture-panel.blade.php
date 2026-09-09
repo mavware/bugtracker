@@ -54,7 +54,21 @@
                 </div>
 
                 <div class="relative bg-black">
-                    <video data-capture="video" class="w-full" autoplay muted playsinline></video>
+                    {{-- A source-less <video> collapses to a short black strip, so the
+                         sample room stands in at the shape a camera frame will have and
+                         says what a finished night looks like. capture.js swaps the two
+                         over around every camera.start()/stop(): the live picture has to
+                         be the element setting this box's height, because the overlay
+                         canvas is sized from the video's own client box. --}}
+                    <div data-capture="placeholder" class="relative aspect-4/3">
+                        <x-surveillance.sample-room aria-hidden="true" class="absolute inset-0" />
+
+                        <div class="absolute bottom-3 left-3 rounded-md bg-black/60 px-2 py-1 text-xs text-zinc-300 backdrop-blur">
+                            {{ __('A sample night. Your camera appears here once you start.') }}
+                        </div>
+                    </div>
+
+                    <video data-capture="video" class="hidden w-full" autoplay muted playsinline></video>
                     <canvas data-capture="overlay" class="absolute inset-0 h-full w-full"></canvas>
                 </div>
 

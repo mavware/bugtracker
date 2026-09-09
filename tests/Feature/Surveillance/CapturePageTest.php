@@ -60,6 +60,22 @@ test('the capture page shows the night\'s numbers under the camera', function ()
     }
 });
 
+// An empty <video> is a black strip, so the stage stands in with the sample room
+// until a stream arrives. capture.js swaps the two by their hidden class, which
+// only works while both are on the page and start out that way round.
+test('the capture stage shows the sample room until the camera opens', function () {
+    $user = User::factory()->create();
+    $session = SurveillanceSession::factory()->for($user)->create();
+
+    $response = $this->actingAs($user)
+        ->get(route('surveillance.capture', $session))
+        ->assertSee('data-capture="placeholder"', false)
+        ->assertSee('<video data-capture="video" class="hidden w-full"', false)
+        ->assertSee('A sample night. Your camera appears here once you start.');
+
+    expect(substr_count($response->getContent(), 'data-test="sample-room-trail"'))->toBe(3);
+});
+
 // A slept screen stops the camera and loses the rest of the night, so the fix has
 // to be on the page they set the device up on, not buried in help.
 test('the capture page says how to stop the screen sleeping', function () {

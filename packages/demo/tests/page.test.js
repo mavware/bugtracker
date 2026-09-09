@@ -44,6 +44,19 @@ describe('demo capture page', () => {
         expect(page.querySelector('[data-capture="abort"]')).toBeNull();
     });
 
+    // An empty <video> is a black strip, so the stage stands in with the sample room
+    // until a stream arrives. capture.js swaps the two by their hidden class, which
+    // only works while both are on the page and start out that way round.
+    test('the stage shows the sample room until the camera opens', () => {
+        const stage = page.querySelector('.tracker .stage');
+        const placeholder = stage.querySelector('[data-capture="placeholder"]');
+
+        expect(placeholder).not.toBeNull();
+        expect(placeholder.classList.contains('hidden')).toBe(false);
+        expect(stage.querySelector('[data-capture="video"]').classList.contains('hidden')).toBe(true);
+        expect(placeholder.querySelectorAll('[data-test="sample-room-trail"]')).toHaveLength(3);
+    });
+
     // The numbers belong under the camera they were read off rather than in a side
     // panel, and capture.js writes each of them to a single element: a second copy
     // would sit there going stale all night.

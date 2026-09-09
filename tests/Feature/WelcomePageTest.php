@@ -50,5 +50,5 @@ test('the hero preview draws every sample trail', function () {
 
     $response->assertOk();
 
-    expect(substr_count($response->getContent(), 'data-test="welcome-hero-trail"'))->toBe(3);
+    expect(substr_count($response->getContent(), 'data-test="sample-room-trail"'))->toBe(3);
 });

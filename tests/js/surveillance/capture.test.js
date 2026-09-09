@@ -120,7 +120,8 @@ function mountPage(config = { csrfToken: 'test-csrf-token', routes: ROUTES }) {
             <button data-capture="start">Start watching</button>
             <button data-capture="end" class="hidden">End night</button>
             <div data-capture="banner" class="hidden"></div>
-            <video data-capture="video"></video>
+            <div data-capture="placeholder">sample room</div>
+            <video data-capture="video" class="hidden"></video>
             <canvas data-capture="overlay"></canvas>
             <span data-capture="state"></span>
             <span data-capture="elapsed" class="hidden"></span>
@@ -222,6 +223,46 @@ describe('capture page', () => {
             settings: expect.objectContaining({ procWidth: 320, diffThreshold: 20 }),
         });
         expect(stubs.localSinkStoreReference).not.toHaveBeenCalled();
+    });
+
+    /**
+     * The stage holds one or the other: the sample room while the page is idle, the
+     * camera once a stream is open. Leaving both in place puts an empty video strip
+     * under the picture, and hiding both leaves the stage a collapsed black bar.
+     */
+    test('the sample room gives way to the camera for the night', async () => {
+        expect(el('placeholder').classList.contains('hidden')).toBe(false);
+        expect(el('video').classList.contains('hidden')).toBe(true);
+
+        await startWatching();
+
+        expect(el('placeholder').classList.contains('hidden')).toBe(true);
+        expect(el('video').classList.contains('hidden')).toBe(false);
+    });
+
+    test('closing the camera check puts the sample room back', async () => {
+        el('check').click();
+        await settle();
+
+        expect(el('placeholder').classList.contains('hidden')).toBe(true);
+
+        el('check').click();
+        await settle();
+
+        expect(el('placeholder').classList.contains('hidden')).toBe(false);
+        expect(el('video').classList.contains('hidden')).toBe(true);
+    });
+
+    // A refused camera prompt never opens a stream, so leaving the video in place
+    // would swap the picture for a black strip and nothing would put it back.
+    test('a refused camera leaves the sample room up', async () => {
+        stubs.cameraStart.mockRejectedValue(new Error('Permission denied'));
+
+        await startWatching();
+
+        expect(el('placeholder').classList.contains('hidden')).toBe(false);
+        expect(el('video').classList.contains('hidden')).toBe(true);
+        expect(el('state').textContent).toBe('Error');
     });
 
     test('the camera check opens the preview without starting a night', async () => {
