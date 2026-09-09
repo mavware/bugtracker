@@ -181,6 +181,49 @@
                     </div>
                 </section>
 
+                {{-- The no-account path. Shown only to guests, because it is an answer to
+                     "do I have to sign up first": the same capture and report, kept on the
+                     visitor's own device instead of in an account. --}}
+                @guest
+                    <section class="mx-auto w-full max-w-6xl px-6 py-16 lg:px-8 lg:py-20" data-test="welcome-demo-section">
+                        <div class="rounded-2xl border border-amber-500/30 bg-amber-50/60 p-8 lg:p-10 dark:border-amber-500/20 dark:bg-amber-500/5">
+                            <div class="grid gap-8 lg:grid-cols-[1.15fr_1fr] lg:items-center">
+                                <div class="flex flex-col gap-4">
+                                    <flux:badge color="amber" size="sm" icon="eye" class="w-fit">{{ __('No account needed') }}</flux:badge>
+
+                                    <flux:heading size="xl" level="2">{{ __('Watch a room tonight without signing up.') }}</flux:heading>
+
+                                    <flux:text class="max-w-xl text-base">
+                                        {{ __('This is the real thing rather than a walkthrough. The same detection runs, the same night is recorded, and the same report is waiting in the morning. It all happens inside your browser, so there is no account to create and nothing to cancel afterwards.') }}
+                                    </flux:text>
+
+                                    <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+                                        <flux:button :href="route('watch.capture')" variant="primary" icon="play" data-test="welcome-demo-link">
+                                            {{ __('Start watching now') }}
+                                        </flux:button>
+                                        <flux:text class="text-sm">{{ __('Change your mind later and your nights can come with you.') }}</flux:text>
+                                    </div>
+                                </div>
+
+                                <ul class="grid gap-3">
+                                    <li class="flex items-start gap-3 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+                                        <flux:icon name="check-circle" variant="micro" class="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                                        <flux:text class="text-sm">{{ __('The whole detector, the overnight capture and the morning report, exactly as an account gets them.') }}</flux:text>
+                                    </li>
+                                    <li class="flex items-start gap-3 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+                                        <flux:icon name="lock-closed" variant="micro" class="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                                        <flux:text class="text-sm">{{ __('Nothing is uploaded. The night is kept in this browser, on this device, and you can delete it in one tap.') }}</flux:text>
+                                    </li>
+                                    <li class="flex items-start gap-3 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+                                        <flux:icon name="information-circle" variant="micro" class="mt-0.5 shrink-0 text-zinc-500" />
+                                        <flux:text class="text-sm">{{ __('An account is what adds trends across nights, the entry point map, and reading a report from another device.') }}</flux:text>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </section>
+                @endguest
+
                 {{-- Features --}}
                 <section class="mx-auto w-full max-w-6xl px-6 py-16 lg:px-8 lg:py-20">
                     <div class="max-w-2xl">
