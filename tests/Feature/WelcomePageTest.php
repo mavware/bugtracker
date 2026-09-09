@@ -42,3 +42,13 @@ test('authenticated users are sent to the dashboard instead', function () {
         ->assertDontSee('data-test="welcome-login-link"', false)
         ->assertDontSee('data-test="welcome-register-link"', false);
 });
+
+// The hero preview is decorative, but it is the page's only picture of what a
+// finished report looks like, so the trails have to survive template edits.
+test('the hero preview draws every sample trail', function () {
+    $response = $this->get(route('home'));
+
+    $response->assertOk();
+
+    expect(substr_count($response->getContent(), 'data-test="welcome-hero-trail"'))->toBe(3);
+});

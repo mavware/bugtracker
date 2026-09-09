@@ -14,19 +14,23 @@
         :intro="__('Keep the device plugged in, the screen on, and this tab visible all night.')"
         mode="local"
     >
-        <x-slot:setupHelp>
-            <div class="rounded-xl border border-zinc-200 p-4 text-sm text-zinc-500 dark:border-zinc-700">
-                <flux:heading size="sm">{{ __('Nothing leaves this device') }}</flux:heading>
-                <p class="mt-2">
-                    {{ __('Nights recorded here stay in this browser on this device. Clearing site data removes them. Create an account to keep them and see trends across nights.') }}
+        {{-- Said once, in the box that stays up all night: what is kept, where it is
+             kept, and what removes it. It used to be split between here and the
+             setup advice, which disappears as soon as the night begins. --}}
+        <x-slot:privacyNote>
+            <flux:heading size="sm">{{ __('Nothing leaves this device') }}</flux:heading>
+            <p class="mt-2">
+                {{ __('Detection runs entirely in this browser. Bug paths and tiny snapshots stay in this browser on this device, no video is stored, and clearing site data removes them.') }}
+            </p>
+            @guest
+                {{-- data-app-nav so capture.js makes it inert overnight: following any
+                     link off this page ends the night. --}}
+                <p class="mt-2" data-app-nav>
+                    <flux:link href="{{ route('register') }}">{{ __('Create a free account') }}</flux:link>
+                    {{ __('to keep your nights and see trends across them.') }}
                 </p>
-                @guest
-                    <p class="mt-2">
-                        <flux:link href="{{ route('register') }}">{{ __('Create a free account') }}</flux:link>
-                    </p>
-                @endguest
-            </div>
-        </x-slot:setupHelp>
+            @endguest
+        </x-slot:privacyNote>
     </x-surveillance.capture-panel>
 
     {{-- The nights this browser holds. localNights.js fills the table from the

@@ -38,7 +38,6 @@ function initCaptureApp(root) {
         checkButton: el('check'),
         checkLabel: el('check-label'),
         endButton: el('end'),
-        abortButton: el('abort'),
         banner: el('banner'),
         state: el('state'),
         elapsed: el('elapsed'),
@@ -48,6 +47,10 @@ function initCaptureApp(root) {
         brightness: el('brightness'),
         debugToggle: el('debug-toggle'),
         setupHelp: el('setup-help'),
+        idleLight: el('idle-light'),
+        liveLight: el('live-light'),
+        started: el('started'),
+        startedAt: el('started-at'),
     };
 
     const app = {
@@ -78,18 +81,11 @@ function initCaptureApp(root) {
         setState('Error');
         showBanner(String(error));
     }));
-    ui.endButton.addEventListener('click', () => endNight(false));
-    ui.abortButton.addEventListener('click', () => {
-        // Discarding is for a night set up wrong — a bad angle, a light left on —
-        // whose sightings would otherwise skew the trend and the entry point map.
-        if (window.confirm('Discard this night? It stays in your list, with its report, but is left out of trends and entry points.')) {
-            endNight(true);
-        }
-    });
+    ui.endButton.addEventListener('click', () => endNight());
     // The back button and closing the tab reach past the locked chrome, and either
     // one ends the night for good. Browsers word this prompt themselves; all we can
-    // do is ask for it. Ending or discarding clears app.running first, so the trip
-    // to the report is never interrupted.
+    // do is ask for it. Ending clears app.running first, so the trip to the report
+    // is never interrupted.
     window.addEventListener('beforeunload', (event) => {
         if (app.running) {
             event.preventDefault();
@@ -227,11 +223,11 @@ function initCaptureApp(root) {
 
         app.running = true;
         setNavigationLocked(true);
+        showRecording(true);
         ui.setupHelp.classList.add('hidden');
         ui.startButton.classList.add('hidden');
         ui.checkButton.classList.add('hidden');
         ui.endButton.classList.remove('hidden');
-        ui.abortButton.classList.remove('hidden');
         setState(watchingState(false));
 
         const intervalMs = 1000 / settings.processFps;
@@ -339,13 +335,14 @@ function initCaptureApp(root) {
         ui.elapsed.textContent = formatClock(Date.now() - app.sessionStartTime);
     }
 
-    async function endNight(aborted) {
+    async function endNight() {
         if (!app.running) {
             return;
         }
 
         app.running = false;
         setNavigationLocked(false);
+        showRecording(false);
         clearInterval(app.loopTimer);
         setState('Finishing…');
 
@@ -355,9 +352,11 @@ function initCaptureApp(root) {
         app.camera.stop();
         await app.wakeLock.release();
 
+        // Never aborted from here: a night is discarded from its report, where the
+        // trails it caught are there to judge the setup by.
         const result = await app.sink.end({
             endedAtOffsetMs: Date.now() - app.sessionStartTime,
-            aborted,
+            aborted: false,
         });
 
         if (result.ok) {
@@ -370,5 +369,21 @@ function initCaptureApp(root) {
 
     function setState(text) {
         ui.state.textContent = text;
+    }
+
+    /**
+     * The header's recording light, and the clock time the night began beside it.
+     * Ending the night usually leaves for the report, but a failed end stays here,
+     * and a light still pulsing on a finished night would be a lie.
+     */
+    function showRecording(recording) {
+        ui.idleLight.classList.toggle('hidden', recording);
+        ui.liveLight.classList.toggle('hidden', !recording);
+        ui.started.classList.toggle('hidden', !recording);
+
+        if (recording) {
+            ui.startedAt.textContent = new Date(app.sessionStartTime)
+                .toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
     }
 }

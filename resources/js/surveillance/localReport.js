@@ -67,6 +67,7 @@ async function initLocalReport(root) {
         el('title').textContent = header.title;
         el('range').textContent = header.range;
         el('discarded-notice').classList.toggle('hidden', !header.discarded);
+        el('discard-label').textContent = header.discarded ? 'Keep this night' : 'Discard night';
         el('claim-panel').classList.toggle('hidden', night.claimedSessionId !== null);
         el('claimed-notice').classList.toggle('hidden', night.claimedSessionId === null);
     };
@@ -133,6 +134,16 @@ async function initLocalReport(root) {
 
         render();
         await controls.rebuild();
+    });
+
+    // The same choice the logged-in report offers: a night recorded through a bad
+    // setup is marked here, once its trails have been seen, rather than at the camera.
+    el('discard').addEventListener('click', async () => {
+        night = await store.patchNight(nightId, {
+            status: night.status === 'aborted' ? 'completed' : 'aborted',
+        });
+
+        renderHeader();
     });
 
     el('delete').addEventListener('click', async () => {

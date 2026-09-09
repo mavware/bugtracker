@@ -41,7 +41,6 @@ function initCaptureApp(root) {
         checkButton: el('check'),
         checkLabel: el('check-label'),
         endButton: el('end'),
-        abortButton: el('abort'),
         banner: el('banner'),
         state: el('state'),
         elapsed: el('elapsed'),
@@ -51,6 +50,10 @@ function initCaptureApp(root) {
         brightness: el('brightness'),
         debugToggle: el('debug-toggle'),
         setupHelp: el('setup-help'),
+        idleLight: el('idle-light'),
+        liveLight: el('live-light'),
+        started: el('started'),
+        startedAt: el('started-at'),
     };
 
     const app = {
@@ -77,12 +80,7 @@ function initCaptureApp(root) {
         setState('Error');
         showBanner(String(error));
     }));
-    ui.endButton.addEventListener('click', () => endNight(false));
-    ui.abortButton.addEventListener('click', () => {
-        if (window.confirm('Discard this night? It stays in your list, with its report, but is marked as discarded.')) {
-            endNight(true);
-        }
-    });
+    ui.endButton.addEventListener('click', () => endNight());
     // Closing the tab ends the night for good. Browsers word this prompt
     // themselves; all we can do is ask for it.
     window.addEventListener('beforeunload', (event) => {
@@ -218,11 +216,11 @@ function initCaptureApp(root) {
 
         app.running = true;
         setNavigationLocked(true);
+        showRecording(true);
         ui.setupHelp.classList.add('hidden');
         ui.startButton.classList.add('hidden');
         ui.checkButton.classList.add('hidden');
         ui.endButton.classList.remove('hidden');
-        ui.abortButton.classList.remove('hidden');
         setState(watchingState(false));
 
         app.loopTimer = setInterval(processFrame, 1000 / settings.processFps);
@@ -295,13 +293,14 @@ function initCaptureApp(root) {
         }
     }
 
-    async function endNight(aborted) {
+    async function endNight() {
         if (!app.running) {
             return;
         }
 
         app.running = false;
         setNavigationLocked(false);
+        showRecording(false);
         clearInterval(app.loopTimer);
         setState('Finishing…');
 
@@ -311,9 +310,11 @@ function initCaptureApp(root) {
         app.camera.stop();
         await app.wakeLock.release();
 
+        // Never aborted from here: a night is discarded from its report, where the
+        // trails it caught are there to judge the setup by.
         const result = await app.sink.end({
             endedAtOffsetMs: Date.now() - app.sessionStartTime,
-            aborted,
+            aborted: false,
         });
 
         window.location.assign(result.reportUrl);
@@ -321,5 +322,17 @@ function initCaptureApp(root) {
 
     function setState(text) {
         ui.state.textContent = text;
+    }
+
+    /** The header's recording light, and the clock time the night began beside it. */
+    function showRecording(recording) {
+        ui.idleLight.classList.toggle('hidden', recording);
+        ui.liveLight.classList.toggle('hidden', !recording);
+        ui.started.classList.toggle('hidden', !recording);
+
+        if (recording) {
+            ui.startedAt.textContent = new Date(app.sessionStartTime)
+                .toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
     }
 }

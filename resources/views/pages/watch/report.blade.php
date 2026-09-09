@@ -19,7 +19,12 @@
                     <flux:heading size="xl" data-report="title"></flux:heading>
                     <flux:text class="mt-2" data-report="range"></flux:text>
                 </div>
-                <flux:button href="{{ route('watch.capture') }}" icon="arrow-left">{{ __('Back') }}</flux:button>
+                <div class="flex items-center gap-2">
+                    <flux:button variant="subtle" icon="x-circle" data-report="discard" data-test="toggle-discarded-button">
+                        <span data-report="discard-label">{{ __('Discard night') }}</span>
+                    </flux:button>
+                    <flux:button href="{{ route('watch.capture') }}" icon="arrow-left">{{ __('Back') }}</flux:button>
+                </div>
             </div>
 
             <flux:callout icon="x-circle" class="mt-6 hidden" data-report="discarded-notice" data-test="discarded-notice">

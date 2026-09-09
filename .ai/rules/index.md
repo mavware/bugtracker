@@ -10,6 +10,8 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/views/layouts/** | .ai/rules/layouts.md |
 | app/Http/Middleware/** | .ai/rules/middleware.md |
 | packages/surveillance/** | .ai/rules/packages-surveillance.md |
+| resources/views/pages/** | .ai/rules/pages.md |
 | app/Http/Controllers/Surveillance/** | .ai/rules/surveillance.md |
 | tests/js/** | .ai/rules/tests-js.md |
 | tests/** | .ai/rules/tests.md |
+| resources/views/** | .ai/rules/views.md |

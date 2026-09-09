@@ -113,10 +113,12 @@ function mountPage(config = { csrfToken: 'test-csrf-token', routes: ROUTES }) {
     document.body.innerHTML = `
         <nav data-app-nav>sidebar</nav>
         <section id="capture-app" data-config='${JSON.stringify(config)}'>
+            <span data-capture="idle-light"></span>
+            <span data-capture="live-light" class="hidden"></span>
+            <span data-capture="started" class="hidden">Started <span data-capture="started-at"></span></span>
             <button data-capture="check"><span data-capture="check-label">Check camera</span></button>
             <button data-capture="start">Start watching</button>
             <button data-capture="end" class="hidden">End night</button>
-            <button data-capture="abort" class="hidden">Discard night</button>
             <div data-capture="banner" class="hidden"></div>
             <video data-capture="video"></video>
             <canvas data-capture="overlay"></canvas>
@@ -383,15 +385,40 @@ describe('capture page', () => {
         expect(el('setup-help').classList.contains('hidden')).toBe(true);
     });
 
-    test('the end and discard buttons only appear once watching', async () => {
+    test('the end button only appears once watching', async () => {
         expect(el('end').classList.contains('hidden')).toBe(true);
-        expect(el('abort').classList.contains('hidden')).toBe(true);
 
         await startWatching();
 
         expect(el('start').classList.contains('hidden')).toBe(true);
+        expect(el('check').classList.contains('hidden')).toBe(true);
         expect(el('end').classList.contains('hidden')).toBe(false);
-        expect(el('abort').classList.contains('hidden')).toBe(false);
+    });
+
+    test('the header light and start time only come on with the night itself', async () => {
+        expect(el('idle-light').classList.contains('hidden')).toBe(false);
+        expect(el('live-light').classList.contains('hidden')).toBe(true);
+        expect(el('started').classList.contains('hidden')).toBe(true);
+
+        await startWatching();
+
+        expect(el('idle-light').classList.contains('hidden')).toBe(true);
+        expect(el('live-light').classList.contains('hidden')).toBe(false);
+        expect(el('started').classList.contains('hidden')).toBe(false);
+        expect(el('started-at').textContent).toMatch(/\d{1,2}[:.]\d{2}/);
+    });
+
+    // A night that could not be ended stays on this page, and a light still
+    // pulsing over a stopped camera would say it was still watching.
+    test('the header light goes out again when the night ends', async () => {
+        stubs.uploaderEnd.mockResolvedValue({ ok: false, status: 500, reportUrl: null });
+
+        await startWatching();
+        el('end').click();
+        await settle();
+
+        expect(el('live-light').classList.contains('hidden')).toBe(true);
+        expect(el('idle-light').classList.contains('hidden')).toBe(false);
     });
 
     test('a pitch-black room is refused before anything is uploaded', async () => {
@@ -451,30 +478,8 @@ describe('capture page', () => {
         expect(window.location.assign).toHaveBeenCalledWith('https://bugtracker.test/surveillance/1/report');
     });
 
-    test('discarding the night reports it as aborted', async () => {
-        await startWatching();
-
-        el('abort').click();
-        await settle();
-
-        expect(window.confirm).toHaveBeenCalled();
-        expect(stubs.uploaderEnd.mock.calls[0][0].aborted).toBe(true);
-    });
-
-    test('backing out of the discard prompt leaves the night running', async () => {
-        await startWatching();
-        window.confirm = vi.fn(() => false);
-
-        el('abort').click();
-        await settle();
-
-        expect(stubs.uploaderEnd).not.toHaveBeenCalled();
-        expect(el('state').textContent).toBe('Watching');
-    });
-
-    test('the buttons do nothing before a night has started', async () => {
+    test('the end button does nothing before a night has started', async () => {
         el('end').click();
-        el('abort').click();
         await settle();
 
         expect(stubs.uploaderEnd).not.toHaveBeenCalled();

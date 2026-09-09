@@ -76,6 +76,15 @@
     @apply  !mb-0 !leading-tight;
 }
 
+/* Flux buttons carry `inline-flex`, and Tailwind emits `.hidden` ahead of
+   `.inline-flex`, so a button holding both loses the argument and stays on
+   screen — which is why End night and Discard night sat on the capture page
+   before any night had started. Scripts switch these buttons over by class, so
+   on a Flux button `hidden` gets the last word. */
+[data-flux-button].hidden {
+    display: none;
+}
+
 /* The ring offset has to match the page background, not the accent. It read as
    accent-foreground only while that happened to be white/zinc-800; with an amber
    accent the offset would draw a dark halo around every focused field. */

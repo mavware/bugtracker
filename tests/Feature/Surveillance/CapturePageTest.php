@@ -6,7 +6,8 @@ use Livewire\Livewire;
 
 // The check-label span is asserted alongside the buttons because capture.js
 // rewrites it to toggle the preview: if Flux's button markup ever swallows it,
-// the toggle silently stops updating and nothing else would catch it.
+// the toggle silently stops updating and nothing else would catch it. Discarding
+// is asserted absent: it belongs to the report, where the night can be judged.
 test('the owner can view the capture page for a pending session', function () {
     $user = User::factory()->create();
     $session = SurveillanceSession::factory()->for($user)->create();
@@ -19,10 +20,24 @@ test('the owner can view the capture page for a pending session', function () {
         )->assertSee('data-test="check-camera-button"', false)->assertSee(
             'data-capture="check-label"',
             false
-        )->assertSee('data-test="end-session-button"', false)->assertSee(
-            'data-test="abort-session-button"',
+        )->assertSee('data-test="end-session-button"', false)->assertDontSee(
+            'data-test="toggle-discarded-button"',
             false
         )->assertSee($x, false));
+});
+
+// The header over the camera is where the night's state is read from, and its
+// two lights and the start time are only ever swapped by capture.js.
+test('the capture page carries the recording header capture.js drives', function () {
+    $user = User::factory()->create();
+    $session = SurveillanceSession::factory()->for($user)->create();
+
+    $this->actingAs($user)
+        ->get(route('surveillance.capture', $session))
+        ->assertSee('data-capture="idle-light"', false)
+        ->assertSee('data-capture="live-light"', false)
+        ->assertSee('data-capture="started-at"', false)
+        ->assertSee('data-capture="state"', false);
 });
 
 // A slept screen stops the camera and loses the rest of the night, so the fix has

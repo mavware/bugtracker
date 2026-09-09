@@ -38,6 +38,22 @@ class extends Component {
     }
 
     /**
+     * Leave this night out of trends and entry points, or put it back in. The
+     * choice belongs here rather than at the camera: whether the setup was any
+     * good is something only the finished report shows.
+     */
+    public function toggleDiscarded(): void
+    {
+        Gate::authorize('update', $this->session);
+
+        $this->session->update([
+            'status' => $this->session->status === SurveillanceSessionStatus::Aborted
+                ? SurveillanceSessionStatus::Completed
+                : SurveillanceSessionStatus::Aborted,
+        ]);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function reportPayload(): array
@@ -84,7 +100,17 @@ class extends Component {
                     {{ $session->started_at?->format('M j, H:i') }} – {{ $session->ended_at?->format('M j, H:i') }}
                 </flux:text>
             </div>
-            <flux:button href="{{ route('dashboard') }}" icon="arrow-left">{{ __('Dashboard') }}</flux:button>
+            <div class="flex items-center gap-2">
+                <flux:button
+                    variant="{{ $session->status === SurveillanceSessionStatus::Aborted ? 'filled' : 'subtle' }}"
+                    icon="{{ $session->status === SurveillanceSessionStatus::Aborted ? 'arrow-uturn-left' : 'x-circle' }}"
+                    wire:click="toggleDiscarded"
+                    data-test="toggle-discarded-button"
+                >
+                    {{ $session->status === SurveillanceSessionStatus::Aborted ? __('Keep this night') : __('Discard night') }}
+                </flux:button>
+                <flux:button href="{{ route('dashboard') }}" icon="arrow-left">{{ __('Dashboard') }}</flux:button>
+            </div>
         </div>
 
         @if ($session->status === SurveillanceSessionStatus::Aborted)

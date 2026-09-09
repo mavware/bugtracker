@@ -5,6 +5,7 @@ use App\Models\BugTrack;
 use App\Models\SurveillanceSession;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Livewire;
 
 test('the report renders the data island and sightings for a finished session', function () {
     $user = User::factory()->create();
@@ -28,7 +29,8 @@ test('a discarded night says why it is missing from the trends', function () {
     $this->actingAs($user)
         ->get(route('surveillance.report', $session))
         ->assertSee('You discarded this night')
-        ->assertSee('left out of trends and entry points');
+        ->assertSee('left out of trends and entry points')
+        ->assertSee('Keep this night');
 });
 
 test('a completed night carries no discarded notice', function () {
@@ -37,7 +39,25 @@ test('a completed night carries no discarded notice', function () {
 
     $this->actingAs($user)
         ->get(route('surveillance.report', $session))
-        ->assertDontSee('You discarded this night');
+        ->assertDontSee('You discarded this night')
+        ->assertSee('Discard night');
+});
+
+// Discarding a night lives on its report now, not on the capture page: the call
+// is about the setup, and the setup can only be judged from what it caught.
+test('a night can be discarded from its report and kept again', function () {
+    $user = User::factory()->create();
+    $session = SurveillanceSession::factory()->for($user)->completed()->create();
+
+    $component = Livewire::actingAs($user)
+        ->test('pages::surveillance.report', ['session' => $session])
+        ->call('toggleDiscarded');
+
+    expect($session->refresh()->status)->toBe(SurveillanceSessionStatus::Aborted);
+
+    $component->call('toggleDiscarded');
+
+    expect($session->refresh()->status)->toBe(SurveillanceSessionStatus::Completed);
 });
 
 test('the report computes analytics lazily when missing', function () {

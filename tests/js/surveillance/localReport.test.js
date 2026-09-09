@@ -71,6 +71,7 @@ function mountPage(localId) {
                 <h1 data-report="title"></h1>
                 <p data-report="range"></p>
                 <div data-report="discarded-notice" class="hidden"></div>
+                <button data-report="discard"><span data-report="discard-label">Discard night</span></button>
                 <div data-report="claim-panel">
                     <input data-report="room" value="Kitchen" />
                     <button data-report="claim">Save to my account</button>
@@ -215,6 +216,27 @@ describe('local report page', () => {
 
         expect(el('missing').classList.contains('hidden')).toBe(false);
         expect(el('page').classList.contains('hidden')).toBe(true);
+    });
+
+    // Discarding moved off the capture page: it is decided here, once the trails
+    // the night caught are on screen, and it has to be undoable from the same button.
+    test('discarding the night marks it in the store, and keeping it puts it back', async () => {
+        mountPage('n1');
+        await bootPage();
+
+        el('discard').click();
+        await new Promise((resolve) => setTimeout(resolve, 20));
+
+        expect((await stubs.store.getNight('n1')).status).toBe('aborted');
+        expect(el('discarded-notice').classList.contains('hidden')).toBe(false);
+        expect(el('discard-label').textContent).toBe('Keep this night');
+
+        el('discard').click();
+        await new Promise((resolve) => setTimeout(resolve, 20));
+
+        expect((await stubs.store.getNight('n1')).status).toBe('completed');
+        expect(el('discarded-notice').classList.contains('hidden')).toBe(true);
+        expect(el('discard-label').textContent).toBe('Discard night');
     });
 
     test('deleting the night removes it and goes back to the watch page', async () => {

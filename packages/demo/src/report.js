@@ -63,6 +63,7 @@ async function initReport(root) {
         el('title').textContent = header.title;
         el('range').textContent = header.range;
         el('discarded-notice').classList.toggle('hidden', !header.discarded);
+        el('discard-label').textContent = header.discarded ? 'Keep this night' : 'Discard night';
 
         const tiles = statTiles(night.analytics);
         el('stat-track-count').textContent = String(tiles.trackCount);
@@ -115,6 +116,16 @@ async function initReport(root) {
 
         render();
         await controls.rebuild();
+    });
+
+    // Discarding is decided here rather than at the camera: whether the setup was
+    // any good is something only the finished trails show. It toggles back.
+    el('discard').addEventListener('click', async () => {
+        night = await store.patchNight(nightId, {
+            status: night.status === 'aborted' ? 'completed' : 'aborted',
+        });
+
+        render();
     });
 
     el('delete').addEventListener('click', async () => {

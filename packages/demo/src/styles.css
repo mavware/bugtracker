@@ -212,6 +212,79 @@ code {
     }
 }
 
+/* The camera and the header that reads it, as one card. */
+.tracker {
+    margin-top: 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.tracker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.tracker-state {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9375rem;
+    font-weight: 500;
+}
+
+.tracker .stage {
+    margin-top: 0;
+    border-radius: 0;
+}
+
+/* The recording light: grey until the night starts, then a pulsing green. */
+.light {
+    position: relative;
+    display: inline-flex;
+    width: 0.625rem;
+    height: 0.625rem;
+}
+
+.light span {
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+}
+
+.light-idle {
+    background: var(--border);
+}
+
+.light-dot {
+    background: #22c55e;
+}
+
+.light-ping {
+    background: #4ade80;
+    opacity: 0.75;
+    animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes ping {
+    75%,
+    100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .light-ping {
+        animation: none;
+    }
+}
+
 .stage {
     position: relative;
     overflow: hidden;
