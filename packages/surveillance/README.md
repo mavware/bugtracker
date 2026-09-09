@@ -1,5 +1,7 @@
 # @mavware/bug-surveillance
 
+[![npm](https://img.shields.io/npm/v/@mavware/bug-surveillance)](https://www.npmjs.com/package/@mavware/bug-surveillance)
+
 Point a phone or laptop camera at a room, leave it running all night, and get
 back every time something walked through the frame: when, where it came in,
 where it left, and a snapshot of each sighting.
