@@ -21,10 +21,16 @@ const stubs = vi.hoisted(() => ({
     uploaderStop: vi.fn(),
     uploaderFlush: vi.fn(async () => {}),
     uploaderEnqueue: vi.fn(),
-    uploaderPost: vi.fn(async () => ({
-        ok: true,
-        json: async () => ({ report_url: 'https://bugtracker.test/surveillance/1/report' }),
-    })),
+    uploaderStoreReference: vi.fn(async () => {}),
+    uploaderEnd: vi.fn(async () => ({ ok: true, status: 200, reportUrl: 'https://bugtracker.test/surveillance/1/report' })),
+    localSinkStart: vi.fn(),
+    localSinkStop: vi.fn(),
+    localSinkFlush: vi.fn(async () => {}),
+    localSinkEnqueue: vi.fn(),
+    localSinkStoreReference: vi.fn(async () => {}),
+    localSinkEnd: vi.fn(async () => ({ ok: true, status: 200, reportUrl: 'https://bugtracker.test/watch/local-night-id/report' })),
+    localSinkOptions: null,
+    openNightStore: vi.fn(async () => ({ volatile: false })),
     wakeAcquire: vi.fn(async () => {}),
     wakeRelease: vi.fn(async () => {}),
 }));
@@ -54,8 +60,29 @@ vi.mock('../../../resources/js/surveillance/uploader.js', () => ({
         stop = stubs.uploaderStop;
         flush = stubs.uploaderFlush;
         enqueue = stubs.uploaderEnqueue;
-        post = stubs.uploaderPost;
+        storeReference = stubs.uploaderStoreReference;
+        end = stubs.uploaderEnd;
     },
+}));
+
+vi.mock('../../../resources/js/surveillance/localNightSink.js', () => ({
+    LocalNightSink: class {
+        /** Keep the options so a test can check which store and route it was handed. */
+        constructor(options) {
+            stubs.localSinkOptions = options;
+        }
+
+        start = stubs.localSinkStart;
+        stop = stubs.localSinkStop;
+        flush = stubs.localSinkFlush;
+        enqueue = stubs.localSinkEnqueue;
+        storeReference = stubs.localSinkStoreReference;
+        end = stubs.localSinkEnd;
+    },
+}));
+
+vi.mock('../../../resources/js/surveillance/nightStore.js', () => ({
+    openNightStore: stubs.openNightStore,
 }));
 
 vi.mock('../../../resources/js/surveillance/wakeLock.js', () => ({
@@ -81,8 +108,14 @@ const ROUTES = {
 const el = (name) => document.querySelector(`[data-capture="${name}"]`);
 const nav = () => document.querySelector('[data-app-nav]');
 
-function mountPage() {
-    const config = { csrfToken: 'test-csrf-token', routes: ROUTES };
+const LOCAL_CONFIG = {
+    mode: 'local',
+    authenticated: false,
+    csrfToken: 'test-csrf-token',
+    routes: { report: 'https://bugtracker.test/watch/00000000-0000-4000-8000-000000000000/report', watch: 'https://bugtracker.test/watch' },
+};
+
+function mountPage(config = { csrfToken: 'test-csrf-token', routes: ROUTES }) {
 
     document.body.innerHTML = `
         <nav data-app-nav>sidebar</nav>
@@ -154,10 +187,9 @@ describe('capture page', () => {
         vi.clearAllMocks();
         stubs.calibrate.mockResolvedValue({ meanLuminance: 120, tooDark: false, dim: false, diffThreshold: 20 });
         stubs.cameraStart.mockResolvedValue(undefined);
-        stubs.uploaderPost.mockResolvedValue({
-            ok: true,
-            json: async () => ({ report_url: 'https://bugtracker.test/surveillance/1/report' }),
-        });
+        stubs.uploaderEnd.mockResolvedValue({ ok: true, status: 200, reportUrl: 'https://bugtracker.test/surveillance/1/report' });
+        stubs.localSinkEnd.mockResolvedValue({ ok: true, status: 200, reportUrl: 'https://bugtracker.test/watch/local-night-id/report' });
+        stubs.localSinkOptions = null;
 
         mountPage();
         window.confirm = vi.fn(() => true);
@@ -188,12 +220,13 @@ describe('capture page', () => {
         expect(el('state').textContent).toBe('Watching');
         expect(el('brightness').textContent).toBe('120 / 255');
 
-        const [url, options] = fetch.mock.calls[0];
-        expect(url).toBe(ROUTES.reference);
-        expect(options.method).toBe('POST');
-        expect(options.headers['X-CSRF-TOKEN']).toBe('test-csrf-token');
-        expect(options.body.get('frame_width')).toBe('1280');
-        expect(options.body.get('settings[procWidth]')).toBe('320');
+        expect(stubs.uploaderStoreReference).toHaveBeenCalledWith({
+            blob: expect.any(Blob),
+            frameWidth: 1280,
+            frameHeight: 720,
+            settings: expect.objectContaining({ procWidth: 320, diffThreshold: 20 }),
+        });
+        expect(stubs.localSinkStoreReference).not.toHaveBeenCalled();
     });
 
     test('the camera check opens the preview without starting a night', async () => {
@@ -339,7 +372,7 @@ describe('capture page', () => {
 
     test('navigation comes back even when the night could not be ended', async () => {
         await startWatching();
-        stubs.uploaderPost.mockResolvedValue({ ok: false, status: 500 });
+        stubs.uploaderEnd.mockResolvedValue({ ok: false, status: 500, reportUrl: null });
 
         el('end').click();
         await settle();
@@ -401,7 +434,7 @@ describe('capture page', () => {
     });
 
     test('a failed reference upload leaves the start button usable', async () => {
-        fetch.mockResolvedValue({ ok: false, status: 422 });
+        stubs.uploaderStoreReference.mockRejectedValueOnce(new Error('Could not start the session (HTTP 422).'));
 
         await startWatching();
 
@@ -415,10 +448,9 @@ describe('capture page', () => {
         el('end').click();
         await settle();
 
-        const [url, payload] = stubs.uploaderPost.mock.calls[0];
-        expect(url).toBe(ROUTES.end);
+        const [payload] = stubs.uploaderEnd.mock.calls[0];
         expect(payload.aborted).toBe(false);
-        expect(payload.ended_at_offset_ms).toBeGreaterThanOrEqual(0);
+        expect(payload.endedAtOffsetMs).toBeGreaterThanOrEqual(0);
 
         expect(stubs.uploaderFlush).toHaveBeenCalledWith({ keepalive: true });
         expect(stubs.cameraStop).toHaveBeenCalled();
@@ -433,7 +465,7 @@ describe('capture page', () => {
         await settle();
 
         expect(window.confirm).toHaveBeenCalled();
-        expect(stubs.uploaderPost.mock.calls[0][1].aborted).toBe(true);
+        expect(stubs.uploaderEnd.mock.calls[0][0].aborted).toBe(true);
     });
 
     test('backing out of the discard prompt leaves the night running', async () => {
@@ -443,7 +475,7 @@ describe('capture page', () => {
         el('abort').click();
         await settle();
 
-        expect(stubs.uploaderPost).not.toHaveBeenCalled();
+        expect(stubs.uploaderEnd).not.toHaveBeenCalled();
         expect(el('state').textContent).toBe('Watching');
     });
 
@@ -452,12 +484,12 @@ describe('capture page', () => {
         el('abort').click();
         await settle();
 
-        expect(stubs.uploaderPost).not.toHaveBeenCalled();
+        expect(stubs.uploaderEnd).not.toHaveBeenCalled();
     });
 
     test('a failed end keeps the user on the page and explains why', async () => {
         await startWatching();
-        stubs.uploaderPost.mockResolvedValue({ ok: false, status: 500 });
+        stubs.uploaderEnd.mockResolvedValue({ ok: false, status: 500, reportUrl: null });
 
         el('end').click();
         await settle();
@@ -535,5 +567,47 @@ describe('capture page', () => {
         window.dispatchEvent(new Event('pagehide'));
 
         expect(stubs.uploaderFlush).toHaveBeenCalledWith({ keepalive: true });
+    });
+    describe('as a guest, with no account', () => {
+        beforeEach(async () => {
+            removeTrackedWindowListeners();
+            mountPage(LOCAL_CONFIG);
+            await bootCaptureApp();
+        });
+
+        test('the night is kept in this browser and nothing is sent to the server', async () => {
+            await startWatching();
+
+            expect(stubs.openNightStore).toHaveBeenCalled();
+            expect(stubs.localSinkOptions.reportUrlTemplate).toBe(LOCAL_CONFIG.routes.report);
+            expect(stubs.localSinkStoreReference).toHaveBeenCalledWith(expect.objectContaining({ frameWidth: 1280, frameHeight: 720 }));
+            expect(stubs.localSinkStart).toHaveBeenCalled();
+            expect(stubs.uploaderStoreReference).not.toHaveBeenCalled();
+            expect(fetch).not.toHaveBeenCalled();
+            expect(el('state').textContent).toBe('Watching');
+        });
+
+        test('the status line says the reference frame is being saved, not uploaded', async () => {
+            let stateWhileStoring = null;
+            stubs.localSinkStoreReference.mockImplementationOnce(async () => {
+                stateWhileStoring = el('state').textContent;
+            });
+
+            await startWatching();
+
+            expect(stateWhileStoring).toBe('Saving reference frame…');
+        });
+
+        test('ending the night goes to the local report', async () => {
+            await startWatching();
+
+            el('end').click();
+            await settle();
+
+            expect(stubs.localSinkFlush).toHaveBeenCalledWith({ keepalive: true });
+            expect(stubs.localSinkEnd.mock.calls[0][0].aborted).toBe(false);
+            expect(window.location.assign).toHaveBeenCalledWith('https://bugtracker.test/watch/local-night-id/report');
+            expect(fetch).not.toHaveBeenCalled();
+        });
     });
 });

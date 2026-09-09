@@ -50,6 +50,22 @@ export function cameraCheckLabel(previewing) {
     return previewing ? 'Stop camera' : 'Check camera';
 }
 
+/**
+ * Which night sink the page gets. A guest's night never leaves the device; a
+ * logged-in user's night is uploaded as it happens so the dashboard can follow
+ * it. The page says which in its config, and this is the only place that reads it.
+ */
+export function captureMode(config) {
+    return config.mode === 'local' ? 'local' : 'server';
+}
+
+export function referenceStoreState(mode) {
+    return mode === 'local' ? 'Saving reference frame…' : 'Uploading reference frame…';
+}
+
+export const AUTH_LOST_MESSAGE =
+    'Your login session expired — log in again in another tab, then reload this page. Detected tracks are held in memory.';
+
 export const WATCHING_MESSAGE = 'Watching';
 
 export const LARGE_MOTION_MESSAGE = 'Watching — ignoring something too large to be a bug';

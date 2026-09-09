@@ -66,6 +66,9 @@
                                 <flux:button :href="route('login')" variant="ghost" icon-trailing="arrow-right">
                                     {{ __('I already have one') }}
                                 </flux:button>
+                                <flux:button :href="route('watch.capture')" variant="ghost" icon="eye" data-test="welcome-try-link">
+                                    {{ __('Try it tonight, no account') }}
+                                </flux:button>
                             @endauth
                         </div>
 

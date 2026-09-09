@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Storage;
  * @property int $id
  * @property int $user_id
  * @property int|null $customer_id
+ * @property string|null $imported_local_id The browser's uuid for a night imported from a device-local recording.
  * @property string $name
  * @property string|null $room
  * @property SurveillanceSessionStatus $status
@@ -33,7 +34,7 @@ use Illuminate\Support\Facades\Storage;
  * @property-read int|null $confirmed_tracks_count Only loaded by queries that withCount() the confirmed tracks.
  * @property-read int|null $sessions_count Only loaded by queries that group sessions and count each group.
  */
-#[Fillable(['customer_id', 'name', 'room', 'status', 'started_at', 'ended_at', 'last_heartbeat_at', 'reference_image_path', 'frame_width', 'frame_height', 'settings', 'analytics'])]
+#[Fillable(['customer_id', 'imported_local_id', 'name', 'room', 'status', 'started_at', 'ended_at', 'last_heartbeat_at', 'reference_image_path', 'frame_width', 'frame_height', 'settings', 'analytics'])]
 class SurveillanceSession extends Model
 {
     /** @use HasFactory<SurveillanceSessionFactory> */

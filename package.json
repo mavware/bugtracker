@@ -23,6 +23,7 @@
         "lightningcss-linux-x64-gnu": "^1.29.1"
     },
     "devDependencies": {
+        "fake-indexeddb": "^6.2.5",
         "happy-dom": "^20.13.2"
     }
 }

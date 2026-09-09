@@ -2,7 +2,14 @@
 
 use App\Http\Controllers\Surveillance\CaptureController;
 use App\Http\Controllers\Surveillance\ImageController;
+use App\Http\Controllers\Surveillance\ImportController;
+use App\Http\Controllers\Surveillance\WatchController;
 use Illuminate\Support\Facades\Route;
+
+// Watching a room needs no account: these pages keep the night in the visitor's
+// browser and never write a row. Everything else on this file is owner-only.
+Route::get('watch', [WatchController::class, 'capture'])->name('watch.capture');
+Route::get('watch/{localId}/report', [WatchController::class, 'report'])->whereUuid('localId')->name('watch.report');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('surveillance/customers', 'pages::surveillance.customers')->name('surveillance.customers');
@@ -17,6 +24,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('surveillance/{session}/tracks', [CaptureController::class, 'storeTracks'])->name('surveillance.tracks.store');
         Route::post('surveillance/{session}/heartbeat', [CaptureController::class, 'heartbeat'])->name('surveillance.heartbeat');
         Route::post('surveillance/{session}/end', [CaptureController::class, 'end'])->name('surveillance.end');
+        Route::post('surveillance/import', [ImportController::class, 'store'])->name('surveillance.import');
     });
 
     Route::get('surveillance/{session}/reference-image', [ImageController::class, 'showReference'])->name('surveillance.reference.show');

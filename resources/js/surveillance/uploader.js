@@ -1,6 +1,10 @@
-// Queues closed tracks and posts them in batches with retry. Tracks stay
-// queued until the server accepts them, so a flaky connection overnight
-// loses nothing; duplicates are idempotent server-side.
+import { buildReferenceForm } from './captureLogic.js';
+
+// The night sink for a logged-in user: queues closed tracks and posts them in
+// batches with retry. Tracks stay queued until the server accepts them, so a
+// flaky connection overnight loses nothing; duplicates are idempotent
+// server-side. LocalNightSink answers the same calls for a guest — keep the two
+// interfaces identical, capture.js does not know which it holds.
 export class Uploader {
     constructor({ routes, csrfToken, onStatus }) {
         this.routes = routes;
@@ -13,6 +17,33 @@ export class Uploader {
         this.flushing = false;
         this.paused = false;
         this.timers = [];
+    }
+
+    /** Upload the reference frame, which is what starts the session server-side. */
+    async storeReference({ blob, frameWidth, frameHeight, settings }) {
+        const response = await fetch(this.routes.reference, {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': this.csrfToken },
+            body: buildReferenceForm({ blob, frameWidth, frameHeight, settings }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Could not start the session (HTTP ${response.status}).`);
+        }
+    }
+
+    /** End the session and learn where its report is. */
+    async end({ endedAtOffsetMs, aborted }) {
+        const response = await this.post(this.routes.end, {
+            ended_at_offset_ms: endedAtOffsetMs,
+            aborted,
+        });
+
+        return {
+            ok: response.ok,
+            status: response.status,
+            reportUrl: response.ok ? (await response.json()).report_url : null,
+        };
     }
 
     start() {

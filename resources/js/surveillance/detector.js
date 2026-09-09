@@ -11,7 +11,7 @@ export const DEFAULT_PARAMS = {
     // or the light changing: five roaches at maxArea. A body does not arrive as one
     // oversized blob but as dozens of roach-sized fragments (folds, edges, patterned
     // clothing), so per-blob limits never see it — only the frame total does.
-    maxChangedArea: 1500,
+    maxChangedArea: 1200,
     maxAspectRatio: 5,
     darkerThanBackground: true, // roaches are dark blobs against the scene
     darkMargin: 5,

@@ -1,19 +1,23 @@
 import { Camera } from './camera.js';
 import { calibrate } from './brightness.js';
 import {
-    buildReferenceForm,
+    AUTH_LOST_MESSAGE,
     calibrationOutcome,
     CAMERA_CHECK_MESSAGE,
     cameraCheckLabel,
+    captureMode,
     countdownMessage,
     formatClock,
     LEAVE_ROOM_SECONDS,
     overlayBoxes,
     PREFLIGHT_MESSAGE,
+    referenceStoreState,
     wakeLockMessage,
     watchingState,
 } from './captureLogic.js';
 import { Detector, DEFAULT_PARAMS } from './detector.js';
+import { LocalNightSink } from './localNightSink.js';
+import { openNightStore } from './nightStore.js';
 import { Tracker } from './tracker.js';
 import { Uploader } from './uploader.js';
 import { WakeLock } from './wakeLock.js';
@@ -51,7 +55,9 @@ function initCaptureApp(root) {
         camera: new Camera(ui.video, DEFAULT_PARAMS.procWidth),
         detector: null,
         tracker: null,
-        uploader: null,
+        // Where the night goes: the server for a logged-in user, this browser's
+        // own store for a guest. Same calls either way; see buildSink().
+        sink: null,
         wakeLock: new WakeLock(() => showBanner(wakeLockMessage(navigator.userAgent))),
         running: false,
         previewing: false,
@@ -94,7 +100,7 @@ function initCaptureApp(root) {
 
     window.addEventListener('pagehide', () => {
         if (app.running) {
-            app.uploader.flush({ keepalive: true });
+            app.sink.flush({ keepalive: true });
         }
     });
 
@@ -196,34 +202,28 @@ function initCaptureApp(root) {
 
         const settings = { ...DEFAULT_PARAMS, diffThreshold: calibration.diffThreshold };
 
-        setState('Uploading reference frame…');
-        await uploadReference(settings);
+        app.sink = await buildSink();
+        setState(referenceStoreState(captureMode(config)));
+        await app.sink.storeReference({
+            blob: await app.camera.captureReferenceJpeg(),
+            frameWidth: app.camera.frameWidth,
+            frameHeight: app.camera.frameHeight,
+            settings,
+        });
 
         app.sessionStartTime = Date.now();
         app.detector = new Detector(settings);
-        app.uploader = new Uploader({
-            routes: config.routes,
-            csrfToken: config.csrfToken,
-            onStatus: (status) => {
-                if (status.queueDepth !== undefined) {
-                    ui.queueDepth.textContent = status.queueDepth;
-                }
-                if (status.authLost) {
-                    showBanner('Your login session expired — log in again in another tab, then reload this page. Detected tracks are held in memory.');
-                }
-            },
-        });
         app.tracker = new Tracker({
             scale: app.camera.scale,
             sessionStartTime: app.sessionStartTime,
             captureCrop: (x, y) => app.camera.captureCropBase64(x, y),
             onTrackClosed: (track) => {
-                app.uploader.enqueue(track);
+                app.sink.enqueue(track);
                 ui.trackCount.textContent = app.tracker.closedCount;
             },
         });
 
-        app.uploader.start();
+        app.sink.start();
         await app.wakeLock.acquire();
 
         app.running = true;
@@ -253,23 +253,29 @@ function initCaptureApp(root) {
         }
     }
 
-    async function uploadReference(settings) {
-        const form = buildReferenceForm({
-            blob: await app.camera.captureReferenceJpeg(),
-            frameWidth: app.camera.frameWidth,
-            frameHeight: app.camera.frameHeight,
-            settings,
-        });
+    /**
+     * The one place the page cares whether it is a guest's night or a
+     * logged-in one. Both sinks answer the same calls from here on.
+     */
+    async function buildSink() {
+        const onStatus = (status) => {
+            if (status.queueDepth !== undefined) {
+                ui.queueDepth.textContent = status.queueDepth;
+            }
+            if (status.authLost) {
+                showBanner(AUTH_LOST_MESSAGE);
+            }
+        };
 
-        const response = await fetch(config.routes.reference, {
-            method: 'POST',
-            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': config.csrfToken },
-            body: form,
-        });
-
-        if (!response.ok) {
-            throw new Error(`Could not start the session (HTTP ${response.status}).`);
+        if (captureMode(config) === 'local') {
+            return new LocalNightSink({
+                store: await openNightStore(),
+                reportUrlTemplate: config.routes.report,
+                onStatus,
+            });
         }
+
+        return new Uploader({ routes: config.routes, csrfToken: config.csrfToken, onStatus });
     }
 
     function processFrame() {
@@ -345,21 +351,20 @@ function initCaptureApp(root) {
         setState('Finishing…');
 
         app.tracker.flush();
-        app.uploader.stop();
-        await app.uploader.flush({ keepalive: true });
+        app.sink.stop();
+        await app.sink.flush({ keepalive: true });
         app.camera.stop();
         await app.wakeLock.release();
 
-        const response = await app.uploader.post(config.routes.end, {
-            ended_at_offset_ms: Date.now() - app.sessionStartTime,
+        const result = await app.sink.end({
+            endedAtOffsetMs: Date.now() - app.sessionStartTime,
             aborted,
         });
 
-        if (response.ok) {
-            const { report_url: reportUrl } = await response.json();
-            window.location.assign(reportUrl);
+        if (result.ok) {
+            window.location.assign(result.reportUrl);
         } else {
-            showBanner(`Could not end the session (HTTP ${response.status}). Your tracks are saved — retry from the sessions page.`);
+            showBanner(`Could not end the session (HTTP ${result.status}). Your tracks are saved — retry from the sessions page.`);
             setState('Error');
         }
     }

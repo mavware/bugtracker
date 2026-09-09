@@ -3,10 +3,12 @@ import {
     buildReferenceForm,
     calibrationOutcome,
     cameraCheckLabel,
+    captureMode,
     DIM_MESSAGE,
     formatClock,
     LARGE_MOTION_MESSAGE,
     overlayBoxes,
+    referenceStoreState,
     TOO_DARK_MESSAGE,
     wakeLockMessage,
     watchingState,
@@ -123,6 +125,19 @@ describe('cameraCheckLabel', () => {
 
     test('offers to close the preview while it is open', () => {
         expect(cameraCheckLabel(true)).toBe('Stop camera');
+    });
+});
+
+describe('captureMode', () => {
+    test('is local only when the page says so, and server otherwise', () => {
+        expect(captureMode({ mode: 'local' })).toBe('local');
+        expect(captureMode({ mode: 'server' })).toBe('server');
+        expect(captureMode({})).toBe('server');
+    });
+
+    test('names what the page is doing with the reference frame in each mode', () => {
+        expect(referenceStoreState('local')).toBe('Saving reference frame…');
+        expect(referenceStoreState('server')).toBe('Uploading reference frame…');
     });
 });
 
