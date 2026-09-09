@@ -38,7 +38,24 @@ describe('demo capture page', () => {
         expect(header.querySelector('[data-capture="state"]')).not.toBeNull();
         expect(header.querySelector('[data-capture="idle-light"]')).not.toBeNull();
         expect(header.querySelector('[data-capture="started-at"]')).not.toBeNull();
+        expect(header.querySelector('[data-capture="elapsed"]')).not.toBeNull();
+        expect(page.querySelectorAll('[data-capture="elapsed"]')).toHaveLength(1);
         expect(page.querySelectorAll('[data-capture="state"]')).toHaveLength(1);
         expect(page.querySelector('[data-capture="abort"]')).toBeNull();
+    });
+
+    // The numbers belong under the camera they were read off rather than in a side
+    // panel, and capture.js writes each of them to a single element: a second copy
+    // would sit there going stale all night.
+    test('the night\'s numbers sit in a footer under the camera', () => {
+        const stats = page.querySelector('.tracker .tracker-stats');
+
+        expect(stats).not.toBeNull();
+        expect(stats.previousElementSibling.classList.contains('stage')).toBe(true);
+
+        for (const key of ['track-count', 'live-count', 'queue-depth', 'brightness']) {
+            expect(page.querySelectorAll(`[data-capture="${key}"]`)).toHaveLength(1);
+            expect(stats.querySelector(`[data-capture="${key}"]`)).not.toBeNull();
+        }
     });
 });

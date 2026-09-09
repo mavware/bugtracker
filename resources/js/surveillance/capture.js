@@ -68,9 +68,10 @@ function initCaptureApp(root) {
     };
 
     ui.startButton.addEventListener('click', () => startNight().catch((error) => {
-        // A refused camera prompt or a failed upload must leave the button usable,
+        // A refused camera prompt or a failed upload must leave the buttons usable,
         // otherwise the only way to try again is reloading the page.
         ui.startButton.removeAttribute('disabled');
+        showCameraCheck(true);
         setState('Error');
         showBanner(String(error));
     }));
@@ -145,6 +146,16 @@ function initCaptureApp(root) {
         setState(CAMERA_CHECK_MESSAGE);
     }
 
+    /**
+     * The camera check belongs to an idle page: it is the way to aim the device
+     * before committing to a night, and the way back out of the preview it opens.
+     * From the moment start is pressed it has no place, so it goes until the page
+     * is idle again.
+     */
+    function showCameraCheck(visible) {
+        ui.checkButton.classList.toggle('hidden', !visible);
+    }
+
     /** Close the preview stream, leaving the status line to the caller. */
     function stopCameraCheck() {
         if (!app.previewing) {
@@ -169,6 +180,7 @@ function initCaptureApp(root) {
         stopCameraCheck();
 
         ui.startButton.setAttribute('disabled', 'disabled');
+        showCameraCheck(false);
         setState('Starting camera…');
 
         await app.camera.start();
@@ -190,6 +202,7 @@ function initCaptureApp(root) {
         if (outcome.blocked) {
             setState('Too dark');
             ui.startButton.removeAttribute('disabled');
+            showCameraCheck(true);
             app.camera.stop();
 
             return;
@@ -226,7 +239,6 @@ function initCaptureApp(root) {
         showRecording(true);
         ui.setupHelp.classList.add('hidden');
         ui.startButton.classList.add('hidden');
-        ui.checkButton.classList.add('hidden');
         ui.endButton.classList.remove('hidden');
         setState(watchingState(false));
 
@@ -332,7 +344,8 @@ function initCaptureApp(root) {
             return;
         }
 
-        ui.elapsed.textContent = formatClock(Date.now() - app.sessionStartTime);
+        // Parenthesised because it reads as part of the state beside it: "Watching (01:12:40)".
+        ui.elapsed.textContent = `(${formatClock(Date.now() - app.sessionStartTime)})`;
     }
 
     async function endNight() {
@@ -380,6 +393,7 @@ function initCaptureApp(root) {
         ui.idleLight.classList.toggle('hidden', recording);
         ui.liveLight.classList.toggle('hidden', !recording);
         ui.started.classList.toggle('hidden', !recording);
+        ui.elapsed.classList.toggle('hidden', !recording);
 
         if (recording) {
             ui.startedAt.textContent = new Date(app.sessionStartTime)

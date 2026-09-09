@@ -243,6 +243,46 @@ code {
     border-radius: 0;
 }
 
+/* The night's numbers, in a footer under the camera. Every cell carries the same
+   right and bottom hairline and the row hangs a pixel past the card, so .tracker's
+   overflow clips the last column and the last row rather than each cell needing to
+   know which edge it sits on once two columns become four. */
+.tracker-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    margin: 0 -1px -1px 0;
+    border-top: 1px solid var(--border);
+}
+
+.tracker-stats > div {
+    padding: 0.75rem 1rem;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+}
+
+.tracker-stats dt {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.tracker-stats dd {
+    margin: 0.25rem 0 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 40rem) {
+    .tracker-stats {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .tracker-stats dd {
+        font-size: 1.5rem;
+    }
+}
+
 /* The recording light: grey until the night starts, then a pulsing green. */
 .light {
     position: relative;
@@ -337,26 +377,6 @@ code {
 .panel ul {
     margin: 0.5rem 0 0;
     padding-left: 1.2rem;
-}
-
-.status {
-    margin: 0.75rem 0 0;
-    display: grid;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-}
-
-.status div {
-    display: flex;
-    justify-content: space-between;
-}
-
-.status dt {
-    color: var(--muted);
-}
-
-.status dd {
-    margin: 0;
 }
 
 .tiles {

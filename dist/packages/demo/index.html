@@ -4,7 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Watch a room · BugTracker demo</title>
-    <link rel="stylesheet" href="./src/styles.css" />
+  <script type="module" crossorigin src="../../assets/index-DMarJUmJ.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/links-2JYRFbcS.js">
+  <link rel="stylesheet" crossorigin href="../../assets/links-OtEqNELp.css">
 </head>
 <body>
     <!-- data-app-nav marks the chrome capture.js makes inert while a night is
@@ -61,17 +63,6 @@
                             <video data-capture="video" autoplay muted playsinline></video>
                             <canvas data-capture="overlay"></canvas>
                         </div>
-
-                        <!-- The night's numbers, in a footer under the camera they
-                             were read off. State and elapsed stay in the header
-                             above it: two copies of either would need two elements
-                             for capture.js to write to. -->
-                        <dl class="tracker-stats">
-                            <div><dt>Bugs tracked</dt><dd data-capture="track-count">0</dd></div>
-                            <div><dt>Live tracks</dt><dd data-capture="live-count">0</dd></div>
-                            <div><dt>Saving</dt><dd data-capture="queue-depth">0</dd></div>
-                            <div><dt>Scene brightness</dt><dd data-capture="brightness">–</dd></div>
-                        </dl>
                     </div>
                     <label class="checkbox">
                         <input type="checkbox" data-capture="debug-toggle" checked />
@@ -80,6 +71,16 @@
                 </div>
 
                 <aside class="stack">
+                    <div class="panel">
+                        <h2>Status</h2>
+                        <dl class="status">
+                            <div><dt>Bugs tracked</dt><dd data-capture="track-count">0</dd></div>
+                            <div><dt>Live tracks</dt><dd data-capture="live-count">0</dd></div>
+                            <div><dt>Saving</dt><dd data-capture="queue-depth">0</dd></div>
+                            <div><dt>Scene brightness</dt><dd data-capture="brightness">–</dd></div>
+                        </dl>
+                    </div>
+
                     <div data-capture="setup-help" class="stack">
                         <div class="panel muted small">
                             <h2>If the screen keeps sleeping</h2>
@@ -135,7 +136,5 @@
         </section>
     </main>
 
-    <script type="module" src="./src/capture.js"></script>
-    <script type="module" src="./src/nights.js"></script>
 </body>
 </html>

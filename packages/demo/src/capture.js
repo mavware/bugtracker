@@ -69,9 +69,10 @@ function initCaptureApp(root) {
     };
 
     ui.startButton.addEventListener('click', () => startNight().catch((error) => {
-        // A refused camera prompt must leave the button usable, otherwise the
+        // A refused camera prompt must leave the buttons usable, otherwise the
         // only way to try again is reloading the page.
         ui.startButton.removeAttribute('disabled');
+        showCameraCheck(true);
         setState('Error');
         showBanner(String(error));
     }));
@@ -128,6 +129,15 @@ function initCaptureApp(root) {
         setState(CAMERA_CHECK_MESSAGE);
     }
 
+    /**
+     * The camera check belongs to an idle page: it aims the device before a night
+     * is committed to, and it is the way back out of the preview it opens. From
+     * the moment start is pressed it goes, until the page is idle again.
+     */
+    function showCameraCheck(visible) {
+        ui.checkButton.classList.toggle('hidden', !visible);
+    }
+
     function stopCameraCheck() {
         if (!app.previewing) {
             return;
@@ -149,6 +159,7 @@ function initCaptureApp(root) {
         stopCameraCheck();
 
         ui.startButton.setAttribute('disabled', 'disabled');
+        showCameraCheck(false);
         setState('Starting camera…');
         await app.camera.start();
 
@@ -169,6 +180,7 @@ function initCaptureApp(root) {
         if (outcome.blocked) {
             setState('Too dark');
             ui.startButton.removeAttribute('disabled');
+            showCameraCheck(true);
             app.camera.stop();
 
             return;
@@ -219,7 +231,6 @@ function initCaptureApp(root) {
         showRecording(true);
         ui.setupHelp.classList.add('hidden');
         ui.startButton.classList.add('hidden');
-        ui.checkButton.classList.add('hidden');
         ui.endButton.classList.remove('hidden');
         setState(watchingState(false));
 
@@ -289,7 +300,8 @@ function initCaptureApp(root) {
 
     function updateElapsed() {
         if (app.running) {
-            ui.elapsed.textContent = formatClock(Date.now() - app.sessionStartTime);
+            // Parenthesised because it reads as part of the state beside it: "Watching (01:12:40)".
+            ui.elapsed.textContent = `(${formatClock(Date.now() - app.sessionStartTime)})`;
         }
     }
 
@@ -329,6 +341,7 @@ function initCaptureApp(root) {
         ui.idleLight.classList.toggle('hidden', recording);
         ui.liveLight.classList.toggle('hidden', !recording);
         ui.started.classList.toggle('hidden', !recording);
+        ui.elapsed.classList.toggle('hidden', !recording);
 
         if (recording) {
             ui.startedAt.textContent = new Date(app.sessionStartTime)

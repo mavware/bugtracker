@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Report · BugTracker demo</title>
+  <script type="module" crossorigin src="../../assets/report-D7q6A9Iw.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/links-2JYRFbcS.js">
+  <link rel="stylesheet" crossorigin href="../../assets/links-OtEqNELp.css">
+</head>
+<body>
+    <header class="site-header">
+        <a href="./" class="brand">BugTracker <span class="badge">demo</span></a>
+        <nav>
+            <a href="https://github.com/mavware/bugtracker" rel="noopener">Source</a>
+        </nav>
+    </header>
+
+    <main>
+        <!-- A shell: report.js reads the night out of this browser's store and
+             fills every data-report element. -->
+        <div id="report-app">
+            <div data-report="missing" class="panel hidden">
+                <h2>This night is not on this device</h2>
+                <p class="muted">Nights are kept only in the browser that recorded them, so this one may have been recorded elsewhere, or removed. <a href="./">Back to watching</a></p>
+            </div>
+
+            <div data-report="volatile" class="banner hidden"></div>
+
+            <div data-report="page" class="hidden">
+                <div class="page-heading">
+                    <div>
+                        <h1 data-report="title"></h1>
+                        <p class="muted" data-report="range"></p>
+                    </div>
+                    <div class="actions">
+                        <button type="button" class="button" data-report="discard">
+                            <span data-report="discard-label">Discard night</span>
+                        </button>
+                        <a href="./" class="button">Back</a>
+                    </div>
+                </div>
+
+                <div data-report="discarded-notice" class="panel hidden">
+                    <h2>You discarded this night</h2>
+                    <p class="muted">Everything it caught is still here.</p>
+                </div>
+
+                <div class="tiles">
+                    <div class="panel"><p class="muted small">Bug sightings</p><p class="tile-value" data-report="stat-track-count">0</p></div>
+                    <div class="panel"><p class="muted small">Top entry point</p><p class="tile-value" data-report="stat-entry">None</p></div>
+                    <div class="panel"><p class="muted small">Top exit point</p><p class="tile-value" data-report="stat-exit">None</p></div>
+                </div>
+
+                <div class="stage">
+                    <canvas data-report="canvas"></canvas>
+                </div>
+
+                <div class="controls">
+                    <button type="button" class="button small" data-report="play">Replay</button>
+                    <select data-report="speed" class="select">
+                        <option value="60">60×</option>
+                        <option value="1">1×</option>
+                        <option value="10">10×</option>
+                        <option value="600">600×</option>
+                    </select>
+                    <input type="range" data-report="scrub" min="0" max="1000" value="0" />
+                    <span class="muted small tabular" data-report="clock">–</span>
+                    <label class="checkbox">
+                        <input type="checkbox" data-report="trails" checked />
+                        Show all trails
+                    </label>
+                </div>
+
+                <div data-report="sightings" class="hidden">
+                    <h2>Sightings</h2>
+                    <p class="muted small">Snapshots let you verify each sighting was really a bug. Click a row to highlight its trail, or mark false positives to exclude them from the report.</p>
+
+                    <table class="table">
+                        <thead>
+                            <tr><th>Time</th><th>Duration</th><th>Entered</th><th>Exited</th><th>First seen</th><th>Last seen</th><th></th></tr>
+                        </thead>
+                        <tbody data-report="rows"></tbody>
+                    </table>
+                </div>
+
+                <div data-report="no-sightings" class="panel hidden">
+                    <h2>No bugs detected</h2>
+                    <p class="muted">Nothing moved through the frame this night — or the room was too dark to see it.</p>
+                </div>
+
+                <p class="footer-actions">
+                    <button type="button" class="button" data-report="delete">Delete this night from this device</button>
+                </p>
+            </div>
+
+            <template data-report="row-template">
+                <tr data-track-id="" class="clickable">
+                    <td class="strong" data-cell="time"></td>
+                    <td data-cell="duration"></td>
+                    <td data-cell="entered"></td>
+                    <td data-cell="exited"></td>
+                    <td data-cell="start-crop"></td>
+                    <td data-cell="end-crop"></td>
+                    <td class="row-actions"><button type="button" class="button small" data-report="toggle">Not a bug</button></td>
+                </tr>
+            </template>
+        </div>
+    </main>
+
+</body>
+</html>

@@ -123,7 +123,7 @@ function mountPage(config = { csrfToken: 'test-csrf-token', routes: ROUTES }) {
             <video data-capture="video"></video>
             <canvas data-capture="overlay"></canvas>
             <span data-capture="state"></span>
-            <span data-capture="elapsed"></span>
+            <span data-capture="elapsed" class="hidden"></span>
             <span data-capture="track-count"></span>
             <span data-capture="live-count"></span>
             <span data-capture="queue-depth"></span>
@@ -276,10 +276,26 @@ describe('capture page', () => {
         expect(el('check-label').textContent).toBe('Stop camera');
     });
 
-    test('the camera check makes way once the night is under way', async () => {
-        await startWatching();
+    // It aims the device on an idle page and it is the way out of its own preview,
+    // so it goes the moment start is pressed, not once watching has begun.
+    test('the camera check makes way as soon as a night is started', async () => {
+        el('start').click();
+        await settle();
 
         expect(el('check').classList.contains('hidden')).toBe(true);
+
+        await vi.advanceTimersByTimeAsync(LEAVE_ROOM_SECONDS * 1000);
+
+        expect(el('check').classList.contains('hidden')).toBe(true);
+    });
+
+    test('the camera check comes back when the night never got going', async () => {
+        stubs.calibrate.mockResolvedValue({ meanLuminance: 2, tooDark: true, dim: true, diffThreshold: 14 });
+
+        await startWatching();
+
+        expect(el('state').textContent).toBe('Too dark');
+        expect(el('check').classList.contains('hidden')).toBe(false);
     });
 
     test('a refused camera leaves the check button usable', async () => {
@@ -410,6 +426,16 @@ describe('capture page', () => {
 
     // A night that could not be ended stays on this page, and a light still
     // pulsing over a stopped camera would say it was still watching.
+    test('the elapsed clock runs beside the state, and only while watching', async () => {
+        expect(el('elapsed').classList.contains('hidden')).toBe(true);
+
+        await startWatching();
+        await vi.advanceTimersByTimeAsync(1000);
+
+        expect(el('elapsed').classList.contains('hidden')).toBe(false);
+        expect(el('elapsed').textContent).toMatch(/^\(\d{2}:\d{2}:\d{2}\)$/);
+    });
+
     test('the header light goes out again when the night ends', async () => {
         stubs.uploaderEnd.mockResolvedValue({ ok: false, status: 500, reportUrl: null });
 
@@ -450,6 +476,7 @@ describe('capture page', () => {
 
         expect(el('banner').textContent).toContain('Permission denied');
         expect(el('start').hasAttribute('disabled')).toBe(false);
+        expect(el('check').classList.contains('hidden')).toBe(false);
         expect(el('state').textContent).toBe('Error');
     });
 

@@ -40,6 +40,26 @@ test('the capture page carries the recording header capture.js drives', function
         ->assertSee('data-capture="state"', false);
 });
 
+// The night's numbers belong under the camera they were read off rather than in a
+// side panel, and capture.js writes each of them to a single element: a second copy
+// would sit there going stale all night.
+test('the capture page shows the night\'s numbers under the camera', function () {
+    $user = User::factory()->create();
+    $session = SurveillanceSession::factory()->for($user)->create();
+
+    $content = $this->actingAs($user)
+        ->get(route('surveillance.capture', $session))
+        ->assertOk()
+        ->getContent();
+
+    $video = strpos($content, 'data-capture="video"');
+
+    foreach (['track-count', 'live-count', 'queue-depth', 'brightness'] as $key) {
+        expect(substr_count($content, 'data-capture="'.$key.'"'))->toBe(1)
+            ->and(strpos($content, 'data-capture="'.$key.'"'))->toBeGreaterThan($video);
+    }
+});
+
 // A slept screen stops the camera and loses the rest of the night, so the fix has
 // to be on the page they set the device up on, not buried in help.
 test('the capture page says how to stop the screen sleeping', function () {

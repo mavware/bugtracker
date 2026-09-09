@@ -33,6 +33,7 @@
                             </span>
                         </span>
                         <span class="text-sm font-medium" data-capture="state">{{ __('Idle') }}</span>
+                        <span class="hidden text-sm text-zinc-500 tabular-nums dark:text-zinc-400" data-capture="elapsed"></span>
                     </div>
 
                     <div class="flex flex-wrap items-center gap-2">
@@ -56,6 +57,32 @@
                     <video data-capture="video" class="w-full" autoplay muted playsinline></video>
                     <canvas data-capture="overlay" class="absolute inset-0 h-full w-full"></canvas>
                 </div>
+
+                {{-- The night's numbers, in a footer under the camera they were read
+                     off. State and elapsed stay in the header above it: two copies of
+                     either would need two elements for capture.js to write to.
+                     Every cell carries the same right and bottom hairline and the row
+                     hangs a pixel past the card, so the card's overflow-hidden clips
+                     the last column and row. divide-x cannot do this: it would draw a
+                     stray line down the first column once two columns wrap to four. --}}
+                <dl class="-mr-px -mb-px grid grid-cols-2 border-t border-zinc-200 sm:grid-cols-4 dark:border-zinc-700">
+                    <div class="border-r border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
+                        <dt class="text-xs text-zinc-500 uppercase dark:text-zinc-400">{{ __('Bugs tracked') }}</dt>
+                        <dd class="mt-1 text-xl font-semibold tabular-nums sm:text-2xl" data-capture="track-count">0</dd>
+                    </div>
+                    <div class="border-r border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
+                        <dt class="text-xs text-zinc-500 uppercase dark:text-zinc-400">{{ __('Live tracks') }}</dt>
+                        <dd class="mt-1 text-xl font-semibold tabular-nums sm:text-2xl" data-capture="live-count">0</dd>
+                    </div>
+                    <div class="border-r border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
+                        <dt class="text-xs text-zinc-500 uppercase dark:text-zinc-400">{{ $mode === 'local' ? __('Saving') : __('Upload queue') }}</dt>
+                        <dd class="mt-1 text-xl font-semibold tabular-nums sm:text-2xl" data-capture="queue-depth">0</dd>
+                    </div>
+                    <div class="border-r border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
+                        <dt class="text-xs text-zinc-500 uppercase dark:text-zinc-400">{{ __('Scene brightness') }}</dt>
+                        <dd class="mt-1 text-xl font-semibold tabular-nums sm:text-2xl" data-capture="brightness">–</dd>
+                    </div>
+                </dl>
             </div>
 
             <label class="mt-3 flex items-center gap-2 text-sm text-zinc-500">
@@ -65,34 +92,6 @@
         </div>
 
         <div class="space-y-4">
-            <div class="rounded-xl border border-zinc-200 p-4 dark:border-zinc-700">
-                <flux:heading size="sm">{{ __('Status') }}</flux:heading>
-                {{-- State lives in the header above the camera, not here: two copies of
-                     it would need two elements for capture.js to write to. --}}
-                <dl class="mt-3 space-y-2 text-sm">
-                    <div class="flex justify-between">
-                        <dt class="text-zinc-500">{{ __('Elapsed') }}</dt>
-                        <dd data-capture="elapsed">–</dd>
-                    </div>
-                    <div class="flex justify-between">
-                        <dt class="text-zinc-500">{{ __('Bugs tracked') }}</dt>
-                        <dd data-capture="track-count">0</dd>
-                    </div>
-                    <div class="flex justify-between">
-                        <dt class="text-zinc-500">{{ __('Live tracks') }}</dt>
-                        <dd data-capture="live-count">0</dd>
-                    </div>
-                    <div class="flex justify-between">
-                        <dt class="text-zinc-500">{{ $mode === 'local' ? __('Saving') : __('Upload queue') }}</dt>
-                        <dd data-capture="queue-depth">0</dd>
-                    </div>
-                    <div class="flex justify-between">
-                        <dt class="text-zinc-500">{{ __('Scene brightness') }}</dt>
-                        <dd data-capture="brightness">–</dd>
-                    </div>
-                </dl>
-            </div>
-
             {{-- Setup advice, not night-time reading: hidden once watching starts. --}}
             <div data-capture="setup-help" class="space-y-4">
                 {{ $setupHelp ?? '' }}
