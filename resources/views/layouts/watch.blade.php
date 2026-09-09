@@ -9,7 +9,7 @@
              makes inert while a night is recording; leaving this page ends the night. --}}
         <header data-app-nav class="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-5 transition-opacity lg:px-8">
             <a href="{{ route('home') }}" class="flex items-center gap-2.5 font-semibold">
-                <span class="flex size-9 items-center justify-center rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-900">
+                <span class="bg-accent-content flex size-9 items-center justify-center rounded-lg text-white dark:text-black">
                     <x-app-logo-icon class="size-5 fill-current" />
                 </span>
                 <span>{{ config('app.name', 'BugTracker') }}</span>
@@ -24,7 +24,7 @@
                     <flux:button :href="route('login')" variant="ghost">
                         {{ __('Log in') }}
                     </flux:button>
-                    <flux:button :href="route('register')" variant="primary">
+                    <flux:button :href="route('register')">
                         {{ __('Get started') }}
                     </flux:button>
                 @endauth

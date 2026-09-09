@@ -10,8 +10,10 @@
      element below; the surrounding page only chooses the copy and the setup help. --}}
 <section class="w-full" id="capture-app" data-config="{{ json_encode($config) }}">
     <div>
-        <flux:heading size="xl">{{ $name }}</flux:heading>
-        <flux:text class="mt-2">{{ $intro }}</flux:text>
+        <h1 class="text-4xl font-semibold tracking-tight text-balance sm:text-5xl lg:text-6xl">
+            {{ $name ?? '' }}
+        </h1>
+        <flux:text class="mt-2">{{ $intro ?? '' }}</flux:text>
     </div>
 
     <div data-capture="banner" class="mt-4 hidden rounded-lg border border-amber-500/50 bg-amber-500/10 p-3 text-sm text-amber-600 dark:text-amber-400"></div>

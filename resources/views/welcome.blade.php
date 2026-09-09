@@ -9,9 +9,11 @@
             <div aria-hidden="true" class="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[40rem] bg-radial-[ellipse_at_top] from-amber-100/70 via-white to-white dark:from-amber-500/10 dark:via-zinc-950 dark:to-zinc-950"></div>
             <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_right,rgb(0_0_0/0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgb(0_0_0/0.04)_1px,transparent_1px)] bg-[size:3rem_3rem] [mask-image:radial-gradient(ellipse_at_top,black_20%,transparent_70%)] dark:bg-[linear-gradient(to_right,rgb(255_255_255/0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgb(255_255_255/0.05)_1px,transparent_1px)]"></div>
 
-            <header class="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-5 lg:px-8">
+            {{-- data-app-nav so capture.js makes it inert while the panel below is
+                 recording: following any link off this page ends the night. --}}
+            <header data-app-nav class="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-5 transition-opacity lg:px-8">
                 <a href="{{ route('home') }}" class="flex items-center gap-2.5 font-semibold">
-                    <span class="flex size-9 items-center justify-center rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-900">
+                    <span class="bg-accent-content flex size-9 items-center justify-center rounded-lg text-white dark:text-black">
                         <x-app-logo-icon class="size-5 fill-current" />
                     </span>
                     <span>{{ config('app.name', 'BugTracker') }}</span>
@@ -29,7 +31,7 @@
                             </flux:button>
 
                             @if (Route::has('register'))
-                                <flux:button :href="route('register')" variant="primary" data-test="welcome-register-link">
+                                <flux:button :href="route('register')" data-test="welcome-register-link">
                                     {{ __('Get started') }}
                                 </flux:button>
                             @endif
@@ -39,8 +41,12 @@
             </header>
 
             <main>
+
+                {{-- Everything from here down is the pitch for the panel above, and
+                     every link in it leaves the page, so each section carries
+                     data-app-nav: a night in progress dims and disables the lot. --}}
                 {{-- Hero --}}
-                <section class="mx-auto grid w-full max-w-6xl items-center gap-12 px-6 pt-12 pb-20 lg:grid-cols-[1.1fr_1fr] lg:px-8 lg:pt-20 lg:pb-28">
+                <section data-app-nav class="mx-auto grid w-full max-w-6xl items-center gap-12 px-6 pt-12 pb-20 transition-opacity lg:grid-cols-[1.1fr_1fr] lg:px-8 lg:pt-20 lg:pb-28">
                     <div class="flex flex-col gap-6">
                         <flux:badge color="amber" size="sm" icon="moon" class="w-fit">{{ __('Overnight pest surveillance') }}</flux:badge>
 
@@ -89,7 +95,7 @@
                     </div>
 
                     {{-- A night in progress, drawn the way the report replays it. Sample values only. --}}
-                    <div aria-hidden="true" class="relative">
+                    <div aria-hidden="true" class="relative" data-test="welcome-hero-preview">
                         <div class="absolute -inset-4 -z-10 rounded-[2rem] bg-amber-300/30 blur-3xl dark:bg-amber-500/10"></div>
 
                         <div class="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl shadow-zinc-900/10 dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-black/40">
@@ -133,7 +139,7 @@
                 </section>
 
                 {{-- How it works --}}
-                <section class="border-y border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
+                <section data-app-nav class="border-y border-zinc-200 bg-zinc-50 transition-opacity dark:border-zinc-800 dark:bg-zinc-900/50">
                     <div class="mx-auto w-full max-w-6xl px-6 py-16 lg:px-8 lg:py-20">
                         <div class="max-w-2xl">
                             <flux:heading size="xl" level="2">{{ __('Three steps, one night') }}</flux:heading>
@@ -204,7 +210,7 @@
                 @endguest
 
                 {{-- Features --}}
-                <section class="mx-auto w-full max-w-6xl px-6 py-16 lg:px-8 lg:py-20">
+                <section data-app-nav class="mx-auto w-full max-w-6xl px-6 py-16 transition-opacity lg:px-8 lg:py-20">
                     <div class="max-w-2xl">
                         <flux:heading size="xl" level="2">{{ __('One night tells you where. A month tells you whether it is working.') }}</flux:heading>
                         <flux:text class="mt-2 text-base">{{ __('Every session feeds the same set of views, so the picture sharpens the longer you watch.') }}</flux:text>
@@ -245,7 +251,7 @@
                 </section>
 
                 {{-- Privacy --}}
-                <section class="mx-auto w-full max-w-6xl px-6 pb-16 lg:px-8 lg:pb-20">
+                <section data-app-nav class="mx-auto w-full max-w-6xl px-6 pb-16 transition-opacity lg:px-8 lg:pb-20">
                     <div class="flex flex-col gap-6 rounded-2xl border border-zinc-200 bg-zinc-50 p-8 md:flex-row md:items-center md:justify-between dark:border-zinc-800 dark:bg-zinc-900/50">
                         <div class="flex items-start gap-4">
                             <span class="flex size-11 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-900">
@@ -272,10 +278,10 @@
                 </section>
             </main>
 
-            <footer class="border-t border-zinc-200 dark:border-zinc-800">
+            <footer data-app-nav class="border-t border-zinc-200 transition-opacity dark:border-zinc-800">
                 <div class="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-3 px-6 py-8 text-sm text-zinc-500 sm:flex-row lg:px-8 dark:text-zinc-400">
                     <div class="flex items-center gap-2">
-                        <x-app-logo-icon class="size-4 fill-current" />
+                        <x-app-logo-icon class="text-accent-content size-4 fill-current" />
                         <span>{{ config('app.name', 'BugTracker') }}</span>
                     </div>
                     <p>{{ __('Watch the room. Seal the gap. Sleep better.') }}</p>

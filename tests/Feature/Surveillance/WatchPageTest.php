@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Surveillance\WatchConfig;
 use App\Http\Controllers\Surveillance\WatchController;
 use App\Models\User;
 
@@ -39,7 +40,7 @@ test('a report id that is not a uuid is not a page', function () {
  * only consumers are the watch scripts, which these tests cannot execute.
  */
 test('the watch config carries exactly what the watch scripts read', function () {
-    $config = app(WatchController::class)->watchConfig();
+    $config = app(WatchConfig::class)();
 
     expect(array_keys($config))->toBe(['mode', 'authenticated', 'csrfToken', 'routes'])
         ->and($config['mode'])->toBe('local')
@@ -52,7 +53,7 @@ test('the watch config carries exactly what the watch scripts read', function ()
 test('a logged-in visitor is recognised so the page can offer to save nights to the account', function () {
     $this->actingAs(User::factory()->create());
 
-    expect(app(WatchController::class)->watchConfig()['authenticated'])->toBeTrue();
+    expect(app(WatchConfig::class)()['authenticated'])->toBeTrue();
 
     $this->get(route('watch.capture'))
         ->assertOk()
