@@ -9,7 +9,7 @@ import {
     computeNightAnalytics,
     mergeAdjacentBins,
     trackEdges,
-} from '../../../resources/js/surveillance/sessionAnalytics.js';
+} from '../src/sessionAnalytics.js';
 
 describe('classifyEdge', () => {
     test.each([

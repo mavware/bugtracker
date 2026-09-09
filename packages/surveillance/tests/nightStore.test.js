@@ -4,8 +4,8 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 import 'fake-indexeddb/auto';
 import { IDBFactory } from 'fake-indexeddb';
-import { InMemoryNightStore } from '../../../resources/js/surveillance/nightStoreMemory.js';
-import { IndexedDbNightStore, openNightStore } from '../../../resources/js/surveillance/nightStore.js';
+import { InMemoryNightStore } from '../src/nightStoreMemory.js';
+import { IndexedDbNightStore, openNightStore } from '../src/nightStore.js';
 
 const night = (id, startedAt) => ({
     id,

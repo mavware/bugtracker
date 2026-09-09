@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { Tracker } from '../../../resources/js/surveillance/tracker.js';
+import { Tracker } from '../src/tracker.js';
 
 const SESSION_START = 1000;
 const SCALE = 4;

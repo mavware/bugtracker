@@ -2,15 +2,15 @@
 
 // The list of nights on the watch page, driven against a seeded store.
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { buildLocalNight } from '../../../resources/js/surveillance/localNight.js';
-import { InMemoryNightStore } from '../../../resources/js/surveillance/nightStoreMemory.js';
+import { buildLocalNight, InMemoryNightStore } from '@bugtracker/surveillance';
 
 const stubs = vi.hoisted(() => ({
     store: null,
     claimNight: vi.fn(),
 }));
 
-vi.mock('../../../resources/js/surveillance/nightStore.js', () => ({
+vi.mock('@bugtracker/surveillance', async (importOriginal) => ({
+    ...(await importOriginal()),
     openNightStore: vi.fn(async () => stubs.store),
 }));
 

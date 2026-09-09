@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { LOCAL_ID_PLACEHOLDER, referenceBlobKey } from '../../../resources/js/surveillance/localNight.js';
-import { HEARTBEAT_INTERVAL_MS, LocalNightSink } from '../../../resources/js/surveillance/localNightSink.js';
-import { InMemoryNightStore } from '../../../resources/js/surveillance/nightStoreMemory.js';
+import { LOCAL_ID_PLACEHOLDER, referenceBlobKey } from '../src/localNight.js';
+import { HEARTBEAT_INTERVAL_MS, LocalNightSink } from '../src/localNightSink.js';
+import { InMemoryNightStore } from '../src/nightStoreMemory.js';
 
 const REPORT_TEMPLATE = `https://bugtracker.test/watch/${LOCAL_ID_PLACEHOLDER}/report`;
 

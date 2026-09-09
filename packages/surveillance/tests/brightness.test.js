@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { BRIGHTNESS_BLOCK, calibrate, toGrayscale } from '../../../resources/js/surveillance/brightness.js';
-import { makeFrame, stubCamera } from '../helpers.js';
+import { BRIGHTNESS_BLOCK, calibrate, toGrayscale } from '../src/brightness.js';
+import { makeFrame, stubCamera } from './helpers.js';
 
 describe('toGrayscale', () => {
     test('gives one luminance value per pixel', () => {

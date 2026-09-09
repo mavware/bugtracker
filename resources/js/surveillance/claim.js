@@ -3,7 +3,7 @@
 // otherwise the panel stays hidden and the dashboard is as it was.
 import { claimNight } from './claimNight.js';
 import { claimSummary } from './claimLogic.js';
-import { openNightStore } from './nightStore.js';
+import { openNightStore } from '@bugtracker/surveillance';
 
 const root = document.getElementById('claim-nights');
 

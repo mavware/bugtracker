@@ -3,8 +3,7 @@
 // visitor, offers to save nights to the account.
 import { claimNight } from './claimNight.js';
 import { claimSummary } from './claimLogic.js';
-import { finalizeInterruptedNight, nightRows, VOLATILE_STORE_MESSAGE } from './localNight.js';
-import { openNightStore } from './nightStore.js';
+import { finalizeInterruptedNight, nightRows, openNightStore, VOLATILE_STORE_MESSAGE } from '@bugtracker/surveillance';
 
 const root = document.getElementById('local-nights');
 

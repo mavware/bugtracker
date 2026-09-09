@@ -1,39 +1,35 @@
 // The report for a night kept in this browser. Reads the night out of the
-// store, fills the shell the page renders, and mirrors what the logged-in
-// report's Livewire actions do: dismissing a track recomputes the analytics
-// and rebuilds the replay.
-import { claimNight } from './claimNight.js';
+// store, fills the shell in report.html, and recomputes the analytics and
+// rebuilds the replay whenever a sighting is dismissed or restored.
 import {
     buildLocalReportPayload,
     finalizeInterruptedNight,
-    MISSING_NIGHT_MESSAGE,
+    mountReportControls,
     nightAnalytics,
+    openNightStore,
     referenceBlobKey,
     reportHeader,
     sightingRows,
     statTiles,
     VOLATILE_STORE_MESSAGE,
-    mountReportControls,
-    openNightStore,
 } from '@bugtracker/surveillance';
+import { INDEX_URL, nightIdFromSearch } from './links.js';
 
 const root = document.getElementById('report-app');
 
-if (root !== null && root.dataset.mode === 'local') {
-    initLocalReport(root);
+if (root !== null) {
+    initReport(root);
 }
 
-async function initLocalReport(root) {
-    const config = JSON.parse(root.dataset.config);
-    const nightId = root.dataset.localId;
+async function initReport(root) {
     const el = (name) => root.querySelector(`[data-report="${name}"]`);
+    const nightId = nightIdFromSearch(window.location.search);
 
     const store = await openNightStore();
-    let night = await store.getNight(nightId);
+    let night = nightId === null ? null : await store.getNight(nightId);
 
     if (night === null) {
         el('missing').classList.remove('hidden');
-        el('missing').setAttribute('title', MISSING_NIGHT_MESSAGE);
 
         return;
     }
@@ -62,23 +58,17 @@ async function initLocalReport(root) {
         loadData: async () => ({ data: buildLocalReportPayload(night, tracks), referenceImage }),
     });
 
-    const renderHeader = () => {
+    const render = () => {
         const header = reportHeader(night);
         el('title').textContent = header.title;
         el('range').textContent = header.range;
         el('discarded-notice').classList.toggle('hidden', !header.discarded);
-        el('claim-panel').classList.toggle('hidden', night.claimedSessionId !== null);
-        el('claimed-notice').classList.toggle('hidden', night.claimedSessionId === null);
-    };
 
-    const renderTiles = () => {
         const tiles = statTiles(night.analytics);
         el('stat-track-count').textContent = String(tiles.trackCount);
         el('stat-entry').textContent = tiles.topEntry;
         el('stat-exit').textContent = tiles.topExit;
-    };
 
-    const renderRows = () => {
         const rows = sightingRows(night, tracks);
         const template = el('row-template');
         const body = el('rows');
@@ -88,12 +78,11 @@ async function initLocalReport(root) {
         body.replaceChildren();
 
         for (const row of rows) {
-            const fragment = template.content.cloneNode(true);
-            const tr = fragment.querySelector('[data-track-id]');
+            const tr = template.content.cloneNode(true).querySelector('[data-track-id]');
             const cell = (name) => tr.querySelector(`[data-cell="${name}"]`);
 
             tr.dataset.trackId = row.clientTrackId;
-            tr.classList.toggle('opacity-40', row.dismissed);
+            tr.classList.toggle('dismissed', row.dismissed);
             cell('time').textContent = row.time;
             cell('duration').textContent = `${row.durationSeconds} s`;
             cell('entered').textContent = row.entered;
@@ -109,12 +98,6 @@ async function initLocalReport(root) {
         }
     };
 
-    const render = () => {
-        renderHeader();
-        renderTiles();
-        renderRows();
-    };
-
     // Delegated, as the rows are re-rendered on every change.
     root.addEventListener('click', async (event) => {
         const toggle = event.target.closest('[data-report="toggle"]');
@@ -125,9 +108,8 @@ async function initLocalReport(root) {
 
         const clientTrackId = toggle.dataset.clientTrackId;
         const track = tracks.find((candidate) => candidate.clientTrackId === clientTrackId);
-        const dismissedAt = track.dismissedAt == null ? Date.now() : null;
 
-        await store.patchTrack(nightId, clientTrackId, { dismissedAt });
+        await store.patchTrack(nightId, clientTrackId, { dismissedAt: track.dismissedAt == null ? Date.now() : null });
         tracks = await store.listTracks(nightId);
         night = await store.patchNight(nightId, { analytics: nightAnalytics(night, tracks) });
 
@@ -141,28 +123,7 @@ async function initLocalReport(root) {
         }
 
         await store.deleteNight(nightId);
-        window.location.assign(config.routes.watch);
-    });
-
-    el('claim')?.addEventListener('click', async () => {
-        el('claim').setAttribute('disabled', 'disabled');
-
-        try {
-            const { reportUrl } = await claimNight(store, nightId, {
-                importUrl: config.routes.import,
-                csrfToken: config.csrfToken,
-                room: el('room')?.value ?? null,
-            });
-
-            night = await store.getNight(nightId);
-            el('claimed-link').setAttribute('href', reportUrl);
-            renderHeader();
-        } catch (error) {
-            el('volatile').textContent = error.message;
-            el('volatile').classList.remove('hidden');
-        } finally {
-            el('claim').removeAttribute('disabled');
-        }
+        window.location.assign(INDEX_URL);
     });
 
     render();
@@ -179,7 +140,6 @@ function cropImage(src) {
     image.src = src;
     image.alt = '';
     image.loading = 'lazy';
-    image.className = 'size-12 rounded object-cover';
 
     return image;
 }

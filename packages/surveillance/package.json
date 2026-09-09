@@ -1,0 +1,17 @@
+{
+    "name": "@bugtracker/surveillance",
+    "version": "0.1.0",
+    "description": "Overnight bug surveillance from a browser camera: detection, tracking, a local night store, analytics and replay, with no server required.",
+    "license": "MIT",
+    "type": "module",
+    "sideEffects": false,
+    "exports": {
+        ".": "./src/index.js"
+    },
+    "files": [
+        "src"
+    ],
+    "engines": {
+        "node": ">=20"
+    }
+}

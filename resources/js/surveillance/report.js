@@ -1,4 +1,4 @@
-import { loadImage, mountReportControls } from './reportControls.js';
+import { loadImage, mountReportControls } from '@bugtracker/surveillance';
 
 const root = document.getElementById('report-app');
 

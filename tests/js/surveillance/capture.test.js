@@ -4,7 +4,7 @@
 // buttons, and check what reaches the network. The camera, uploader, wake lock
 // and calibration are stubbed; the detector and tracker are the real ones.
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { LARGE_MOTION_MESSAGE, LEAVE_ROOM_SECONDS } from '../../../resources/js/surveillance/captureLogic.js';
+import { LARGE_MOTION_MESSAGE, LEAVE_ROOM_SECONDS } from '@bugtracker/surveillance';
 import { makeFrame, paintRect } from '../helpers.js';
 
 const stubs = vi.hoisted(() => ({
@@ -35,7 +35,10 @@ const stubs = vi.hoisted(() => ({
     wakeRelease: vi.fn(async () => {}),
 }));
 
-vi.mock('../../../resources/js/surveillance/camera.js', () => ({
+// The library is mocked in part: the camera, calibration, wake lock and the
+// local sink are stubbed, while the detector, tracker and everything pure stay real.
+vi.mock('@bugtracker/surveillance', async (importOriginal) => ({
+    ...(await importOriginal()),
     Camera: class {
         scale = 4;
         frameWidth = 1280;
@@ -47,25 +50,17 @@ vi.mock('../../../resources/js/surveillance/camera.js', () => ({
         grabProcessedFrame = stubs.grabProcessedFrame;
         captureCropBase64 = () => 'crop-data';
     },
-}));
-
-vi.mock('../../../resources/js/surveillance/brightness.js', async (importOriginal) => ({
-    ...(await importOriginal()),
     calibrate: stubs.calibrate,
-}));
+    WakeLock: class {
+        /** Hold on to the callback so a test can fire the unsupported path. */
+        constructor(onUnsupported) {
+            stubs.wakeLockUnsupported = onUnsupported;
+        }
 
-vi.mock('../../../resources/js/surveillance/uploader.js', () => ({
-    Uploader: class {
-        start = stubs.uploaderStart;
-        stop = stubs.uploaderStop;
-        flush = stubs.uploaderFlush;
-        enqueue = stubs.uploaderEnqueue;
-        storeReference = stubs.uploaderStoreReference;
-        end = stubs.uploaderEnd;
+        acquire = stubs.wakeAcquire;
+
+        release = stubs.wakeRelease;
     },
-}));
-
-vi.mock('../../../resources/js/surveillance/localNightSink.js', () => ({
     LocalNightSink: class {
         /** Keep the options so a test can check which store and route it was handed. */
         constructor(options) {
@@ -79,24 +74,22 @@ vi.mock('../../../resources/js/surveillance/localNightSink.js', () => ({
         storeReference = stubs.localSinkStoreReference;
         end = stubs.localSinkEnd;
     },
-}));
-
-vi.mock('../../../resources/js/surveillance/nightStore.js', () => ({
     openNightStore: stubs.openNightStore,
 }));
 
-vi.mock('../../../resources/js/surveillance/wakeLock.js', () => ({
-    WakeLock: class {
-        /** Hold on to the callback so a test can fire the unsupported path. */
-        constructor(onUnsupported) {
-            stubs.wakeLockUnsupported = onUnsupported;
-        }
-
-        acquire = stubs.wakeAcquire;
-
-        release = stubs.wakeRelease;
+vi.mock('../../../resources/js/surveillance/uploader.js', () => ({
+    Uploader: class {
+        start = stubs.uploaderStart;
+        stop = stubs.uploaderStop;
+        flush = stubs.uploaderFlush;
+        enqueue = stubs.uploaderEnqueue;
+        storeReference = stubs.uploaderStoreReference;
+        end = stubs.uploaderEnd;
     },
 }));
+
+
+
 
 const ROUTES = {
     reference: 'https://bugtracker.test/surveillance/1/reference',

@@ -1,3 +1,7 @@
+// The demo's capture page: the library's camera, detector and tracker wired to
+// the markup in index.html, with every night kept in this browser's own store.
+// This is the reference for wiring @bugtracker/surveillance into a page of
+// your own: the library decides, this file only plumbs.
 import {
     calibrate,
     calibrationOutcome,
@@ -14,12 +18,12 @@ import {
     overlayBoxes,
     PREFLIGHT_MESSAGE,
     Tracker,
+    VOLATILE_STORE_MESSAGE,
     WakeLock,
     wakeLockMessage,
     watchingState,
 } from '@bugtracker/surveillance';
-import { AUTH_LOST_MESSAGE, captureMode, referenceStoreState } from './captureLogic.js';
-import { Uploader } from './uploader.js';
+import { REPORT_URL_TEMPLATE } from './links.js';
 
 const root = document.getElementById('capture-app');
 
@@ -28,7 +32,6 @@ if (root !== null) {
 }
 
 function initCaptureApp(root) {
-    const config = JSON.parse(root.dataset.config);
     const el = (name) => root.querySelector(`[data-capture="${name}"]`);
 
     const ui = {
@@ -54,8 +57,6 @@ function initCaptureApp(root) {
         camera: new Camera(ui.video, DEFAULT_PARAMS.procWidth),
         detector: null,
         tracker: null,
-        // Where the night goes: the server for a logged-in user, this browser's
-        // own store for a guest. Same calls either way; see buildSink().
         sink: null,
         wakeLock: new WakeLock(() => showBanner(wakeLockMessage(navigator.userAgent))),
         running: false,
@@ -65,55 +66,41 @@ function initCaptureApp(root) {
     };
 
     ui.startButton.addEventListener('click', () => startNight().catch((error) => {
-        // A refused camera prompt or a failed upload must leave the button usable,
-        // otherwise the only way to try again is reloading the page.
+        // A refused camera prompt must leave the button usable, otherwise the
+        // only way to try again is reloading the page.
         ui.startButton.removeAttribute('disabled');
         setState('Error');
         showBanner(String(error));
     }));
     ui.checkButton.addEventListener('click', () => toggleCameraCheck().catch((error) => {
-        // Same reasoning as the start button: a refused prompt must not leave the
-        // page stuck believing a preview is open.
         stopCameraCheck();
         setState('Error');
         showBanner(String(error));
     }));
     ui.endButton.addEventListener('click', () => endNight(false));
     ui.abortButton.addEventListener('click', () => {
-        // Discarding is for a night set up wrong — a bad angle, a light left on —
-        // whose sightings would otherwise skew the trend and the entry point map.
-        if (window.confirm('Discard this night? It stays in your list, with its report, but is left out of trends and entry points.')) {
+        if (window.confirm('Discard this night? It stays in your list, with its report, but is marked as discarded.')) {
             endNight(true);
         }
     });
-    // The back button and closing the tab reach past the locked chrome, and either
-    // one ends the night for good. Browsers word this prompt themselves; all we can
-    // do is ask for it. Ending or discarding clears app.running first, so the trip
-    // to the report is never interrupted.
+    // Closing the tab ends the night for good. Browsers word this prompt
+    // themselves; all we can do is ask for it.
     window.addEventListener('beforeunload', (event) => {
         if (app.running) {
             event.preventDefault();
             event.returnValue = '';
         }
     });
-
     window.addEventListener('pagehide', () => {
         if (app.running) {
-            app.sink.flush({ keepalive: true });
+            app.sink.flush();
         }
     });
 
-    /**
-     * Lock the app chrome while a night is recording. Leaving this page ends the
-     * night, so a stray tap on a sidebar link would throw away hours of watching
-     * with nothing asking first. `inert` takes the links out of the tab order too,
-     * which pointer-events alone would not; the fade says the lock is deliberate
-     * rather than the page having broken.
-     */
+    /** Lock the page chrome while a night records; a stray tap on a link would end it. */
     function setNavigationLocked(locked) {
         for (const region of document.querySelectorAll('[data-app-nav]')) {
             region.toggleAttribute('inert', locked);
-            region.classList.toggle('opacity-40', locked);
         }
     }
 
@@ -126,12 +113,7 @@ function initCaptureApp(root) {
         ui.banner.classList.add('hidden');
     }
 
-    /**
-     * Open the preview on its own so the device can be aimed before a night is
-     * committed to. Nothing is measured, uploaded or recorded here — it is the
-     * same camera the night uses, held open until the user is happy or presses
-     * start.
-     */
+    /** Open the preview on its own so the device can be aimed before a night is committed to. */
     async function toggleCameraCheck() {
         if (app.previewing) {
             stopCameraCheck();
@@ -141,7 +123,6 @@ function initCaptureApp(root) {
         }
 
         setState('Starting camera…');
-
         await app.camera.start();
 
         app.previewing = true;
@@ -149,7 +130,6 @@ function initCaptureApp(root) {
         setState(CAMERA_CHECK_MESSAGE);
     }
 
-    /** Close the preview stream, leaving the status line to the caller. */
     function stopCameraCheck() {
         if (!app.previewing) {
             return;
@@ -160,21 +140,18 @@ function initCaptureApp(root) {
         ui.checkLabel.textContent = cameraCheckLabel(false);
     }
 
+    // The order is load-bearing: checklist, camera, countdown, then measure.
+    // The countdown comes before calibration and the reference photo so all of
+    // them describe an empty room rather than the person walking out of it.
     async function startNight() {
-        // Asked before the camera opens: the light has to be on before calibration
-        // measures the scene, and a user who backs out should not have been filmed.
         if (!window.confirm(PREFLIGHT_MESSAGE)) {
             return;
         }
 
-        // A preview holds a stream of its own. Close it before the night opens the
-        // camera, or getUserMedia hands back a second one and the first keeps the
-        // device — and its recording light — running for the rest of the night.
         stopCameraCheck();
 
         ui.startButton.setAttribute('disabled', 'disabled');
         setState('Starting camera…');
-
         await app.camera.start();
 
         await countdownToLeave();
@@ -200,9 +177,23 @@ function initCaptureApp(root) {
         }
 
         const settings = { ...DEFAULT_PARAMS, diffThreshold: calibration.diffThreshold };
+        const store = await openNightStore();
 
-        app.sink = await buildSink();
-        setState(referenceStoreState(captureMode(config)));
+        if (store.volatile) {
+            showBanner(VOLATILE_STORE_MESSAGE);
+        }
+
+        app.sink = new LocalNightSink({
+            store,
+            reportUrlTemplate: REPORT_URL_TEMPLATE,
+            onStatus: (status) => {
+                if (status.queueDepth !== undefined) {
+                    ui.queueDepth.textContent = String(status.queueDepth);
+                }
+            },
+        });
+
+        setState('Saving reference frame…');
         await app.sink.storeReference({
             blob: await app.camera.captureReferenceJpeg(),
             frameWidth: app.camera.frameWidth,
@@ -218,7 +209,7 @@ function initCaptureApp(root) {
             captureCrop: (x, y) => app.camera.captureCropBase64(x, y),
             onTrackClosed: (track) => {
                 app.sink.enqueue(track);
-                ui.trackCount.textContent = app.tracker.closedCount;
+                ui.trackCount.textContent = String(app.tracker.closedCount);
             },
         });
 
@@ -234,47 +225,15 @@ function initCaptureApp(root) {
         ui.abortButton.classList.remove('hidden');
         setState(watchingState(false));
 
-        const intervalMs = 1000 / settings.processFps;
-        app.loopTimer = setInterval(processFrame, intervalMs);
+        app.loopTimer = setInterval(processFrame, 1000 / settings.processFps);
         setInterval(updateElapsed, 1000);
     }
 
-    /**
-     * Hold the camera open but idle while the user walks out, counting down on the
-     * status line. Nothing is measured until this finishes, so the reference photo,
-     * the background model and the noise floor all describe an empty room.
-     */
     async function countdownToLeave() {
         for (let secondsLeft = LEAVE_ROOM_SECONDS; secondsLeft > 0; secondsLeft--) {
             setState(countdownMessage(secondsLeft));
-
             await new Promise((resolve) => setTimeout(resolve, 1000));
         }
-    }
-
-    /**
-     * The one place the page cares whether it is a guest's night or a
-     * logged-in one. Both sinks answer the same calls from here on.
-     */
-    async function buildSink() {
-        const onStatus = (status) => {
-            if (status.queueDepth !== undefined) {
-                ui.queueDepth.textContent = status.queueDepth;
-            }
-            if (status.authLost) {
-                showBanner(AUTH_LOST_MESSAGE);
-            }
-        };
-
-        if (captureMode(config) === 'local') {
-            return new LocalNightSink({
-                store: await openNightStore(),
-                reportUrlTemplate: config.routes.report,
-                onStatus,
-            });
-        }
-
-        return new Uploader({ routes: config.routes, csrfToken: config.csrfToken, onStatus });
     }
 
     function processFrame() {
@@ -282,11 +241,10 @@ function initCaptureApp(root) {
             return;
         }
 
-        const frame = app.camera.grabProcessedFrame();
-        const blobs = app.detector.detect(frame);
+        const blobs = app.detector.detect(app.camera.grabProcessedFrame());
         app.tracker.update(blobs);
 
-        ui.liveCount.textContent = app.tracker.active.length;
+        ui.liveCount.textContent = String(app.tracker.active.length);
         setState(watchingState(app.detector.largeMotion));
         drawOverlay(blobs);
     }
@@ -306,8 +264,8 @@ function initCaptureApp(root) {
             return;
         }
 
-        // A dropped frame gets a red border instead of boxes: the person standing
-        // in shot is being ignored, not missed.
+        // A dropped frame gets a red border instead of boxes: the person in
+        // shot is being ignored, not missed.
         if (app.detector.largeMotion) {
             ctx.strokeStyle = '#f87171';
             ctx.lineWidth = 6;
@@ -332,11 +290,9 @@ function initCaptureApp(root) {
     }
 
     function updateElapsed() {
-        if (!app.running) {
-            return;
+        if (app.running) {
+            ui.elapsed.textContent = formatClock(Date.now() - app.sessionStartTime);
         }
-
-        ui.elapsed.textContent = formatClock(Date.now() - app.sessionStartTime);
     }
 
     async function endNight(aborted) {
@@ -351,7 +307,7 @@ function initCaptureApp(root) {
 
         app.tracker.flush();
         app.sink.stop();
-        await app.sink.flush({ keepalive: true });
+        await app.sink.flush();
         app.camera.stop();
         await app.wakeLock.release();
 
@@ -360,12 +316,7 @@ function initCaptureApp(root) {
             aborted,
         });
 
-        if (result.ok) {
-            window.location.assign(result.reportUrl);
-        } else {
-            showBanner(`Could not end the session (HTTP ${result.status}). Your tracks are saved — retry from the sessions page.`);
-            setState('Error');
-        }
+        window.location.assign(result.reportUrl);
     }
 
     function setState(text) {

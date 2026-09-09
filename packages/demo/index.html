@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Watch a room · BugTracker demo</title>
+    <link rel="stylesheet" href="./src/styles.css" />
+</head>
+<body>
+    <!-- data-app-nav marks the chrome capture.js makes inert while a night is
+         recording; leaving this page ends the night. -->
+    <header data-app-nav class="site-header">
+        <a href="./" class="brand">BugTracker <span class="badge">demo</span></a>
+        <nav>
+            <a href="https://github.com/mavware/bugtracker" rel="noopener">Source</a>
+        </nav>
+    </header>
+
+    <main>
+        <section id="capture-app">
+            <div class="page-heading">
+                <div>
+                    <h1>Watch a room tonight</h1>
+                    <p class="muted">Keep the device plugged in, the screen on, and this tab visible all night.</p>
+                </div>
+                <div class="actions">
+                    <button type="button" class="button" data-capture="check">
+                        <span data-capture="check-label">Check camera</span>
+                    </button>
+                    <button type="button" class="button primary" data-capture="start">Start watching</button>
+                    <button type="button" class="button danger hidden" data-capture="end">End night</button>
+                    <button type="button" class="button hidden" data-capture="abort">Discard night</button>
+                </div>
+            </div>
+
+            <div data-capture="banner" class="banner hidden"></div>
+
+            <div class="capture-grid">
+                <div>
+                    <div class="stage">
+                        <video data-capture="video" autoplay muted playsinline></video>
+                        <canvas data-capture="overlay"></canvas>
+                    </div>
+                    <label class="checkbox">
+                        <input type="checkbox" data-capture="debug-toggle" checked />
+                        Show detection boxes
+                    </label>
+                </div>
+
+                <aside class="stack">
+                    <div class="panel">
+                        <h2>Status</h2>
+                        <dl class="status">
+                            <div><dt>State</dt><dd data-capture="state">Idle</dd></div>
+                            <div><dt>Elapsed</dt><dd data-capture="elapsed">–</dd></div>
+                            <div><dt>Bugs tracked</dt><dd data-capture="track-count">0</dd></div>
+                            <div><dt>Live tracks</dt><dd data-capture="live-count">0</dd></div>
+                            <div><dt>Saving</dt><dd data-capture="queue-depth">0</dd></div>
+                            <div><dt>Scene brightness</dt><dd data-capture="brightness">–</dd></div>
+                        </dl>
+                    </div>
+
+                    <div data-capture="setup-help" class="stack">
+                        <div class="panel muted small">
+                            <h2>Nothing leaves this device</h2>
+                            <p>Nights recorded here stay in this browser on this device. Clearing site data removes them. This demo runs the full detection pipeline from the <code>@bugtracker/surveillance</code> library with no server at all.</p>
+                        </div>
+
+                        <div class="panel muted small">
+                            <h2>If the screen keeps sleeping</h2>
+                            <p>This page asks the device to stay awake on its own, so usually there is nothing to do. If it sleeps anyway, the camera stops and the rest of the night is lost — set it manually once:</p>
+                            <ul>
+                                <li>iPhone or iPad: Auto-Lock to Never, and Low Power Mode off — it blocks the screen lock on its own.</li>
+                                <li>Android: Screen timeout to its longest option.</li>
+                                <li>Laptop: turn off screen sleep in your system power settings.</li>
+                                <li>Keep it plugged in either way — a screen held on all night will flatten a battery.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="panel muted small">
+                        Detection runs entirely in this browser. Bug paths and tiny snapshots are kept here; no video is stored.
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        <section id="local-nights" class="hidden nights">
+            <div class="page-heading">
+                <div>
+                    <h2>Nights on this device</h2>
+                    <p class="muted small">Only this browser can see these. Clearing site data deletes them.</p>
+                </div>
+            </div>
+
+            <div data-nights="banner" class="banner hidden"></div>
+
+            <table class="table">
+                <thead>
+                    <tr><th>Night</th><th>Started</th><th>Status</th><th>Sightings</th><th></th></tr>
+                </thead>
+                <tbody data-nights="rows"></tbody>
+            </table>
+
+            <template data-nights="row-template">
+                <tr data-night-id="">
+                    <td class="strong" data-cell="name"></td>
+                    <td data-cell="started"></td>
+                    <td data-cell="status"></td>
+                    <td data-cell="sightings"></td>
+                    <td class="row-actions">
+                        <a class="button small" data-cell="report" href="#">Report</a>
+                        <button type="button" class="button small" data-cell="remove">Remove</button>
+                    </td>
+                </tr>
+            </template>
+        </section>
+    </main>
+
+    <script type="module" src="./src/capture.js"></script>
+    <script type="module" src="./src/nights.js"></script>
+</body>
+</html>

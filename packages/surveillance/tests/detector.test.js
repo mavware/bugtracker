@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'vitest';
-import { Detector } from '../../../resources/js/surveillance/detector.js';
-import { makeFrame, paintRect } from '../helpers.js';
+import { Detector } from '../src/detector.js';
+import { makeFrame, paintRect } from './helpers.js';
 
 const SIZE = 12;
 const SCENE = 200;

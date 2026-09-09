@@ -13,7 +13,7 @@ import {
     reportUrlFor,
     sightingRows,
     statTiles,
-} from '../../../resources/js/surveillance/localNight.js';
+} from '../src/localNight.js';
 
 // 2026-09-08 22:30 local time, and 01:30 the following morning.
 const EVENING = new Date(2026, 8, 8, 22, 30).getTime();
