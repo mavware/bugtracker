@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import {
     AUTH_LOST_MESSAGE,
+    autoEndAfterMs,
     buildReferenceForm,
     captureMode,
     referenceStoreState,
@@ -44,5 +45,24 @@ describe('captureMode', () => {
 
     test('tells a logged-out user their tracks are still held', () => {
         expect(AUTH_LOST_MESSAGE).toContain('held in memory');
+    });
+});
+
+
+describe('autoEndAfterMs', () => {
+    test('is null when the box is unticked, whatever the field says', () => {
+        expect(autoEndAfterMs({ enabled: false, hours: '8' })).toBeNull();
+    });
+
+    test('turns the hours into milliseconds from the start', () => {
+        expect(autoEndAfterMs({ enabled: true, hours: '8' })).toBe(8 * 60 * 60 * 1000);
+        expect(autoEndAfterMs({ enabled: true, hours: 0.5 })).toBe(30 * 60 * 1000);
+    });
+
+    test('a blank, unreadable or non-positive number lets the night run on rather than ending it at once', () => {
+        expect(autoEndAfterMs({ enabled: true, hours: '' })).toBeNull();
+        expect(autoEndAfterMs({ enabled: true, hours: 'eight' })).toBeNull();
+        expect(autoEndAfterMs({ enabled: true, hours: '0' })).toBeNull();
+        expect(autoEndAfterMs({ enabled: true, hours: '-2' })).toBeNull();
     });
 });

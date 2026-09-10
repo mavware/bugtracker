@@ -116,6 +116,7 @@ function mountPage(config = { csrfToken: 'test-csrf-token', routes: ROUTES }) {
             <span data-capture="idle-light"></span>
             <span data-capture="live-light" class="hidden"></span>
             <span data-capture="started" class="hidden">Started <span data-capture="started-at"></span></span>
+            <span data-capture="auto-end-note" class="hidden">Ends <span data-capture="auto-end-at"></span></span>
             <button data-capture="check"><span data-capture="check-label">Check camera</span></button>
             <button data-capture="start">
                 <svg data-capture="start-play"></svg>
@@ -135,8 +136,15 @@ function mountPage(config = { csrfToken: 'test-csrf-token', routes: ROUTES }) {
             <span data-capture="brightness"></span>
             <input type="checkbox" data-capture="debug-toggle" checked />
             <div data-capture="setup-help">Aim the camera… <button data-capture="start-alias">Start tracking tonight</button></div>
-            <div data-capture="night-help" class="hidden">If the screen keeps sleeping…</div>
+            <div data-capture="night-help" class="hidden">
+                If the screen keeps sleeping…
+                <p data-capture="auto-end-note" class="hidden">Ends <span data-capture="auto-end-at"></span> on its own.</p>
+            </div>
             <dialog data-capture="preflight">
+                <input type="checkbox" data-capture="auto-end" />
+                <div data-capture="auto-end-fields" class="hidden">
+                    <input type="number" data-capture="auto-end-hours" value="8" />
+                </div>
                 <button data-capture="preflight-cancel">Not yet</button>
                 <button data-capture="preflight-start">Start Tracking</button>
             </dialog>
@@ -769,6 +777,81 @@ describe('capture page', () => {
 
         expect(el('start-label').textContent).toBe('Start tracking');
         expect(el('start-spinner').classList.contains('hidden')).toBe(true);
+    });
+
+    describe('stopping after a set time', () => {
+        const HOUR = 60 * 60 * 1000;
+
+        function chooseAutoEnd(hours) {
+            el('auto-end').checked = true;
+            el('auto-end').dispatchEvent(new Event('change'));
+            el('auto-end-hours').value = String(hours);
+        }
+
+        test('the hours field only shows while the box is ticked', async () => {
+            expect(el('auto-end-fields').classList.contains('hidden')).toBe(true);
+
+            el('auto-end').checked = true;
+            el('auto-end').dispatchEvent(new Event('change'));
+
+            expect(el('auto-end-fields').classList.contains('hidden')).toBe(false);
+
+            el('auto-end').checked = false;
+            el('auto-end').dispatchEvent(new Event('change'));
+
+            expect(el('auto-end-fields').classList.contains('hidden')).toBe(true);
+        });
+
+        test('a night with an end time ends itself once the hours are up, and says when', async () => {
+            chooseAutoEnd(2);
+
+            await startWatching();
+
+            // Said in the header and again in the night-time reading, from one clock.
+            const notes = document.querySelectorAll('[data-capture="auto-end-note"]');
+            const clocks = document.querySelectorAll('[data-capture="auto-end-at"]');
+            expect(notes).toHaveLength(2);
+            for (const note of notes) {
+                expect(note.classList.contains('hidden')).toBe(false);
+            }
+            expect(clocks[0].textContent).not.toBe('');
+            expect(clocks[1].textContent).toBe(clocks[0].textContent);
+
+            await vi.advanceTimersByTimeAsync(2 * HOUR - 1000);
+            expect(stubs.uploaderEnd).not.toHaveBeenCalled();
+
+            await vi.advanceTimersByTimeAsync(2000);
+            expect(stubs.uploaderEnd).toHaveBeenCalledTimes(1);
+            expect(window.location.assign).toHaveBeenCalledWith('https://bugtracker.test/surveillance/1/report');
+        });
+
+        test('an unticked box runs the night until End night is pressed, whatever the field says', async () => {
+            el('auto-end-hours').value = '1';
+
+            await startWatching();
+
+            for (const note of document.querySelectorAll('[data-capture="auto-end-note"]')) {
+                expect(note.classList.contains('hidden')).toBe(true);
+            }
+
+            // The clock is jumped rather than run: a day of fake frames is a long wait.
+            vi.setSystemTime(Date.now() + 24 * HOUR);
+            await vi.advanceTimersByTimeAsync(1000);
+            expect(stubs.uploaderEnd).not.toHaveBeenCalled();
+        });
+
+        // The tab may have been asleep for the deadline itself; the next tick of the
+        // clock still has to catch a deadline that is already past.
+        test('a deadline the clock slept through is still honoured on the next tick', async () => {
+            chooseAutoEnd(1);
+
+            await startWatching();
+
+            vi.setSystemTime(Date.now() + 3 * HOUR);
+            await vi.advanceTimersByTimeAsync(1000);
+
+            expect(stubs.uploaderEnd).toHaveBeenCalledTimes(1);
+        });
     });
 
     test('closing the tab mid-night is challenged first', async () => {

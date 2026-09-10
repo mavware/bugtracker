@@ -100,6 +100,9 @@ test('the capture page carries the room checklist capture.js asks before the cam
         ->toContain('Changing colour reads as movement')
         ->toContain('Draw the curtains')
         ->toContain('five seconds once you press Start')
+        ->toContain('Stop tracking after a set time')
+        ->toContain('data-capture="auto-end"')
+        ->toContain('data-capture="auto-end-hours"')
         ->toContain('data-capture="preflight-start"')
         ->toContain('data-capture="preflight-cancel"');
 });

@@ -50,6 +50,9 @@
                         <span data-capture="started" class="hidden text-sm text-zinc-500 dark:text-zinc-400">
                             {{ __('Started') }} <span data-capture="started-at" class="tabular-nums"></span>
                         </span>
+                        <span data-capture="auto-end-note" class="hidden text-sm text-zinc-500 dark:text-zinc-400">
+                            {{ __('Ends') }} <span data-capture="auto-end-at" class="tabular-nums"></span>
+                        </span>
 
                         <flux:button size="sm" variant="subtle" icon="camera" data-capture="check" data-test="check-camera-button">
                             <span data-capture="check-label">{{ __('Check camera') }}</span>
@@ -140,6 +143,15 @@
                     <p class="mt-2">
                         {{ __('Leave this device plugged in, the screen on, and this tab in front. Opening anything else on it ends the night.') }}
                     </p>
+                    {{-- The same note as the header's, for the reader who is looking at
+                         this column rather than the camera. capture.js writes every
+                         auto-end-note and auto-end-at on the page together. --}}
+                    <p data-capture="auto-end-note" class="mt-3 hidden font-medium text-zinc-700 dark:text-zinc-300">
+                        <span class="flex items-center gap-1.5">
+                            <flux:icon name="clock" variant="micro" class="text-amber-600 dark:text-amber-400" />
+                            <span>{{ __('Ends') }} <span data-capture="auto-end-at" class="tabular-nums"></span> {{ __('on its own.') }}</span>
+                        </span>
+                    </p>
 
                     <flux:heading size="sm" class="mt-4">{{ __('If the screen keeps sleeping') }}</flux:heading>
                     <p class="mt-2">
@@ -222,7 +234,34 @@
                 </li>
             </ol>
 
-            <div class="mt-6 flex items-center gap-2 rounded-xl bg-zinc-50 p-3.5 text-sm text-zinc-600 dark:bg-zinc-800/60 dark:text-zinc-300">
+            {{-- An optional end. Unticked, the night runs until End night is pressed;
+                 ticked, capture.js ends it once this many hours have passed, and says
+                 when in the card's header. The hours field is only shown while the
+                 box is ticked — an unticked box means "run all night", full stop. --}}
+            <div class="mt-6 rounded-xl border border-zinc-200 p-3.5 dark:border-zinc-700">
+                <label class="flex items-center gap-2 text-sm font-medium">
+                    <input type="checkbox" data-capture="auto-end" data-test="auto-end-checkbox" class="rounded" />
+                    {{ __('Stop tracking after a set time') }}
+                </label>
+                <div data-capture="auto-end-fields" class="hidden">
+                    <label class="mt-3 flex flex-wrap items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
+                        <input
+                            type="number"
+                            data-capture="auto-end-hours"
+                            data-test="auto-end-hours"
+                            min="0.5"
+                            max="24"
+                            step="0.5"
+                            value="8"
+                            inputmode="decimal"
+                            class="w-20 rounded-lg border border-zinc-300 bg-white px-2 py-1 text-sm tabular-nums dark:border-zinc-600 dark:bg-zinc-800"
+                        />
+                        {{ __('hours from the start, then the night ends on its own.') }}
+                    </label>
+                </div>
+            </div>
+
+            <div class="mt-4 flex items-center gap-2 rounded-xl bg-zinc-50 p-3.5 text-sm text-zinc-600 dark:bg-zinc-800/60 dark:text-zinc-300">
                 <flux:icon name="clock" variant="mini" class="shrink-0 text-zinc-400" />
                 {{ __('Then leave the room. You have five seconds once you press Start.') }}
             </div>

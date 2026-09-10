@@ -37,3 +37,27 @@ export function buildReferenceForm({ blob, frameWidth, frameHeight, settings }) 
 
     return form;
 }
+
+/**
+ * How long a night runs before ending itself, in milliseconds, or null for a
+ * night that runs until End night is pressed. Read off the checklist's "stop
+ * tracking after" box and its hours field: an unticked box is null however the
+ * field reads, and a ticked box with a blank, unreadable or non-positive number
+ * is null too, so the worst a stray value can do is let the night run on.
+ *
+ * @param {{ enabled: boolean, hours: string | number }} choice
+ * @returns {number | null}
+ */
+export function autoEndAfterMs({ enabled, hours }) {
+    if (!enabled) {
+        return null;
+    }
+
+    const parsed = Number(hours);
+
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+        return null;
+    }
+
+    return Math.round(parsed * 60 * 60 * 1000);
+}

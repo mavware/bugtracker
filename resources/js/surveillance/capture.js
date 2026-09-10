@@ -17,7 +17,7 @@ import {
     wakeLockMessage,
     watchingState,
 } from '@mavware/bug-surveillance';
-import { AUTH_LOST_MESSAGE, captureMode, referenceStoreState } from './captureLogic.js';
+import { AUTH_LOST_MESSAGE, autoEndAfterMs, captureMode, referenceStoreState } from './captureLogic.js';
 import { Uploader } from './uploader.js';
 
 const root = document.getElementById('capture-app');
@@ -61,6 +61,13 @@ function initCaptureApp(root) {
         liveLight: el('live-light'),
         started: el('started'),
         startedAt: el('started-at'),
+        autoEnd: el('auto-end'),
+        autoEndHours: el('auto-end-hours'),
+        autoEndFields: el('auto-end-fields'),
+        // Said twice, in the header and in the night-time reading, so both are
+        // lists: every note is shown and hidden together, every clock written alike.
+        autoEndNotes: [...root.querySelectorAll('[data-capture="auto-end-note"]')],
+        autoEndClocks: [...root.querySelectorAll('[data-capture="auto-end-at"]')],
     };
 
     const app = {
@@ -74,6 +81,11 @@ function initCaptureApp(root) {
         running: false,
         previewing: false,
         sessionStartTime: null,
+        // The clock time the night ends itself, or null for one that runs until
+        // End night is pressed. Checked by the once-a-second clock rather than a
+        // setTimeout of its own: a backgrounded tab clamps and skips long timers,
+        // but cannot miss a deadline that every tick compares against.
+        autoEndAt: null,
         loopTimer: null,
     };
 
@@ -102,6 +114,8 @@ function initCaptureApp(root) {
     }));
     ui.endButton.addEventListener('click', () => endNight());
     ui.preflightCancel.addEventListener('click', () => ui.preflight.close(''));
+    // The hours field only means anything while the box is ticked, so it only shows then.
+    ui.autoEnd.addEventListener('change', () => ui.autoEndFields.classList.toggle('hidden', !ui.autoEnd.checked));
     // The back button and closing the tab reach past the locked chrome, and either
     // one ends the night for good. Browsers word this prompt themselves; all we can
     // do is ask for it. Ending clears app.running first, so the trip to the report
@@ -296,6 +310,9 @@ function initCaptureApp(root) {
         });
 
         app.sessionStartTime = Date.now();
+
+        const autoEndMs = autoEndAfterMs({ enabled: ui.autoEnd.checked, hours: ui.autoEndHours.value });
+        app.autoEndAt = autoEndMs === null ? null : app.sessionStartTime + autoEndMs;
         app.detector = new Detector(settings);
         app.tracker = new Tracker({
             scale: app.camera.scale,
@@ -414,6 +431,12 @@ function initCaptureApp(root) {
             return;
         }
 
+        if (app.autoEndAt !== null && Date.now() >= app.autoEndAt) {
+            endNight();
+
+            return;
+        }
+
         // Parenthesised because it reads as part of the state beside it: "Tracking (01:12:40)".
         ui.elapsed.textContent = `(${formatClock(Date.now() - app.sessionStartTime)})`;
     }
@@ -455,6 +478,10 @@ function initCaptureApp(root) {
      * button's own label, so the button says what it is busy with rather than
      * sitting greyed out under a name that is no longer true.
      */
+    function clockTime(timestamp) {
+        return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
     function setState(text) {
         ui.state.textContent = text;
 
@@ -487,10 +514,16 @@ function initCaptureApp(root) {
         ui.liveLight.classList.toggle('hidden', !recording);
         ui.started.classList.toggle('hidden', !recording);
         ui.elapsed.classList.toggle('hidden', !recording);
+        for (const note of ui.autoEndNotes) {
+            note.classList.toggle('hidden', !recording || app.autoEndAt === null);
+        }
 
         if (recording) {
-            ui.startedAt.textContent = new Date(app.sessionStartTime)
-                .toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            ui.startedAt.textContent = clockTime(app.sessionStartTime);
+
+            for (const clock of ui.autoEndClocks) {
+                clock.textContent = app.autoEndAt === null ? '' : clockTime(app.autoEndAt);
+            }
         }
     }
 }
