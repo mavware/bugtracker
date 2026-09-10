@@ -94,7 +94,7 @@ describe('cameraCheckLabel', () => {
 
 describe('watchingState', () => {
     test('reads as plain watching while the room is quiet', () => {
-        expect(watchingState(false)).toBe('Watching');
+        expect(watchingState(false)).toBe('Tracking');
     });
 
     test('says a large thing is being ignored, so silence does not look like a fault', () => {

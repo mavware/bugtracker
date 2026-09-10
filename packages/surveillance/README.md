@@ -39,7 +39,7 @@ Four pieces, which you wire into your own page:
 The library never touches your markup, your router or your framework. It decides;
 your page plumbs.
 
-## Watching a room
+## Tracking a room
 
 ```js
 import {

@@ -6,7 +6,7 @@
 @php
     /**
      * The night's one trail: in at the left edge, a loop over the rug, and up to the
-     * top-right corner, which is the corner Start watching sits in. It is a cue as
+     * top-right corner, which is the corner Start tracking sits in. It is a cue as
      * much as a picture, so it is drawn in the accent rather than in the replay's
      * per-track hues — one line the eye can follow to the button, instead of three
      * finished ones competing.

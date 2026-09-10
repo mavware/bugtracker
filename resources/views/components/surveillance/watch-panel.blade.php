@@ -38,7 +38,7 @@
                 {{-- The same start as the card's own button: capture.js forwards the
                      click, so the checklist, camera and countdown run exactly once. --}}
                 <flux:button variant="primary" icon="play" data-capture="start-alias" data-test="watch-hero-start">
-                    {{ __('Start watching tonight') }}
+                    {{ __('Start tracking tonight') }}
                 </flux:button>
 
                 @auth

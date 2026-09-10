@@ -319,7 +319,7 @@ function initCaptureApp(root) {
 
     function updateElapsed() {
         if (app.running) {
-            // Parenthesised because it reads as part of the state beside it: "Watching (01:12:40)".
+            // Parenthesised because it reads as part of the state beside it: "Tracking (01:12:40)".
             ui.elapsed.textContent = `(${formatClock(Date.now() - app.sessionStartTime)})`;
         }
     }

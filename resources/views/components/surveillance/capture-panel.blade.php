@@ -54,8 +54,14 @@
                         <flux:button size="sm" variant="subtle" icon="camera" data-capture="check" data-test="check-camera-button">
                             <span data-capture="check-label">{{ __('Check camera') }}</span>
                         </flux:button>
-                        <flux:button size="sm" variant="primary" icon="play" data-capture="start" data-test="start-capture-button">
-                            {{ __('Start watching') }}
+                        {{-- Its own icons and label rather than Flux's icon prop: while the
+                             button is disabled capture.js swaps the play for a spinner and
+                             writes the status into the label, so the button itself says
+                             what the page is doing. --}}
+                        <flux:button size="sm" variant="primary" data-capture="start" data-test="start-capture-button">
+                            <flux:icon name="play" variant="micro" data-capture="start-play" />
+                            <flux:icon.loading variant="micro" class="hidden" data-capture="start-spinner" />
+                            <span data-capture="start-label">{{ __('Start tracking') }}</span>
                         </flux:button>
                         <flux:button size="sm" variant="danger" icon="stop" data-capture="end" data-test="end-session-button" class="hidden">
                             {{ __('End night') }}

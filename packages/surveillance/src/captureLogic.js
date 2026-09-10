@@ -42,7 +42,7 @@ export function countdownMessage(secondsLeft) {
  * A camera check opens the preview on its own, watching nothing and measuring
  * nothing, purely so the framing can be settled before a night is committed to.
  */
-export const CAMERA_CHECK_MESSAGE = 'Camera check — aim the device, then start watching.';
+export const CAMERA_CHECK_MESSAGE = 'Camera check — aim the device, then start tracking.';
 
 /** A toggle's label says what the next press does, not what the camera is doing. */
 export function cameraCheckLabel(previewing, { stop = 'Stop camera', check = 'Check camera' } = {}) {
@@ -83,9 +83,9 @@ export function calibrationOutcome(calibration, { tooDark = TOO_DARK_MESSAGE, di
     return { blocked: false, banner: calibration.dim ? dim : null };
 }
 
-export const WATCHING_MESSAGE = 'Watching';
+export const WATCHING_MESSAGE = 'Tracking';
 
-export const LARGE_MOTION_MESSAGE = 'Watching — ignoring something too large to be a bug';
+export const LARGE_MOTION_MESSAGE = 'Tracking — ignoring something too large to be a bug';
 
 /**
  * The status line while a night runs. When the detector drops a frame for

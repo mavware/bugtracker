@@ -30,11 +30,17 @@ function initCaptureApp(root) {
     const config = JSON.parse(root.dataset.config);
     const el = (name) => root.querySelector(`[data-capture="${name}"]`);
 
+    // The button's resting name, read back from the page so the copy lives in one place.
+    const startLabel = el('start-label').textContent.trim();
+
     const ui = {
         video: el('video'),
         overlay: el('overlay'),
         placeholder: el('placeholder'),
         startButton: el('start'),
+        startLabel: el('start-label'),
+        startPlay: el('start-play'),
+        startSpinner: el('start-spinner'),
         checkButton: el('check'),
         checkLabel: el('check-label'),
         endButton: el('end'),
@@ -74,7 +80,8 @@ function initCaptureApp(root) {
     ui.startButton.addEventListener('click', () => startNight().catch((error) => {
         // A refused camera prompt or a failed upload must leave the buttons usable,
         // otherwise the only way to try again is reloading the page.
-        ui.startButton.removeAttribute('disabled');
+        setStartBusy(false);
+        showNightReading(false);
         showCameraCheck(true);
         showCameraStage(false);
         setState('Error');
@@ -88,6 +95,7 @@ function initCaptureApp(root) {
         // Same reasoning as the start button: a refused prompt must not leave the
         // page stuck believing a preview is open.
         stopCameraCheck();
+        showNightReading(false);
         showCameraStage(false);
         setState('Error');
         showBanner(String(error));
@@ -143,11 +151,13 @@ function initCaptureApp(root) {
     async function toggleCameraCheck() {
         if (app.previewing) {
             stopCameraCheck();
+            showNightReading(false);
             setState('Idle');
 
             return;
         }
 
+        showNightReading(true);
         setState('Starting camera…');
         showCameraStage(true);
 
@@ -168,6 +178,18 @@ function initCaptureApp(root) {
     function showCameraStage(live) {
         ui.placeholder.classList.toggle('hidden', live);
         ui.video.classList.toggle('hidden', !live);
+    }
+
+    /**
+     * The side column's two faces. The setup reading — aiming advice, or the
+     * hero's copy — goes whenever the status leaves Idle, whether for a camera
+     * check or a confirmed checklist, and the night-time reading takes its place.
+     * Every path back to Idle — a closed check, a refused camera, a too-dark
+     * room, a failed start — puts the setup reading back.
+     */
+    function showNightReading(night) {
+        ui.setupHelp.classList.toggle('hidden', night);
+        ui.nightHelp.classList.toggle('hidden', !night);
     }
 
     /**
@@ -217,10 +239,10 @@ function initCaptureApp(root) {
         // measures the scene, and a user who backs out should not have been filmed.
         // The button is held disabled for the asking, so a second press — or a
         // forwarded one — cannot open the checklist twice.
-        ui.startButton.setAttribute('disabled', 'disabled');
+        setStartBusy(true);
 
         if (!(await askPreflight())) {
-            ui.startButton.removeAttribute('disabled');
+            setStartBusy(false);
 
             return;
         }
@@ -230,8 +252,8 @@ function initCaptureApp(root) {
         // device — and its recording light — running for the rest of the night.
         stopCameraCheck();
 
-        ui.startButton.setAttribute('disabled', 'disabled');
         showCameraCheck(false);
+        showNightReading(true);
         setState('Starting camera…');
         showCameraStage(true);
 
@@ -253,7 +275,8 @@ function initCaptureApp(root) {
 
         if (outcome.blocked) {
             setState('Too dark');
-            ui.startButton.removeAttribute('disabled');
+            setStartBusy(false);
+            showNightReading(false);
             showCameraCheck(true);
             app.camera.stop();
             showCameraStage(false);
@@ -290,8 +313,6 @@ function initCaptureApp(root) {
         app.running = true;
         setNavigationLocked(true);
         showRecording(true);
-        ui.setupHelp.classList.add('hidden');
-        ui.nightHelp.classList.remove('hidden');
         ui.startButton.classList.add('hidden');
         ui.endButton.classList.remove('hidden');
         setState(watchingState(false));
@@ -349,7 +370,6 @@ function initCaptureApp(root) {
         app.tracker.update(blobs);
 
         ui.liveCount.textContent = app.tracker.active.length;
-        setState(watchingState(app.detector.largeMotion));
         drawOverlay(blobs);
     }
 
@@ -368,13 +388,9 @@ function initCaptureApp(root) {
             return;
         }
 
-        // A dropped frame gets a red border instead of boxes: the person standing
-        // in shot is being ignored, not missed.
+        // A dropped frame draws no boxes: the person standing in shot is being
+        // ignored, not missed, and saying so on screen only made the page jump.
         if (app.detector.largeMotion) {
-            ctx.strokeStyle = '#f87171';
-            ctx.lineWidth = 6;
-            ctx.strokeRect(0, 0, canvas.width, canvas.height);
-
             return;
         }
 
@@ -398,7 +414,7 @@ function initCaptureApp(root) {
             return;
         }
 
-        // Parenthesised because it reads as part of the state beside it: "Watching (01:12:40)".
+        // Parenthesised because it reads as part of the state beside it: "Tracking (01:12:40)".
         ui.elapsed.textContent = `(${formatClock(Date.now() - app.sessionStartTime)})`;
     }
 
@@ -434,8 +450,31 @@ function initCaptureApp(root) {
         }
     }
 
+    /**
+     * The status line, and — for as long as the start button is disabled — the
+     * button's own label, so the button says what it is busy with rather than
+     * sitting greyed out under a name that is no longer true.
+     */
     function setState(text) {
         ui.state.textContent = text;
+
+        if (ui.startButton.hasAttribute('disabled')) {
+            ui.startLabel.textContent = text;
+        }
+    }
+
+    /**
+     * Disable the start button and turn its play icon into a spinner, or give it
+     * back: the label is written by setState while busy and restored here.
+     */
+    function setStartBusy(busy) {
+        ui.startButton.toggleAttribute('disabled', busy);
+        ui.startPlay.classList.toggle('hidden', busy);
+        ui.startSpinner.classList.toggle('hidden', !busy);
+
+        if (!busy) {
+            ui.startLabel.textContent = startLabel;
+        }
     }
 
     /**

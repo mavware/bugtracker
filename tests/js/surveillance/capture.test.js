@@ -117,7 +117,11 @@ function mountPage(config = { csrfToken: 'test-csrf-token', routes: ROUTES }) {
             <span data-capture="live-light" class="hidden"></span>
             <span data-capture="started" class="hidden">Started <span data-capture="started-at"></span></span>
             <button data-capture="check"><span data-capture="check-label">Check camera</span></button>
-            <button data-capture="start">Start watching</button>
+            <button data-capture="start">
+                <svg data-capture="start-play"></svg>
+                <svg data-capture="start-spinner" class="hidden"></svg>
+                <span data-capture="start-label">Start tracking</span>
+            </button>
             <button data-capture="end" class="hidden">End night</button>
             <div data-capture="banner" class="hidden"></div>
             <div data-capture="placeholder">sample room</div>
@@ -130,7 +134,7 @@ function mountPage(config = { csrfToken: 'test-csrf-token', routes: ROUTES }) {
             <span data-capture="queue-depth"></span>
             <span data-capture="brightness"></span>
             <input type="checkbox" data-capture="debug-toggle" checked />
-            <div data-capture="setup-help">Aim the camera… <button data-capture="start-alias">Start watching tonight</button></div>
+            <div data-capture="setup-help">Aim the camera… <button data-capture="start-alias">Start tracking tonight</button></div>
             <div data-capture="night-help" class="hidden">If the screen keeps sleeping…</div>
             <dialog data-capture="preflight">
                 <button data-capture="preflight-cancel">Not yet</button>
@@ -218,7 +222,7 @@ describe('capture page', () => {
         expect(stubs.cameraStart).toHaveBeenCalled();
         expect(stubs.uploaderStart).toHaveBeenCalled();
         expect(stubs.wakeAcquire).toHaveBeenCalled();
-        expect(el('state').textContent).toBe('Watching');
+        expect(el('state').textContent).toBe('Tracking');
         expect(el('brightness').textContent).toBe('120 / 255');
 
         expect(stubs.uploaderStoreReference).toHaveBeenCalledWith({
@@ -307,7 +311,7 @@ describe('capture page', () => {
         expect(stubs.cameraStart).toHaveBeenCalledTimes(2);
         expect(stubs.cameraStop.mock.invocationCallOrder[0])
             .toBeLessThan(stubs.cameraStart.mock.invocationCallOrder[1]);
-        expect(el('state').textContent).toBe('Watching');
+        expect(el('state').textContent).toBe('Tracking');
     });
 
     test('backing out of the checklist leaves an open camera check alone', async () => {
@@ -408,7 +412,7 @@ describe('capture page', () => {
         await vi.advanceTimersByTimeAsync(2000);
 
         expect(stubs.calibrate).toHaveBeenCalled();
-        expect(el('state').textContent).toBe('Watching');
+        expect(el('state').textContent).toBe('Tracking');
     });
 
     test('a device that will not hold its screen on says which setting to change', async () => {
@@ -451,14 +455,94 @@ describe('capture page', () => {
         expect(nav().hasAttribute('inert')).toBe(false);
     });
 
-    test('the setup advice makes way for the night-time reading once the night is under way', async () => {
+    // As soon as the status leaves Idle, not once the night is recording: the
+    // countdown and calibration are already the night, and the copy beside the
+    // camera should say so.
+    test('the setup advice makes way for the night-time reading as soon as the start is confirmed', async () => {
         expect(el('setup-help').classList.contains('hidden')).toBe(false);
         expect(el('night-help').classList.contains('hidden')).toBe(true);
+
+        el('start').click();
+        el('preflight-start').click();
+        await settle();
+
+        expect(el('state').textContent).not.toBe('Idle');
+        expect(el('setup-help').classList.contains('hidden')).toBe(true);
+        expect(el('night-help').classList.contains('hidden')).toBe(false);
+
+        await vi.advanceTimersByTimeAsync(LEAVE_ROOM_SECONDS * 1000);
+
+        expect(el('setup-help').classList.contains('hidden')).toBe(true);
+        expect(el('night-help').classList.contains('hidden')).toBe(false);
+    });
+
+    // The status leaves Idle for a camera check too, so the column follows it
+    // there and back.
+    test('a camera check swaps the setup advice out and closing it swaps it back', async () => {
+        el('check').click();
+        await settle();
+
+        expect(el('setup-help').classList.contains('hidden')).toBe(true);
+        expect(el('night-help').classList.contains('hidden')).toBe(false);
+
+        el('check').click();
+        await settle();
+
+        expect(el('state').textContent).toBe('Idle');
+        expect(el('setup-help').classList.contains('hidden')).toBe(false);
+        expect(el('night-help').classList.contains('hidden')).toBe(true);
+    });
+
+    test('a refused camera check puts the setup advice back', async () => {
+        stubs.cameraStart.mockRejectedValue(new Error('Permission denied'));
+
+        el('check').click();
+        await settle();
+
+        expect(el('state').textContent).toBe('Error');
+        expect(el('setup-help').classList.contains('hidden')).toBe(false);
+    });
+
+    // The checklist is asked over an idle page and the status has not moved yet.
+    test('the setup advice stays put behind the checklist', async () => {
+        el('start').click();
+
+        expect(el('setup-help').classList.contains('hidden')).toBe(false);
+
+        el('preflight-cancel').click();
+        await settle();
+
+        expect(el('setup-help').classList.contains('hidden')).toBe(false);
+        expect(el('night-help').classList.contains('hidden')).toBe(true);
+    });
+
+    test('starting from an open camera check keeps the night-time reading up', async () => {
+        el('check').click();
+        await settle();
 
         await startWatching();
 
         expect(el('setup-help').classList.contains('hidden')).toBe(true);
         expect(el('night-help').classList.contains('hidden')).toBe(false);
+    });
+
+    test('the setup advice comes back when the night never got going', async () => {
+        stubs.calibrate.mockResolvedValue({ meanLuminance: 2, tooDark: true, dim: true, diffThreshold: 14 });
+
+        await startWatching();
+
+        expect(el('setup-help').classList.contains('hidden')).toBe(false);
+        expect(el('night-help').classList.contains('hidden')).toBe(true);
+    });
+
+    test('the setup advice comes back when the camera is refused', async () => {
+        stubs.cameraStart.mockRejectedValue(new Error('Permission denied'));
+
+        await startWatching();
+
+        expect(el('state').textContent).toBe('Error');
+        expect(el('setup-help').classList.contains('hidden')).toBe(false);
+        expect(el('night-help').classList.contains('hidden')).toBe(true);
     });
 
     // The hero's own start button forwards to the card's, so a page can offer the
@@ -551,7 +635,7 @@ describe('capture page', () => {
         await startWatching();
 
         expect(el('banner').textContent).toContain('very dim');
-        expect(el('state').textContent).toBe('Watching');
+        expect(el('state').textContent).toBe('Tracking');
     });
 
     test('a refused camera leaves the start button usable', async () => {
@@ -623,7 +707,9 @@ describe('capture page', () => {
         expect(stubs.grabProcessedFrame.mock.calls.length).toBe(framesWhileWatching);
     });
 
-    test('a person walking into shot is ignored rather than tracked as a swarm', async () => {
+    // Ignored quietly: the status line used to announce it, and the longer text
+    // re-wrapped the header's buttons on every frame it came and went.
+    test('a person walking into shot is ignored rather than tracked as a swarm, and the status does not say so', async () => {
         stubs.grabProcessedFrame.mockImplementation(() => makeFrame(64, 64, 200));
         await startWatching();
         await vi.advanceTimersByTimeAsync(1000);
@@ -633,13 +719,56 @@ describe('capture page', () => {
         stubs.grabProcessedFrame.mockImplementation(() => paintRect(makeFrame(64, 64, 200), 0, 0, 40, 40, 100));
         await vi.advanceTimersByTimeAsync(1000);
 
-        expect(el('state').textContent).toBe(LARGE_MOTION_MESSAGE);
+        expect(el('state').textContent).toBe('Tracking');
+        expect(el('state').textContent).not.toBe(LARGE_MOTION_MESSAGE);
         expect(stubs.uploaderEnqueue).not.toHaveBeenCalled();
 
         stubs.grabProcessedFrame.mockImplementation(() => makeFrame(64, 64, 200));
         await vi.advanceTimersByTimeAsync(1000);
 
-        expect(el('state').textContent).toBe('Watching');
+        expect(el('state').textContent).toBe('Tracking');
+    });
+
+    // A greyed-out "Start tracking" says nothing about the countdown or the
+    // calibration under way; the button carries the status until it is usable again.
+    test('the start button shows the status with a spinner while it is disabled', async () => {
+        expect(el('start-play').classList.contains('hidden')).toBe(false);
+        expect(el('start-spinner').classList.contains('hidden')).toBe(true);
+
+        el('start').click();
+        el('preflight-start').click();
+        await settle();
+
+        expect(el('start').hasAttribute('disabled')).toBe(true);
+        expect(el('start-spinner').classList.contains('hidden')).toBe(false);
+        expect(el('start-play').classList.contains('hidden')).toBe(true);
+        expect(el('start-label').textContent).toBe(el('state').textContent);
+        expect(el('start-label').textContent).not.toBe('Start tracking');
+
+        await vi.advanceTimersByTimeAsync(LEAVE_ROOM_SECONDS * 1000);
+
+        expect(el('start-label').textContent).toBe(el('state').textContent);
+    });
+
+    test('the start button gets its name and play icon back when the night never got going', async () => {
+        stubs.calibrate.mockResolvedValue({ meanLuminance: 2, tooDark: true, dim: true, diffThreshold: 14 });
+
+        await startWatching();
+
+        expect(el('state').textContent).toBe('Too dark');
+        expect(el('start').hasAttribute('disabled')).toBe(false);
+        expect(el('start-label').textContent).toBe('Start tracking');
+        expect(el('start-play').classList.contains('hidden')).toBe(false);
+        expect(el('start-spinner').classList.contains('hidden')).toBe(true);
+    });
+
+    test('backing out of the checklist gives the start button its name back', async () => {
+        el('start').click();
+        el('preflight-cancel').click();
+        await settle();
+
+        expect(el('start-label').textContent).toBe('Start tracking');
+        expect(el('start-spinner').classList.contains('hidden')).toBe(true);
     });
 
     test('closing the tab mid-night is challenged first', async () => {
@@ -694,7 +823,7 @@ describe('capture page', () => {
             expect(stubs.localSinkStart).toHaveBeenCalled();
             expect(stubs.uploaderStoreReference).not.toHaveBeenCalled();
             expect(fetch).not.toHaveBeenCalled();
-            expect(el('state').textContent).toBe('Watching');
+            expect(el('state').textContent).toBe('Tracking');
         });
 
         test('the status line says the reference frame is being saved, not uploaded', async () => {

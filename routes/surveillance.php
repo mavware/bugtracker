@@ -6,7 +6,7 @@ use App\Http\Controllers\Surveillance\ImportController;
 use App\Http\Controllers\Surveillance\WatchController;
 use Illuminate\Support\Facades\Route;
 
-// Watching a room needs no account: these pages keep the night in the visitor's
+// Tracking a room needs no account: these pages keep the night in the visitor's
 // browser and never write a row. Everything else on this file is owner-only.
 Route::get('watch', [WatchController::class, 'capture'])->name('watch.capture');
 Route::get('watch/{localId}/report', [WatchController::class, 'report'])->whereUuid('localId')->name('watch.report');
