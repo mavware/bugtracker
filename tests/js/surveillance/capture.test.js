@@ -134,7 +134,7 @@ function mountPage(config = { csrfToken: 'test-csrf-token', routes: ROUTES }) {
             <div data-capture="night-help" class="hidden">If the screen keeps sleeping…</div>
             <dialog data-capture="preflight">
                 <button data-capture="preflight-cancel">Not yet</button>
-                <button data-capture="preflight-start">Start, I'm leaving</button>
+                <button data-capture="preflight-start">Start Tracking</button>
             </dialog>
         </section>
     `;

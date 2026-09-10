@@ -227,7 +227,7 @@
                 {{ __('Not yet') }}
             </flux:button>
             <flux:button variant="primary" icon="play" data-capture="preflight-start" data-test="preflight-start-button">
-                {{ __('Start, I\'m leaving') }}
+                {{ __('Start tracking') }}
             </flux:button>
         </div>
     </dialog>
