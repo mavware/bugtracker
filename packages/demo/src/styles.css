@@ -349,12 +349,12 @@ code {
     height: 100%;
 }
 
-/* The sample room standing in for a camera that has not opened yet. 4:3 is the
+/* The sample room standing in for a camera that has not opened yet. 2:1 is the
    drawing's own shape, and the only thing giving the stage a height while the
    video beside it is hidden. */
 .sample-stage {
     position: relative;
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 2 / 1;
 }
 
 .sample-room {
@@ -376,14 +376,27 @@ code {
     color: #d4d4d8;
 }
 
-/* The dashes crawl along each trail, the way the report replays a real one. */
+/* The one trail, in the accent, drawing itself in as the page settles. The path
+   carries pathLength="1", so the dash pattern is in path fractions and no length
+   has to be measured or kept in step with the d attribute. It runs once and holds,
+   so the finished trail is what stays on screen. */
+.trail-group {
+    color: var(--accent);
+}
+
 .trail {
-    animation: trail 6s linear infinite;
+    animation: trail 1s ease-out forwards;
+}
+
+/* The arrowhead waits for the line to reach it. `both` keeps it invisible through
+   the delay rather than flashing on before the trail arrives. */
+.trail-tip {
+    animation: trail-tip 200ms ease-out 850ms both;
 }
 
 @keyframes trail {
     from {
-        stroke-dashoffset: 120;
+        stroke-dashoffset: 1;
     }
 
     to {
@@ -391,8 +404,21 @@ code {
     }
 }
 
+@keyframes trail-tip {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Dropping the animations leaves dashoffset at 0 and the tip at full opacity, so
+   the whole trail is simply there — the right still picture. */
 @media (prefers-reduced-motion: reduce) {
-    .trail {
+    .trail,
+    .trail-tip {
         animation: none;
     }
 }

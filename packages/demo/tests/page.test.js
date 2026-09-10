@@ -54,7 +54,7 @@ describe('demo capture page', () => {
         expect(placeholder).not.toBeNull();
         expect(placeholder.classList.contains('hidden')).toBe(false);
         expect(stage.querySelector('[data-capture="video"]').classList.contains('hidden')).toBe(true);
-        expect(placeholder.querySelectorAll('[data-test="sample-room-trail"]')).toHaveLength(3);
+        expect(placeholder.querySelectorAll('[data-test="sample-room-trail"]')).toHaveLength(1);
     });
 
     // The numbers belong under the camera they were read off rather than in a side

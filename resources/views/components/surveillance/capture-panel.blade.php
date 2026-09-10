@@ -62,7 +62,7 @@
                          over around every camera.start()/stop(): the live picture has to
                          be the element setting this box's height, because the overlay
                          canvas is sized from the video's own client box. --}}
-                    <div data-capture="placeholder" class="relative aspect-4/3">
+                    <div data-capture="placeholder" class="relative aspect-2/1">
                         <x-surveillance.sample-room aria-hidden="true" class="absolute inset-0" />
 
                         <div class="absolute bottom-3 left-3 rounded-md bg-black/60 px-2 py-1 text-xs text-zinc-300 backdrop-blur">

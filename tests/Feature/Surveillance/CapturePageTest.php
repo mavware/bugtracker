@@ -73,7 +73,7 @@ test('the capture stage shows the sample room until the camera opens', function 
         ->assertSee('<video data-capture="video" class="hidden w-full"', false)
         ->assertSee('A sample night. Your camera appears here once you start.');
 
-    expect(substr_count($response->getContent(), 'data-test="sample-room-trail"'))->toBe(3);
+    expect(substr_count($response->getContent(), 'data-test="sample-room-trail"'))->toBe(1);
 });
 
 // A slept screen stops the camera and loses the rest of the night, so the fix has

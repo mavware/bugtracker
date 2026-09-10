@@ -74,13 +74,13 @@ test('the pitch around the watch panel goes inert while a night records', functi
 });
 
 // The hero preview is decorative, but it is the page's picture of what a finished
-// report looks like, so the trails have to survive template edits. Counted within
-// the hero and not across the page: the watch panel above it draws the same room
-// as its camera placeholder, so a whole-page count would pass on either alone.
-test('the hero preview draws every sample trail', function () {
+// report looks like, so its one trail has to survive template edits. Counted within
+// the hero and not across the page: anywhere else the same room is drawn would
+// otherwise satisfy this on its own.
+test('the hero preview draws the sample trail', function () {
     $content = $this->get(route('home'))->assertOk()->getContent();
 
     $hero = Str::after($content, 'data-test="welcome-hero-preview"');
 
-    expect(substr_count(Str::before($hero, '</section>'), 'data-test="sample-room-trail"'))->toBe(3);
+    expect(substr_count(Str::before($hero, '</section>'), 'data-test="sample-room-trail"'))->toBe(1);
 });

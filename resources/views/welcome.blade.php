@@ -110,7 +110,7 @@
                                 <span class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('Started 22:40') }}</span>
                             </div>
 
-                            <div class="relative aspect-4/3 bg-zinc-900">
+                            <div class="relative aspect-2/1 bg-zinc-900">
                                 <x-surveillance.sample-room class="absolute inset-0" />
 
                                 <div class="absolute top-3 left-3 flex items-center gap-1.5 rounded-md bg-black/60 px-2 py-1 text-xs font-medium text-amber-300 backdrop-blur">

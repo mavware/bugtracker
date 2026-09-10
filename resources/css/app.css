@@ -35,16 +35,33 @@
     --color-accent-content: var(--color-amber-700);
     --color-accent-foreground: var(--color-amber-950);
 
-    /* Welcome page hero: a dashed bug trail that appears to crawl along its path. */
-    --animate-trail: trail 6s linear infinite;
+    /* The sample room's one trail, drawing itself in as the page settles: the path
+       carries pathLength="1" so the dash pattern is in path fractions and no length
+       has to be measured here or kept in step with the d attribute. Runs once and
+       holds, so the finished trail is what stays on screen. */
+    --animate-trail: trail 1s ease-out forwards;
+
+    /* The arrowhead waits for the line to reach it. `both` keeps it invisible
+       through the delay rather than flashing on before the trail arrives. */
+    --animate-trail-tip: trail-tip 200ms ease-out 850ms both;
 
     @keyframes trail {
         from {
-            stroke-dashoffset: 120;
+            stroke-dashoffset: 1;
         }
 
         to {
             stroke-dashoffset: 0;
+        }
+    }
+
+    @keyframes trail-tip {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
         }
     }
 }
