@@ -35,19 +35,33 @@
     --color-accent-content: var(--color-amber-700);
     --color-accent-foreground: var(--color-amber-950);
 
-    /* The sample room's one trail, drawing itself in as the page settles: the path
-       carries pathLength="1" so the dash pattern is in path fractions and no length
-       has to be measured here or kept in step with the d attribute. Runs once and
-       holds, so the finished trail is what stays on screen. */
-    --animate-trail: trail 1s ease-out forwards;
+    /* The sample room's one trail. Two of these animate stroke-dashoffset and an
+       element only has one of it, so they run on two paths sharing the same d: the
+       crawl on the dashed line you can see, and the reveal on a white stroke inside
+       a <mask> that uncovers it over the first second. Only the mask's path carries
+       pathLength="1", which puts its dash pattern in path fractions so no length
+       has to be measured here or kept in step with the d attribute. */
+    --animate-trail-reveal: trail-reveal 1s ease-out forwards;
+    --animate-trail-crawl: trail-crawl 6s linear infinite;
 
     /* The arrowhead waits for the line to reach it. `both` keeps it invisible
        through the delay rather than flashing on before the trail arrives. */
     --animate-trail-tip: trail-tip 200ms ease-out 850ms both;
 
-    @keyframes trail {
+    @keyframes trail-reveal {
         from {
             stroke-dashoffset: 1;
+        }
+
+        to {
+            stroke-dashoffset: 0;
+        }
+    }
+
+    /* 120 is ten whole 6-on 6-off periods, so the loop repeats with no seam. */
+    @keyframes trail-crawl {
+        from {
+            stroke-dashoffset: 120;
         }
 
         to {

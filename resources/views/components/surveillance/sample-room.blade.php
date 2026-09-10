@@ -16,6 +16,7 @@
     // Per instance: two of these on one page would otherwise both paint with
     // whichever <defs> the browser met first.
     $lamplightId = uniqid('sample-room-lamplight-');
+    $revealId = uniqid('sample-room-reveal-');
 @endphp
 
 <svg viewBox="0 0 400 200" fill="none" {{ $attributes->class(['block size-full']) }}>
@@ -27,6 +28,22 @@
             <stop offset="0.55" stop-color="#a8a29e" stop-opacity="0.13" />
             <stop offset="1" stop-color="#a8a29e" stop-opacity="0" />
         </radialGradient>
+
+        {{-- The reveal: the same path, stroked white wide enough to cover the dashed
+             line and its round caps, drawing itself in over the first second. It has
+             to be a mask because the line below is already spending its own
+             stroke-dashoffset on the crawl, and an element only has one. --}}
+        <mask id="{{ $revealId }}">
+            <path
+                d="{{ $trail }}"
+                pathLength="1"
+                stroke="#fff"
+                stroke-width="7"
+                stroke-linecap="round"
+                stroke-dasharray="1"
+                class="motion-safe:animate-trail-reveal"
+            />
+        </mask>
     </defs>
 
     {{-- The reference frame: a living room at night, from a camera propped on a
@@ -73,21 +90,22 @@
          rather than leaving the room. --}}
     <rect x="0" y="163" width="4" height="26" fill="rgb(74 222 128 / 0.65)" />
 
-    {{-- Drawn once over a second rather than sitting there finished: pathLength="1"
-         makes the dash pattern one path-length long, so animating the offset from 1
-         to 0 walks the line from the entry dot to the tip with no measuring. Without
-         motion-safe the animation is dropped and the dashoffset default of 0 leaves
-         the whole trail on screen, which is the right still picture. --}}
+    {{-- The dashes crawl along the path the way the report replays a real night,
+         and the mask walks the line out from the entry dot to the tip over the first
+         second. Drop motion-safe and both animations go: the dashes hold still at
+         offset 0 and the mask sits fully drawn, leaving a static dotted trail, which
+         is the right still picture. --}}
     <g data-test="sample-room-trail" class="text-accent">
-        <path
-            d="{{ $trail }}"
-            pathLength="1"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            stroke-dasharray="1"
-            class="motion-safe:animate-trail"
-        />
+        <g mask="url(#{{ $revealId }})">
+            <path
+                d="{{ $trail }}"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-dasharray="6 6"
+                class="motion-safe:animate-trail-crawl"
+            />
+        </g>
         <circle cx="2" cy="176" r="9" fill="currentColor" opacity="0.2" />
         <circle cx="2" cy="176" r="4" fill="currentColor" />
         <path d="M 356 18 L 350 32 L 362 32 Z" fill="currentColor" class="motion-safe:animate-trail-tip" />

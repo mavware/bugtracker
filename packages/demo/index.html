@@ -78,6 +78,23 @@
                                         <stop offset="0.55" stop-color="#a8a29e" stop-opacity="0.13" />
                                         <stop offset="1" stop-color="#a8a29e" stop-opacity="0" />
                                     </radialGradient>
+
+                                    <!-- The reveal: the same path, stroked white wide enough to
+                                         cover the dashed line and its round caps, drawing itself
+                                         in over the first second. It has to be a mask because the
+                                         line below is already spending its own stroke-dashoffset
+                                         on the crawl, and an element only has one. -->
+                                    <mask id="demo-sample-room-reveal">
+                                        <path
+                                            d="M 2 176 C 60 186, 130 180, 186 158 C 232 140, 288 138, 296 116 C 304 94, 258 84, 222 98 C 190 110, 186 142, 214 154 C 246 168, 300 148, 326 118 C 344 96, 354 64, 356 32"
+                                            pathLength="1"
+                                            stroke="#fff"
+                                            stroke-width="7"
+                                            stroke-linecap="round"
+                                            stroke-dasharray="1"
+                                            class="trail-reveal"
+                                        />
+                                    </mask>
                                 </defs>
 
                                 <!-- The room, at the shape and coordinates the app component
@@ -110,21 +127,21 @@
                                 <rect x="0" y="163" width="4" height="26" fill="rgb(74 222 128 / 0.65)" />
 
                                 <!-- The night's one trail: in at the left edge, a loop over the
-                                     rug, and up to the corner Start watching sits in. Drawn once
-                                     over a second rather than sitting there finished:
-                                     pathLength="1" makes the dash pattern one path-length long,
-                                     so animating the offset from 1 to 0 walks the line from the
-                                     entry dot to the tip with no measuring. -->
+                                     rug, and up to the corner Start watching sits in. The dashes
+                                     crawl along it the way the report replays a real night, and
+                                     the mask walks it out from the entry dot to the tip over the
+                                     first second. -->
                                 <g data-test="sample-room-trail" class="trail-group">
-                                    <path
-                                        d="M 2 176 C 60 186, 130 180, 186 158 C 232 140, 288 138, 296 116 C 304 94, 258 84, 222 98 C 190 110, 186 142, 214 154 C 246 168, 300 148, 326 118 C 344 96, 354 64, 356 32"
-                                        pathLength="1"
-                                        stroke="currentColor"
-                                        stroke-width="2.5"
-                                        stroke-linecap="round"
-                                        stroke-dasharray="1"
-                                        class="trail"
-                                    />
+                                    <g mask="url(#demo-sample-room-reveal)">
+                                        <path
+                                            d="M 2 176 C 60 186, 130 180, 186 158 C 232 140, 288 138, 296 116 C 304 94, 258 84, 222 98 C 190 110, 186 142, 214 154 C 246 168, 300 148, 326 118 C 344 96, 354 64, 356 32"
+                                            stroke="currentColor"
+                                            stroke-width="2.5"
+                                            stroke-linecap="round"
+                                            stroke-dasharray="6 6"
+                                            class="trail-crawl"
+                                        />
+                                    </g>
                                     <circle cx="2" cy="176" r="9" fill="currentColor" opacity="0.2" />
                                     <circle cx="2" cy="176" r="4" fill="currentColor" />
                                     <path d="M 356 18 L 350 32 L 362 32 Z" fill="currentColor" class="trail-tip" />
