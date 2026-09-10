@@ -2,6 +2,7 @@
 
 use App\Models\SurveillanceSession;
 use App\Models\User;
+use Illuminate\Support\Str;
 use Livewire\Livewire;
 
 // The check-label span is asserted alongside the buttons because capture.js
@@ -77,17 +78,26 @@ test('the capture stage shows the sample room until the camera opens', function 
 });
 
 // A slept screen stops the camera and loses the rest of the night, so the fix has
-// to be on the page they set the device up on, not buried in help.
-test('the capture page says how to stop the screen sleeping', function () {
+// to be on the page they set the device up on, not buried in help — and in the
+// block capture.js reveals when the night starts, because that is when a screen
+// can sleep. The setup advice is hidden at that moment.
+test('the capture page says how to stop the screen sleeping, in the night-time reading', function () {
     $user = User::factory()->create();
     $session = SurveillanceSession::factory()->for($user)->create();
 
-    $this->actingAs($user)
+    $content = $this->actingAs($user)
         ->get(route('surveillance.capture', $session))
-        ->assertSee('If the screen keeps sleeping')
-        ->assertSee('Auto-Lock')
-        ->assertSee('Screen timeout')
-        ->assertSee('Low Power Mode');
+        ->assertOk()
+        ->getContent();
+
+    $nightHelp = Str::between($content, 'data-capture="night-help"', 'Detection runs entirely in this browser');
+
+    expect($nightHelp)
+        ->toContain('Keep it running all night')
+        ->toContain('If the screen keeps sleeping')
+        ->toContain('Auto-Lock')
+        ->toContain('Screen timeout')
+        ->toContain('Low Power Mode');
 });
 
 // A slept or hijacked capture device can only be noticed from somewhere else, so

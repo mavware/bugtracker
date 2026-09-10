@@ -48,6 +48,7 @@ function initCaptureApp(root) {
         brightness: el('brightness'),
         debugToggle: el('debug-toggle'),
         setupHelp: el('setup-help'),
+        nightHelp: el('night-help'),
         idleLight: el('idle-light'),
         liveLight: el('live-light'),
         started: el('started'),
@@ -77,6 +78,10 @@ function initCaptureApp(root) {
         setState('Error');
         showBanner(String(error));
     }));
+    // A page may put a second start button in its own copy. It forwards to the
+    // real one, so the checklist, the camera and the countdown run once, and a
+    // disabled start button swallows the forwarded click the way it does its own.
+    el('start-alias')?.addEventListener('click', () => ui.startButton.click());
     ui.checkButton.addEventListener('click', () => toggleCameraCheck().catch((error) => {
         // Same reasoning as the start button: a refused prompt must not leave the
         // page stuck believing a preview is open.
@@ -257,6 +262,7 @@ function initCaptureApp(root) {
         setNavigationLocked(true);
         showRecording(true);
         ui.setupHelp.classList.add('hidden');
+        ui.nightHelp.classList.remove('hidden');
         ui.startButton.classList.add('hidden');
         ui.endButton.classList.remove('hidden');
         setState(watchingState(false));

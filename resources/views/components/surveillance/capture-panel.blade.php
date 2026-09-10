@@ -1,26 +1,34 @@
 @props([
     'config',
-    'name',
-    'intro',
+    'name' => null,
+    'intro' => null,
     'mode' => 'server',
+    'asideFirst' => false,
 ])
 
-{{-- The capture page proper, shared by the logged-in page and the guest one.
-     capture.js reads data-config from #capture-app and drives every data-capture
-     element below; the surrounding page only chooses the copy and the setup help. --}}
+{{-- The capture page proper, shared by the logged-in page, the guest one and the
+     welcome hero. capture.js reads data-config from #capture-app and drives every
+     data-capture element below; the surrounding page only chooses the copy.
+
+     The side column has two faces. setupHelp is for an idle page and goes the
+     moment a night starts; nightHelp is hidden until then and holds what is
+     worth reading with the room dark. asideFirst puts the column before the
+     camera, which is how a hero reads: copy, then the thing it is about. --}}
 <section class="w-full" id="capture-app" data-config="{{ json_encode($config) }}">
-    <div>
-        <h1 class="text-4xl font-semibold tracking-tight text-balance sm:text-5xl lg:text-6xl">
-            {{ $name ?? '' }}
-        </h1>
-        <flux:text class="mt-2">{{ $intro ?? '' }}</flux:text>
-    </div>
+    @if ($name !== null)
+        <div>
+            <h1 class="text-4xl font-semibold tracking-tight text-balance sm:text-5xl lg:text-6xl">
+                {{ $name }}
+            </h1>
+            <flux:text class="mt-2">{{ $intro ?? '' }}</flux:text>
+        </div>
+    @endif
 
     <div data-capture="banner" class="mt-4 hidden rounded-lg border border-amber-500/50 bg-amber-500/10 p-3 text-sm text-amber-600 dark:text-amber-400"></div>
 
-    <div class="mt-6 grid gap-6 lg:grid-cols-3">
+    <div @class(['grid gap-6 lg:grid-cols-3', 'mt-6' => $name !== null, 'mt-4' => $name === null])>
         <div class="lg:col-span-2">
-            <div class="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700">
+            <div class="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
                 {{-- The night's own header, sitting on the camera it is watching: what
                      the capture is doing on the left, and the controls for it on the
                      right. capture.js swaps the light and the buttons over at the one
@@ -107,13 +115,27 @@
             </label>
         </div>
 
-        <div class="space-y-4">
-            {{-- Setup advice, not night-time reading: hidden once watching starts. --}}
+        <div @class(['space-y-4', 'order-first' => $asideFirst])>
+            {{-- Setup advice, or a hero's copy: idle-page reading, hidden once
+                 watching starts. --}}
             <div data-capture="setup-help" class="space-y-4">
                 {{ $setupHelp ?? '' }}
+            </div>
+
+            {{-- What takes its place for the night. The screen-sleep advice lives
+                 here rather than in the setup help because a slept screen is the
+                 one thing that silently ends the night, so it has to be on screen
+                 while the night is running, not only while it is being set up. --}}
+            <div data-capture="night-help" class="hidden space-y-4">
+                {{ $nightHelp ?? '' }}
 
                 <div class="rounded-xl border border-zinc-200 p-4 text-sm text-zinc-500 dark:border-zinc-700">
-                    <flux:heading size="sm">{{ __('If the screen keeps sleeping') }}</flux:heading>
+                    <flux:heading size="sm">{{ __('Keep it running all night') }}</flux:heading>
+                    <p class="mt-2">
+                        {{ __('Leave this device plugged in, the screen on, and this tab in front. Opening anything else on it ends the night.') }}
+                    </p>
+
+                    <flux:heading size="sm" class="mt-4">{{ __('If the screen keeps sleeping') }}</flux:heading>
                     <p class="mt-2">
                         {{ __('This page asks the device to stay awake on its own, so usually there is nothing to do. If it sleeps anyway, the camera stops and the rest of the night is lost — set it manually once:') }}
                     </p>
@@ -126,9 +148,9 @@
                 </div>
             </div>
 
-            {{-- The claim that has to hold all night, so it sits outside setup-help,
-                 which is hidden the moment watching starts. A page can replace it to
-                 fold its own note about the night's storage into the same box. --}}
+            {{-- The claim that has to hold all night, so it sits outside both faces
+                 above. A page can replace it to fold its own note about the night's
+                 storage into the same box. --}}
             <div class="rounded-xl border border-zinc-200 p-4 text-sm text-zinc-500 dark:border-zinc-700">
                 @if (isset($privacyNote))
                     {{ $privacyNote }}

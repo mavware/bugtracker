@@ -130,7 +130,8 @@ function mountPage(config = { csrfToken: 'test-csrf-token', routes: ROUTES }) {
             <span data-capture="queue-depth"></span>
             <span data-capture="brightness"></span>
             <input type="checkbox" data-capture="debug-toggle" checked />
-            <div data-capture="setup-help">If the screen keeps sleeping…</div>
+            <div data-capture="setup-help">Aim the camera… <button data-capture="start-alias">Start watching tonight</button></div>
+            <div data-capture="night-help" class="hidden">If the screen keeps sleeping…</div>
         </section>
     `;
 
@@ -434,12 +435,36 @@ describe('capture page', () => {
         expect(nav().hasAttribute('inert')).toBe(false);
     });
 
-    test('the setup advice makes way once the night is under way', async () => {
+    test('the setup advice makes way for the night-time reading once the night is under way', async () => {
         expect(el('setup-help').classList.contains('hidden')).toBe(false);
+        expect(el('night-help').classList.contains('hidden')).toBe(true);
 
         await startWatching();
 
         expect(el('setup-help').classList.contains('hidden')).toBe(true);
+        expect(el('night-help').classList.contains('hidden')).toBe(false);
+    });
+
+    // The hero's own start button forwards to the card's, so a page can offer the
+    // start in its copy without a second start-up chain to keep in step.
+    test('a start button in the page copy starts the night through the real one', async () => {
+        el('start-alias').click();
+        await vi.advanceTimersByTimeAsync(LEAVE_ROOM_SECONDS * 1000);
+
+        expect(window.confirm).toHaveBeenCalledTimes(1);
+        expect(stubs.cameraStart).toHaveBeenCalledTimes(1);
+        expect(el('end').classList.contains('hidden')).toBe(false);
+    });
+
+    test('a forwarded click is swallowed while a start is already under way', async () => {
+        el('start').click();
+        await settle();
+
+        el('start-alias').click();
+        await vi.advanceTimersByTimeAsync(LEAVE_ROOM_SECONDS * 1000);
+
+        expect(window.confirm).toHaveBeenCalledTimes(1);
+        expect(stubs.cameraStart).toHaveBeenCalledTimes(1);
     });
 
     test('the end button only appears once watching', async () => {

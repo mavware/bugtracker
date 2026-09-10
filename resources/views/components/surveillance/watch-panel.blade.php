@@ -3,7 +3,11 @@
 {{-- The whole guest watch screen: the panel a night is run from and the table of
      nights this browser is holding. The watch page is this and nothing else, and
      the welcome page leads with it, so both get the same screen from one place —
-     two copies would drift the moment either was edited. --}}
+     two copies would drift the moment either was edited.
+
+     The copy beside the camera is the hero. It sits in the panel's setup slot so
+     it makes way the moment a night starts, and the night-time reading takes the
+     column over. --}}
 @auth
     <flux:callout icon="information-circle" class="mb-6" data-test="watch-signed-in-notice">
         <flux:callout.text>
@@ -16,58 +20,59 @@
 <x-surveillance.capture-panel
     :config="$config"
     mode="local"
+    :aside-first="true"
 >
+    <x-slot:setupHelp>
+        <div class="flex flex-col gap-5" data-test="watch-hero-copy">
+            <flux:badge color="amber" size="sm" icon="moon" class="w-fit">{{ __('Overnight pest surveillance') }}</flux:badge>
+
+            <h1 class="text-4xl font-semibold tracking-tight text-balance lg:text-5xl">
+                {{ __('Find out what walks through the kitchen at 3am.') }}
+            </h1>
+
+            <p class="text-lg text-pretty text-zinc-600 dark:text-zinc-400">
+                {{ __('Point any phone or laptop camera at the room, leave it running all night, and wake up to every sighting, where each one came in, and whether last week\'s bait station made any difference.') }}
+            </p>
+
+            <div class="flex flex-wrap items-center gap-3">
+                {{-- The same start as the card's own button: capture.js forwards the
+                     click, so the checklist, camera and countdown run exactly once. --}}
+                <flux:button variant="primary" icon="play" data-capture="start-alias" data-test="watch-hero-start">
+                    {{ __('Start watching tonight') }}
+                </flux:button>
+
+                @auth
+                    <flux:button :href="route('dashboard')" variant="ghost" icon-trailing="arrow-right">
+                        {{ __('Record to my account instead') }}
+                    </flux:button>
+                @else
+                    @if (Route::has('register'))
+                        <flux:button :href="route('register')" variant="ghost" icon-trailing="arrow-right">
+                            {{ __('Create a free account') }}
+                        </flux:button>
+                    @endif
+                @endauth
+            </div>
+
+            <ul class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-zinc-500 dark:text-zinc-400">
+                <li class="flex items-center gap-1.5">
+                    <flux:icon name="device-phone-mobile" variant="micro" />
+                    {{ __('No hardware to buy') }}
+                </li>
+                <li class="flex items-center gap-1.5">
+                    <flux:icon name="user-minus" variant="micro" />
+                    {{ __('No account needed') }}
+                </li>
+                <li class="flex items-center gap-1.5">
+                    <flux:icon name="lock-closed" variant="micro" />
+                    {{ __('Nothing is uploaded') }}
+                </li>
+            </ul>
+        </div>
+    </x-slot:setupHelp>
+
     {{-- Said once, in the box that stays up all night: what is kept, where it is
-         kept, and what removes it. It used to be split between here and the
-         setup advice, which disappears as soon as the night begins. --}}
-    <x-slot:heroSection>
-        <div class="flex flex-col gap-6">
-                        <flux:badge color="amber" size="sm" icon="moon" class="w-fit">{{ __('Overnight pest surveillance') }}</flux:badge>
-
-                        <h1 class="text-4xl font-semibold tracking-tight text-balance sm:text-5xl lg:text-6xl">
-                            {{ __('Find out what walks through the kitchen at 3am.') }}
-                        </h1>
-
-                        <p class="max-w-xl text-lg text-pretty text-zinc-600 dark:text-zinc-400">
-                            {{ __('Point any phone or laptop camera at the room, leave it running all night, and wake up to every sighting, where each one came in, and whether last week\'s bait station made any difference.') }}
-                        </p>
-
-                        <div class="flex flex-wrap items-center gap-3">
-                            @auth
-                                <flux:button :href="route('dashboard')" variant="primary" icon="play">
-                                    {{ __('Start a session') }}
-                                </flux:button>
-                            @else
-                                @if (Route::has('register'))
-                                    <flux:button :href="route('register')" variant="primary" icon="play">
-                                        {{ __('Create a free account') }}
-                                    </flux:button>
-                                @endif
-                                <flux:button :href="route('login')" variant="ghost" icon-trailing="arrow-right">
-                                    {{ __('I already have one') }}
-                                </flux:button>
-                                <flux:button :href="route('watch.capture')" variant="ghost" icon="eye" data-test="welcome-try-link">
-                                    {{ __('Try it tonight, no account') }}
-                                </flux:button>
-                            @endauth
-                        </div>
-
-                        <ul class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-zinc-500 dark:text-zinc-400">
-                            <li class="flex items-center gap-1.5">
-                                <flux:icon name="device-phone-mobile" variant="micro" />
-                                {{ __('No hardware to buy') }}
-                            </li>
-                            <li class="flex items-center gap-1.5">
-                                <flux:icon name="cpu-chip" variant="micro" />
-                                {{ __('Detection runs on the device') }}
-                            </li>
-                            <li class="flex items-center gap-1.5">
-                                <flux:icon name="lock-closed" variant="micro" />
-                                {{ __('Only you can see your footage') }}
-                            </li>
-                        </ul>
-                    </div>
-    </x-slot:heroSection>
+         kept, and what removes it. --}}
     <x-slot:privacyNote>
         <flux:heading size="sm">{{ __('Nothing leaves this device') }}</flux:heading>
         <p class="mt-2">
