@@ -132,6 +132,10 @@ function mountPage(config = { csrfToken: 'test-csrf-token', routes: ROUTES }) {
             <input type="checkbox" data-capture="debug-toggle" checked />
             <div data-capture="setup-help">Aim the camera… <button data-capture="start-alias">Start watching tonight</button></div>
             <div data-capture="night-help" class="hidden">If the screen keeps sleeping…</div>
+            <dialog data-capture="preflight">
+                <button data-capture="preflight-cancel">Not yet</button>
+                <button data-capture="preflight-start">Start, I'm leaving</button>
+            </dialog>
         </section>
     `;
 
@@ -189,7 +193,6 @@ describe('capture page', () => {
         stubs.localSinkOptions = null;
 
         mountPage();
-        window.confirm = vi.fn(() => true);
         window.location.assign = vi.fn();
         vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true })));
 
@@ -202,9 +205,10 @@ describe('capture page', () => {
         vi.unstubAllGlobals();
     });
 
-    /** Click start and sit through the leave-the-room countdown. */
+    /** Click start, confirm the room checklist, and sit through the leave-the-room countdown. */
     async function startWatching() {
         el('start').click();
+        el('preflight-start').click();
         await vi.advanceTimersByTimeAsync(LEAVE_ROOM_SECONDS * 1000);
     }
 
@@ -271,7 +275,7 @@ describe('capture page', () => {
         await settle();
 
         expect(stubs.cameraStart).toHaveBeenCalled();
-        expect(window.confirm).not.toHaveBeenCalled();
+        expect(el('preflight').open).toBe(false);
         expect(stubs.calibrate).not.toHaveBeenCalled();
         expect(fetch).not.toHaveBeenCalled();
         expect(el('check-label').textContent).toBe('Stop camera');
@@ -310,8 +314,8 @@ describe('capture page', () => {
         el('check').click();
         await settle();
 
-        window.confirm = vi.fn(() => false);
         el('start').click();
+        el('preflight-cancel').click();
         await settle();
 
         expect(stubs.cameraStop).not.toHaveBeenCalled();
@@ -322,6 +326,7 @@ describe('capture page', () => {
     // so it goes the moment start is pressed, not once watching has begun.
     test('the camera check makes way as soon as a night is started', async () => {
         el('start').click();
+        el('preflight-start').click();
         await settle();
 
         expect(el('check').classList.contains('hidden')).toBe(true);
@@ -355,16 +360,15 @@ describe('capture page', () => {
         el('start').click();
         await settle();
 
-        const [message] = window.confirm.mock.calls[0];
-        expect(message).toContain('Turn on a light');
-        expect(message).toContain('Turn off fans');
-        expect(message).toContain('changing colour reads as movement');
+        expect(el('preflight').open).toBe(true);
+        expect(el('start').hasAttribute('disabled')).toBe(true);
+        expect(stubs.cameraStart).not.toHaveBeenCalled();
     });
 
     test('backing out of the checklist starts nothing and leaves the button usable', async () => {
-        window.confirm = vi.fn(() => false);
-
-        await startWatching();
+        el('start').click();
+        el('preflight-cancel').click();
+        await vi.advanceTimersByTimeAsync(LEAVE_ROOM_SECONDS * 1000);
 
         expect(stubs.cameraStart).not.toHaveBeenCalled();
         expect(stubs.calibrate).not.toHaveBeenCalled();
@@ -373,8 +377,20 @@ describe('capture page', () => {
         expect(el('state').textContent).toBe('');
     });
 
+    // Escape is how a keyboard closes a dialog, and it hands back no value: that
+    // has to read as backing out, not as a start.
+    test('closing the checklist with Escape counts as backing out', async () => {
+        el('start').click();
+        el('preflight').close();
+        await vi.advanceTimersByTimeAsync(LEAVE_ROOM_SECONDS * 1000);
+
+        expect(stubs.cameraStart).not.toHaveBeenCalled();
+        expect(el('start').hasAttribute('disabled')).toBe(false);
+    });
+
     test('nothing is measured until the user has had five seconds to leave', async () => {
         el('start').click();
+        el('preflight-start').click();
         await settle();
 
         // The preview is live so the room can be framed, but the scene is untouched.
@@ -449,21 +465,24 @@ describe('capture page', () => {
     // start in its copy without a second start-up chain to keep in step.
     test('a start button in the page copy starts the night through the real one', async () => {
         el('start-alias').click();
+        expect(el('preflight').open).toBe(true);
+        el('preflight-start').click();
         await vi.advanceTimersByTimeAsync(LEAVE_ROOM_SECONDS * 1000);
 
-        expect(window.confirm).toHaveBeenCalledTimes(1);
         expect(stubs.cameraStart).toHaveBeenCalledTimes(1);
         expect(el('end').classList.contains('hidden')).toBe(false);
     });
 
-    test('a forwarded click is swallowed while a start is already under way', async () => {
+    test('a forwarded click is swallowed while the checklist is already open', async () => {
         el('start').click();
         await settle();
 
+        // A second showModal() on an open dialog would throw; the disabled start
+        // button is what keeps the forwarded click from reaching it.
         el('start-alias').click();
+        el('preflight-start').click();
         await vi.advanceTimersByTimeAsync(LEAVE_ROOM_SECONDS * 1000);
 
-        expect(window.confirm).toHaveBeenCalledTimes(1);
         expect(stubs.cameraStart).toHaveBeenCalledTimes(1);
     });
 

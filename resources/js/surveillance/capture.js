@@ -12,7 +12,6 @@ import {
     LocalNightSink,
     openNightStore,
     overlayBoxes,
-    PREFLIGHT_MESSAGE,
     Tracker,
     WakeLock,
     wakeLockMessage,
@@ -49,6 +48,9 @@ function initCaptureApp(root) {
         debugToggle: el('debug-toggle'),
         setupHelp: el('setup-help'),
         nightHelp: el('night-help'),
+        preflight: el('preflight'),
+        preflightStart: el('preflight-start'),
+        preflightCancel: el('preflight-cancel'),
         idleLight: el('idle-light'),
         liveLight: el('live-light'),
         started: el('started'),
@@ -91,6 +93,7 @@ function initCaptureApp(root) {
         showBanner(String(error));
     }));
     ui.endButton.addEventListener('click', () => endNight());
+    ui.preflightCancel.addEventListener('click', () => ui.preflight.close(''));
     // The back button and closing the tab reach past the locked chrome, and either
     // one ends the night for good. Browsers word this prompt themselves; all we can
     // do is ask for it. Ending clears app.running first, so the trip to the report
@@ -189,10 +192,36 @@ function initCaptureApp(root) {
         ui.checkLabel.textContent = cameraCheckLabel(false);
     }
 
+    /**
+     * Put the room checklist in front of the user and wait for their answer. The
+     * dialog is the page's; Start closes it with a value, Cancel and Escape close
+     * it empty, and the close event is the one place both are read.
+     */
+    function askPreflight() {
+        return new Promise((resolve) => {
+            const onStart = () => ui.preflight.close('start');
+            const onClose = () => {
+                ui.preflightStart.removeEventListener('click', onStart);
+                resolve(ui.preflight.returnValue === 'start');
+            };
+
+            ui.preflightStart.addEventListener('click', onStart);
+            ui.preflight.addEventListener('close', onClose, { once: true });
+            ui.preflight.returnValue = '';
+            ui.preflight.showModal();
+        });
+    }
+
     async function startNight() {
         // Asked before the camera opens: the light has to be on before calibration
         // measures the scene, and a user who backs out should not have been filmed.
-        if (!window.confirm(PREFLIGHT_MESSAGE)) {
+        // The button is held disabled for the asking, so a second press — or a
+        // forwarded one — cannot open the checklist twice.
+        ui.startButton.setAttribute('disabled', 'disabled');
+
+        if (!(await askPreflight())) {
+            ui.startButton.removeAttribute('disabled');
+
             return;
         }
 

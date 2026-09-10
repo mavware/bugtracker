@@ -77,6 +77,33 @@ test('the capture stage shows the sample room until the camera opens', function 
     expect(substr_count($response->getContent(), 'data-test="sample-room-trail"'))->toBe(1);
 });
 
+// The room checklist is asked in a dialog of the page's own, so its copy lives
+// here rather than in the script. It must be on the page, closed, with the two
+// buttons capture.js reads the answer from.
+test('the capture page carries the room checklist capture.js asks before the camera opens', function () {
+    $user = User::factory()->create();
+    $session = SurveillanceSession::factory()->for($user)->create();
+
+    $content = $this->actingAs($user)
+        ->get(route('surveillance.capture', $session))
+        ->assertOk()
+        ->getContent();
+
+    $dialog = Str::between($content, '<dialog', '</dialog>');
+
+    expect($dialog)
+        ->toContain('data-capture="preflight"')
+        ->not->toContain(' open')
+        ->toContain('Before you start, check the room')
+        ->toContain('Turn on a light')
+        ->toContain('Turn off fans')
+        ->toContain('Changing colour reads as movement')
+        ->toContain('Draw the curtains')
+        ->toContain('five seconds once you press Start')
+        ->toContain('data-capture="preflight-start"')
+        ->toContain('data-capture="preflight-cancel"');
+});
+
 // A slept screen stops the camera and loses the rest of the night, so the fix has
 // to be on the page they set the device up on, not buried in help — and in the
 // block capture.js reveals when the night starts, because that is when a screen

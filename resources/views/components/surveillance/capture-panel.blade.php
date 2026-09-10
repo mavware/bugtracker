@@ -163,5 +163,74 @@
         </div>
     </div>
 
+    {{-- The room checklist, asked before the camera opens: the light has to be on
+         before calibration measures the scene, and someone who backs out should
+         not have been filmed. A native dialog rather than window.confirm so it can
+         be laid out, and rather than a Flux modal so capture.js can open and await
+         it with no Alpine in between. Start and Cancel close it with a return
+         value capture.js reads; Escape closes it empty, which counts as Cancel. --}}
+    <dialog
+        data-capture="preflight"
+        data-test="preflight-dialog"
+        class="m-auto w-[calc(100%-2rem)] max-w-lg rounded-2xl border border-zinc-200 bg-white p-0 text-zinc-900 shadow-2xl shadow-zinc-900/20 backdrop:bg-zinc-950/60 backdrop:backdrop-blur-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:shadow-black/60"
+    >
+        <div class="p-6 sm:p-8">
+            <div class="flex items-start gap-4">
+                <span class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
+                    <flux:icon name="moon" class="size-6" />
+                </span>
+                <div>
+                    <flux:heading size="lg">{{ __('Before you start, check the room') }}</flux:heading>
+                    <flux:text class="mt-1">{{ __('The camera watches for anything that changes between frames, so the room has to be lit, and still.') }}</flux:text>
+                </div>
+            </div>
+
+            <ol class="mt-6 space-y-3">
+                <li class="flex items-start gap-3 rounded-xl border border-zinc-200 p-3.5 dark:border-zinc-700">
+                    <flux:icon name="light-bulb" class="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                    <div>
+                        <p class="text-sm font-medium">{{ __('Turn on a light') }}</p>
+                        <p class="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">{{ __('A dim lamp or nightlight is enough, but the camera cannot see in pitch darkness.') }}</p>
+                    </div>
+                </li>
+                <li class="flex items-start gap-3 rounded-xl border border-zinc-200 p-3.5 dark:border-zinc-700">
+                    <flux:icon name="arrow-path" class="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                    <div>
+                        <p class="text-sm font-medium">{{ __('Turn off fans, heaters, and anything else that moves') }}</p>
+                        <p class="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">{{ __('A stirring curtain or a spinning blade is a sighting every few seconds.') }}</p>
+                    </div>
+                </li>
+                <li class="flex items-start gap-3 rounded-xl border border-zinc-200 p-3.5 dark:border-zinc-700">
+                    <flux:icon name="tv" class="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                    <div>
+                        <p class="text-sm font-medium">{{ __('Turn off televisions and screens, and cover blinking LEDs') }}</p>
+                        <p class="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">{{ __('Changing colour reads as movement.') }}</p>
+                    </div>
+                </li>
+                <li class="flex items-start gap-3 rounded-xl border border-zinc-200 p-3.5 dark:border-zinc-700">
+                    <flux:icon name="window" class="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                    <div>
+                        <p class="text-sm font-medium">{{ __('Draw the curtains if you can') }}</p>
+                        <p class="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">{{ __('So passing headlights do not sweep the room.') }}</p>
+                    </div>
+                </li>
+            </ol>
+
+            <div class="mt-6 flex items-center gap-2 rounded-xl bg-zinc-50 p-3.5 text-sm text-zinc-600 dark:bg-zinc-800/60 dark:text-zinc-300">
+                <flux:icon name="clock" variant="mini" class="shrink-0 text-zinc-400" />
+                {{ __('Then leave the room. You have five seconds once you press Start.') }}
+            </div>
+        </div>
+
+        <div class="flex flex-wrap justify-end gap-2 border-t border-zinc-200 px-6 py-4 sm:px-8 dark:border-zinc-700">
+            <flux:button variant="filled" data-capture="preflight-cancel" data-test="preflight-cancel-button">
+                {{ __('Not yet') }}
+            </flux:button>
+            <flux:button variant="primary" icon="play" data-capture="preflight-start" data-test="preflight-start-button">
+                {{ __('Start, I\'m leaving') }}
+            </flux:button>
+        </div>
+    </dialog>
+
     @vite('resources/js/surveillance/capture.js')
 </section>
