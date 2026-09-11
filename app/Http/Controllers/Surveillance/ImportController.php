@@ -27,7 +27,7 @@ class ImportController extends Controller
             abort(401);
         }
 
-        $validated = $this->validatedInput($request, $this->importNightRules());
+        $validated = $this->validatedInput($request, $this->importNightRules($user));
 
         $result = $import->handle($user, $validated);
 

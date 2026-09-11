@@ -47,6 +47,7 @@ class ImportLocalNight
                 [
                     'name' => __('Night of :date', ['date' => SurveillanceSession::nightDateFor($startedAt)->format('M j')]),
                     'room' => $room !== '' ? $room : null,
+                    'customer_id' => $validated->filled('customer_id') ? $validated->integer('customer_id') : null,
                     'status' => $validated->boolean('aborted')
                         ? SurveillanceSessionStatus::Aborted
                         : SurveillanceSessionStatus::Completed,

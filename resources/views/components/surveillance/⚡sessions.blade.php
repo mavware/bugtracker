@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -82,6 +83,14 @@ new class extends Component {
         $this->reset('search', 'status');
         $this->resetPage();
     }
+
+    /**
+     * claim.js dispatches this after importing a device-local night from the
+     * dashboard panel. Nothing to do but render again: the query re-runs and
+     * the new session is in it.
+     */
+    #[On('night-imported')]
+    public function refreshAfterImport(): void {}
 
     /**
      * @return Collection<int, Customer>

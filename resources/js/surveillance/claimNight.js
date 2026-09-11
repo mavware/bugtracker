@@ -12,10 +12,15 @@ export class ClaimError extends Error {
 }
 
 /**
+ * Once the account has the night, the local copy is removed: it was only ever
+ * a stand-in for the account, and keeping it would list the same night twice.
+ * A page still showing that copy passes keepLocalCopy, and the night is marked
+ * claimed instead so it can link to the account's report.
+ *
  * @returns {Promise<{ sessionId: number, reportUrl: string }>}
  * @throws {ClaimError} with the message to show, and the HTTP status.
  */
-export async function claimNight(store, nightId, { importUrl, csrfToken, room = null, fetch = globalThis.fetch }) {
+export async function claimNight(store, nightId, { importUrl, csrfToken, room = null, customerId = null, keepLocalCopy = false, fetch = globalThis.fetch }) {
     const night = await store.getNight(nightId);
 
     if (night === null) {
@@ -28,7 +33,7 @@ export async function claimNight(store, nightId, { importUrl, csrfToken, room = 
 
     let result = null;
 
-    for (const chunk of buildImportChunks(night, tracks, referenceBase64, { room })) {
+    for (const chunk of buildImportChunks(night, tracks, referenceBase64, { room, customerId })) {
         const response = await fetch(importUrl, {
             method: 'POST',
             headers: {
@@ -46,7 +51,11 @@ export async function claimNight(store, nightId, { importUrl, csrfToken, room = 
         result = await response.json();
     }
 
-    await store.patchNight(nightId, { claimedSessionId: result.session_id, claimedAt: Date.now() });
+    if (keepLocalCopy) {
+        await store.patchNight(nightId, { claimedSessionId: result.session_id, claimedAt: Date.now() });
+    } else {
+        await store.deleteNight(nightId);
+    }
 
     return { sessionId: result.session_id, reportUrl: result.report_url };
 }

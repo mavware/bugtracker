@@ -3,9 +3,11 @@
 namespace App\Concerns;
 
 use App\Models\SurveillanceSession;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ValidatedInput;
+use Illuminate\Validation\Rule;
 
 trait SurveillanceValidationRules
 {
@@ -55,11 +57,12 @@ trait SurveillanceValidationRules
      * Get the validation rules for importing a night recorded in the browser
      * without an account. The frame comes with the payload, so the points are
      * bounded by it rather than by a stored session. A night with no sightings
-     * is still a night, so the track list may be empty.
+     * is still a night, so the track list may be empty. A customer, if named,
+     * has to be one of the importing user's own.
      *
-     * @return array<string, array<int, string>>
+     * @return array<string, array<int, mixed>>
      */
-    protected function importNightRules(): array
+    protected function importNightRules(User $user): array
     {
         return [
             'local_id' => ['required', 'uuid'],
@@ -67,6 +70,7 @@ trait SurveillanceValidationRules
             'ended_at' => ['required', 'date', 'after_or_equal:started_at'],
             'aborted' => ['sometimes', 'boolean'],
             'room' => ['nullable', 'string', 'max:80'],
+            'customer_id' => ['sometimes', 'nullable', 'integer', Rule::exists('customers', 'id')->where('user_id', $user->id)],
             'frame_width' => ['required', 'integer', 'between:160,4096'],
             'frame_height' => ['required', 'integer', 'between:160,4096'],
             'settings' => ['sometimes', 'array'],

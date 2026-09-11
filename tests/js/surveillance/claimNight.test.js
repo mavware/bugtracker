@@ -32,8 +32,8 @@ describe('claimNight', () => {
         await store.putTrack(localTrackFromClosed(closedTrack('t1'), 'n1', 1280, 720));
     });
 
-    test('posts the night with the right headers and marks it claimed with the session it became', async () => {
-        const result = await claimNight(store, 'n1', { importUrl: IMPORT_URL, csrfToken: 'test-csrf-token', room: 'Kitchen', fetch });
+    test('posts the night with the right headers and removes the local copy once the account has it', async () => {
+        const result = await claimNight(store, 'n1', { importUrl: IMPORT_URL, csrfToken: 'test-csrf-token', room: 'Kitchen', customerId: '7', fetch });
 
         expect(fetch).toHaveBeenCalledTimes(1);
         const [url, options] = fetch.mock.calls[0];
@@ -44,10 +44,18 @@ describe('claimNight', () => {
         const body = JSON.parse(options.body);
         expect(body.local_id).toBe('n1');
         expect(body.room).toBe('Kitchen');
+        expect(body.customer_id).toBe(7);
         expect(body.reference_image).toBe('/9j/');
         expect(body.tracks[0].client_track_id).toBe('t1');
 
         expect(result).toEqual({ sessionId: 42, reportUrl: 'https://bugtracker.test/surveillance/42/report' });
+        expect(await store.getNight('n1')).toBeNull();
+        expect(await store.listTracks('n1')).toHaveLength(0);
+    });
+
+    test('a page still showing the copy can keep it, marked with the session it became', async () => {
+        await claimNight(store, 'n1', { importUrl: IMPORT_URL, csrfToken: 'x', keepLocalCopy: true, fetch });
+
         expect((await store.getNight('n1')).claimedSessionId).toBe(42);
     });
 

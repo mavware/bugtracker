@@ -16,13 +16,14 @@ export const CLAIM_FAILED_MESSAGE = 'Could not save this night to your account';
  * the same session; only the first carries the reference photo. A night with
  * no sightings still produces one chunk — an empty night is still a night.
  */
-export function buildImportChunks(night, tracks, referenceBase64, { room = null } = {}) {
+export function buildImportChunks(night, tracks, referenceBase64, { room = null, customerId = null } = {}) {
     const metadata = {
         local_id: night.id,
         started_at: new Date(night.startedAt).toISOString(),
         ended_at: new Date(night.endedAt ?? night.startedAt).toISOString(),
         aborted: night.status === 'aborted',
         room: room !== null && room.trim() !== '' ? room.trim() : null,
+        customer_id: customerId === null || customerId === '' ? null : Number(customerId),
         frame_width: night.frameWidth,
         frame_height: night.frameHeight,
         settings: night.settings ?? {},

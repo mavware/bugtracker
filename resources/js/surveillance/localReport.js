@@ -159,10 +159,13 @@ async function initLocalReport(root) {
         el('claim').setAttribute('disabled', 'disabled');
 
         try {
+            // Kept: this page is the local copy, and it stays readable with a
+            // link to the account's report rather than vanishing under the user.
             const { reportUrl } = await claimNight(store, nightId, {
                 importUrl: config.routes.import,
                 csrfToken: config.csrfToken,
                 room: el('room')?.value ?? null,
+                keepLocalCopy: true,
             });
 
             night = await store.getNight(nightId);

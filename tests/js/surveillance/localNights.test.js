@@ -132,7 +132,7 @@ describe('local nights list', () => {
         await stubs.store.putNight(night('a', new Date(2026, 8, 7, 22, 0).getTime()));
         await stubs.store.putNight(night('b', new Date(2026, 8, 8, 22, 0).getTime()));
         stubs.claimNight.mockImplementation(async (store, nightId) => {
-            await store.patchNight(nightId, { claimedSessionId: 9 });
+            await store.deleteNight(nightId);
 
             return { sessionId: 9, reportUrl: '/surveillance/9/report' };
         });
@@ -144,7 +144,9 @@ describe('local nights list', () => {
         expect(stubs.claimNight).toHaveBeenCalledTimes(2);
         expect(stubs.claimNight.mock.calls[0][2]).toMatchObject({ room: 'Hall', importUrl: '/surveillance/import' });
         expect(el('progress').textContent).toBe('2 nights saved to your account, 1 already saved.');
-        expect([...rows()].every((row) => row.querySelector('[data-cell="status"]').textContent.includes('saved to account'))).toBe(true);
+        // The imported copies are gone; the one saved earlier from its report stays listed as such.
+        expect([...rows()].map((row) => row.dataset.nightId)).toEqual(['done']);
+        expect(rows()[0].querySelector('[data-cell="status"]').textContent).toContain('saved to account');
     });
 
     test('a failed import is explained and the rest still go through', async () => {

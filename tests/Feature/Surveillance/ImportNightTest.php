@@ -2,6 +2,7 @@
 
 use App\Actions\Surveillance\ComputeNightlyTrend;
 use App\Enums\SurveillanceSessionStatus;
+use App\Models\Customer;
 use App\Models\SurveillanceSession;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
@@ -180,4 +181,42 @@ test('the import is validated like the live upload', function (array $overrides,
 
 test('a guest cannot import a night', function () {
     $this->postJson(route('surveillance.import'), importPayload())->assertUnauthorized();
+});
+
+// Each night is filed under a customer as it is imported, so a technician's
+// nights land on the right property without a second visit to the report.
+test('an imported night can be filed under one of the user\'s customers', function () {
+    Storage::fake('local');
+    $user = User::factory()->create();
+    $customer = Customer::factory()->for($user)->create();
+
+    $this->actingAs($user)
+        ->postJson(route('surveillance.import'), importPayload(['customer_id' => $customer->id]))
+        ->assertOk();
+
+    expect(SurveillanceSession::query()->sole()->customer_id)->toBe($customer->id);
+});
+
+test('an imported night cannot be filed under another user\'s customer', function () {
+    Storage::fake('local');
+    $user = User::factory()->create();
+    $strangersCustomer = Customer::factory()->create();
+
+    $this->actingAs($user)
+        ->postJson(route('surveillance.import'), importPayload(['customer_id' => $strangersCustomer->id]))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['customer_id']);
+
+    expect(SurveillanceSession::query()->count())->toBe(0);
+});
+
+test('an imported night with no customer, or an empty one, is filed under none', function () {
+    Storage::fake('local');
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->postJson(route('surveillance.import'), importPayload(['customer_id' => null]))
+        ->assertOk();
+
+    expect(SurveillanceSession::query()->sole()->customer_id)->toBeNull();
 });

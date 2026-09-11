@@ -32,7 +32,7 @@ describe('buildImportChunks', () => {
     test('sends the night metadata with every chunk and the photo with the first only', () => {
         const tracks = Array.from({ length: IMPORT_CHUNK_SIZE + 1 }, (_, index) => track(`t${index}`));
 
-        const chunks = buildImportChunks(night, tracks, 'cGhvdG8=', { room: ' Kitchen ' });
+        const chunks = buildImportChunks(night, tracks, 'cGhvdG8=', { room: ' Kitchen ', customerId: '7' });
 
         expect(chunks).toHaveLength(2);
         expect(chunks[0]).toMatchObject({
@@ -41,6 +41,7 @@ describe('buildImportChunks', () => {
             ended_at: '2026-09-09T05:00:00.000Z',
             aborted: false,
             room: 'Kitchen',
+            customer_id: 7,
             frame_width: 1280,
             frame_height: 720,
             settings: { procWidth: 320 },
@@ -65,12 +66,13 @@ describe('buildImportChunks', () => {
         });
     });
 
-    test('an empty night is still one chunk, a discarded one is flagged, and no room means null', () => {
+    test('an empty night is still one chunk, a discarded one is flagged, and no room or customer means null', () => {
         const [chunk] = buildImportChunks({ ...night, status: 'aborted' }, [], null, { room: '  ' });
 
         expect(chunk.tracks).toEqual([]);
         expect(chunk.aborted).toBe(true);
         expect(chunk.room).toBeNull();
+        expect(chunk.customer_id).toBeNull();
     });
 
     test('an interrupted night that never ended is closed at its start for the import', () => {
