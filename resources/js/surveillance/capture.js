@@ -87,16 +87,13 @@ function initCaptureApp(root) {
         // but cannot miss a deadline that every tick compares against.
         autoEndAt: null,
         loopTimer: null,
+        clockTimer: null,
     };
 
     ui.startButton.addEventListener('click', () => startNight().catch((error) => {
         // A refused camera prompt or a failed upload must leave the buttons usable,
         // otherwise the only way to try again is reloading the page.
-        setStartBusy(false);
-        showNightReading(false);
-        showCameraCheck(true);
-        showCameraStage(false);
-        setState('Error');
+        returnToIdle('Error');
         showBanner(String(error));
     }));
     // A page may put a second start button in its own copy. It forwards to the
@@ -106,10 +103,7 @@ function initCaptureApp(root) {
     ui.checkButton.addEventListener('click', () => toggleCameraCheck().catch((error) => {
         // Same reasoning as the start button: a refused prompt must not leave the
         // page stuck believing a preview is open.
-        stopCameraCheck();
-        showNightReading(false);
-        showCameraStage(false);
-        setState('Error');
+        returnToIdle('Error');
         showBanner(String(error));
     }));
     ui.endButton.addEventListener('click', () => endNight());
@@ -164,16 +158,12 @@ function initCaptureApp(root) {
      */
     async function toggleCameraCheck() {
         if (app.previewing) {
-            stopCameraCheck();
-            showNightReading(false);
-            setState('Idle');
+            returnToIdle('Idle');
 
             return;
         }
 
-        showNightReading(true);
-        setState('Starting camera…');
-        showCameraStage(true);
+        leaveIdle();
 
         await app.camera.start();
 
@@ -216,16 +206,42 @@ function initCaptureApp(root) {
         ui.checkButton.classList.toggle('hidden', !visible);
     }
 
-    /** Close the preview stream, leaving the status line to the caller. */
-    function stopCameraCheck() {
-        if (!app.previewing) {
-            return;
-        }
-
+    /**
+     * Close whichever stream is open, preview or night, and put the sample room
+     * back on the stage. Safe when none is open: stopping a camera that never
+     * started is a no-op, so callers need not know which state they came from.
+     */
+    function closeCamera() {
         app.camera.stop();
         app.previewing = false;
         showCameraStage(false);
         ui.checkLabel.textContent = cameraCheckLabel(false);
+    }
+
+    /**
+     * The page leaves Idle: for a camera check or a night, the side column turns
+     * to the night-time reading and the stage waits for the camera.
+     */
+    function leaveIdle() {
+        showNightReading(true);
+        setState('Starting camera…');
+        showCameraStage(true);
+    }
+
+    /**
+     * Put the page back the way an idle page is, whichever way it left: a night
+     * that failed to start, a camera check refused or closed, a room too dark to
+     * watch. Each of those paths used to do its own subset of this and they had
+     * drifted — a failed reference upload hid the stage but left the camera, and
+     * its recording light, running. The status is the caller's: Idle for a check
+     * closed on purpose, Error or Too dark for one the page had to give up on.
+     */
+    function returnToIdle(state) {
+        closeCamera();
+        setStartBusy(false);
+        showNightReading(false);
+        showCameraCheck(true);
+        setState(state);
     }
 
     /**
@@ -264,12 +280,12 @@ function initCaptureApp(root) {
         // A preview holds a stream of its own. Close it before the night opens the
         // camera, or getUserMedia hands back a second one and the first keeps the
         // device — and its recording light — running for the rest of the night.
-        stopCameraCheck();
+        if (app.previewing) {
+            closeCamera();
+        }
 
         showCameraCheck(false);
-        showNightReading(true);
-        setState('Starting camera…');
-        showCameraStage(true);
+        leaveIdle();
 
         await app.camera.start();
 
@@ -288,12 +304,7 @@ function initCaptureApp(root) {
         }
 
         if (outcome.blocked) {
-            setState('Too dark');
-            setStartBusy(false);
-            showNightReading(false);
-            showCameraCheck(true);
-            app.camera.stop();
-            showCameraStage(false);
+            returnToIdle('Too dark');
 
             return;
         }
@@ -336,7 +347,7 @@ function initCaptureApp(root) {
 
         const intervalMs = 1000 / settings.processFps;
         app.loopTimer = setInterval(processFrame, intervalMs);
-        setInterval(updateElapsed, 1000);
+        app.clockTimer = setInterval(updateElapsed, 1000);
     }
 
     /**
@@ -450,6 +461,7 @@ function initCaptureApp(root) {
         setNavigationLocked(false);
         showRecording(false);
         clearInterval(app.loopTimer);
+        clearInterval(app.clockTimer);
         setState('Finishing…');
 
         app.tracker.flush();
@@ -473,15 +485,15 @@ function initCaptureApp(root) {
         }
     }
 
+    function clockTime(timestamp) {
+        return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
     /**
      * The status line, and — for as long as the start button is disabled — the
      * button's own label, so the button says what it is busy with rather than
      * sitting greyed out under a name that is no longer true.
      */
-    function clockTime(timestamp) {
-        return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }
-
     function setState(text) {
         ui.state.textContent = text;
 

@@ -657,13 +657,19 @@ describe('capture page', () => {
         expect(el('state').textContent).toBe('Error');
     });
 
-    test('a failed reference upload leaves the start button usable', async () => {
+    // The camera was open by then. It has to close — a stream left running behind
+    // the sample room keeps the device's recording light on with nothing watching.
+    test('a failed reference upload leaves the start button usable and closes the camera', async () => {
         stubs.uploaderStoreReference.mockRejectedValueOnce(new Error('Could not start the session (HTTP 422).'));
 
         await startWatching();
 
         expect(el('banner').textContent).toContain('422');
         expect(el('start').hasAttribute('disabled')).toBe(false);
+        expect(stubs.cameraStop).toHaveBeenCalledTimes(1);
+        expect(el('placeholder').classList.contains('hidden')).toBe(false);
+        expect(el('check').classList.contains('hidden')).toBe(false);
+        expect(el('setup-help').classList.contains('hidden')).toBe(false);
     });
 
     test('ending the night reports it as kept, then goes to the report', async () => {

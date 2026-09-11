@@ -18,7 +18,7 @@ test('a guest can open the watch page and is told the night stays on the device'
         ->assertSee('id="local-nights"', false)
         ->assertSee('stay in this browser')
         ->assertSee('If the screen keeps sleeping')
-        ->assertDontSee('Checking on it later');
+        ->assertDontSee('Checking on it from bed');
 });
 
 test('a guest can open a local report shell for any uuid', function () {

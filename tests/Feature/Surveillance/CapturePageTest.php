@@ -136,11 +136,19 @@ test('the capture page points the user at their dashboard on another device', fu
     $user = User::factory()->create();
     $session = SurveillanceSession::factory()->for($user)->create();
 
-    $this->actingAs($user)
+    $content = $this->actingAs($user)
         ->get(route('surveillance.capture', $session))
-        ->assertSee('Checking on it later')
-        ->assertSee('a different phone or computer', false)
-        ->assertSee(route('dashboard'));
+        ->assertOk()
+        ->getContent();
+
+    // In the night-time block, not the setup one: it is read once the user has
+    // left the room, which is after the setup reading has gone.
+    $nightHelp = Str::between($content, 'data-capture="night-help"', 'Detection runs entirely in this browser');
+
+    expect($nightHelp)
+        ->toContain('Checking on it from bed')
+        ->toContain('a different phone or computer')
+        ->toContain(route('dashboard'));
 });
 
 // capture.js makes [data-app-nav] inert while recording. Flux owns the markup for

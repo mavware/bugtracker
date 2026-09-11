@@ -46,14 +46,16 @@ new #[Title('Capture')] class extends Component {
 <x-surveillance.capture-panel
     :config="$this->captureConfig()"
     :name="$session->name"
-    :intro="__('Keep the device plugged in, the screen on, and this tab visible all night.')"
     mode="server"
 >
-    <x-slot:setupHelp>
+    {{-- Night-time reading, so it is in the slot that appears once the night is
+         under way rather than the one that leaves with the hero. The panel's own
+         box beside it already says to keep the device plugged in and awake. --}}
+    <x-slot:nightHelp>
         <div class="rounded-xl border border-zinc-200 p-4 text-sm text-zinc-500 dark:border-zinc-700">
-            <flux:heading size="sm">{{ __('Checking on it later') }}</flux:heading>
+            <flux:heading size="sm">{{ __('Checking on it from bed') }}</flux:heading>
             <p class="mt-2">
-                {{ __('Once this device is recording, leave it be — opening anything else on it ends the night. To see how it is going, open your dashboard on a different phone or computer:') }}
+                {{ __('Leave this device be — opening anything else on it ends the night. To see how it is going, open your dashboard on a different phone or computer:') }}
             </p>
             {{-- Deliberately not a link: following it here would end the recording. --}}
             <p class="mt-2 font-mono text-xs break-all text-zinc-700 dark:text-zinc-300">{{ route('dashboard') }}</p>
@@ -61,5 +63,5 @@ new #[Title('Capture')] class extends Component {
                 {{ __('It shows sightings so far, when the last one was, and warns you if this device stops checking in.') }}
             </p>
         </div>
-    </x-slot:setupHelp>
+    </x-slot:nightHelp>
 </x-surveillance.capture-panel>
