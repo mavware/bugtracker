@@ -207,3 +207,14 @@ test('a finished session redirects from capture to its report', function () {
         ->get(route('surveillance.capture', $session))
         ->assertRedirect(route('surveillance.report', $session));
 });
+
+// Start on an active night would re-upload the reference frame and reset
+// started_at, mis-timing every sighting already stored; its page shows it instead.
+test('a night recording on another device redirects from capture to its page', function () {
+    $user = User::factory()->create();
+    $session = SurveillanceSession::factory()->for($user)->active()->create();
+
+    $this->actingAs($user)
+        ->get(route('surveillance.capture', $session))
+        ->assertRedirect(route('surveillance.report', $session));
+});

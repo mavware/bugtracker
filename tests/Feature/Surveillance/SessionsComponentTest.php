@@ -24,6 +24,18 @@ test('the dashboard lists only the current user\'s sessions', function () {
         ->assertDontSee('Someone else\'s watch');
 });
 
+test('only a pending night links to the capture page; a recording one links to its own page', function () {
+    $user = User::factory()->create();
+    $pending = SurveillanceSession::factory()->for($user)->create();
+    $recording = SurveillanceSession::factory()->for($user)->active()->create();
+
+    Livewire::actingAs($user)
+        ->test('surveillance.sessions')
+        ->assertSee(route('surveillance.capture', $pending))
+        ->assertSee(route('surveillance.report', $recording))
+        ->assertDontSee(route('surveillance.capture', $recording));
+});
+
 test('starting a session creates a pending session and redirects to capture', function () {
     $user = User::factory()->create();
 

@@ -217,10 +217,11 @@ new class extends Component {
                 @foreach ($this->sessions as $session)
                     <flux:table.row wire:key="session-{{ $session->id }}">
                         <flux:table.cell variant="strong">
-                            @if ($session->status->isFinished())
-                                <flux:link href="{{ route('surveillance.report', $session) }}">{{ $session->name }}</flux:link>
-                            @else
+                            {{-- Only a pending night goes to the camera; a recording one has a page of its own. --}}
+                            @if ($session->status === SurveillanceSessionStatus::Pending)
                                 <flux:link href="{{ route('surveillance.capture', $session) }}">{{ $session->name }}</flux:link>
+                            @else
+                                <flux:link href="{{ route('surveillance.report', $session) }}">{{ $session->name }}</flux:link>
                             @endif
                         </flux:table.cell>
                         @if ($this->customers->isNotEmpty())

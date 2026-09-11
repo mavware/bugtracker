@@ -18,6 +18,16 @@ test('the list can be searched by name or email', function () {
         ->assertDontSee('rob@example.com');
 });
 
+test('the page heading and subheading are rendered by the app layout', function () {
+    $this->actingAs(User::factory()->admin()->create())
+        ->get(route('admin.users'))
+        ->assertSeeInOrder([
+            'Users',
+            'Every account on the site.',
+            '<section wire:snapshot=',
+        ], false);
+});
+
 test('an admin can grant and revoke admin access', function () {
     $admin = User::factory()->admin()->create();
     $member = User::factory()->create();

@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', HomeController::class)->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::view('dashboard', 'dashboard')->name('dashboard');
+    Route::view('dashboard', 'pages::surveillance.surveillance')->name('dashboard');
 });
 
 require __DIR__.'/admin.php';

@@ -20,6 +20,16 @@ test('customers from every account are listed and searchable by owner email', fu
         ->assertDontSee('A different firm\'s account');
 });
 
+test('the page heading and subheading are rendered by the app layout', function () {
+    $this->actingAs(User::factory()->admin()->create())
+        ->get(route('admin.customers'))
+        ->assertSeeInOrder([
+            'Customers',
+            'Properties recorded on someone else&#039;s behalf, across all accounts.',
+            '<section wire:snapshot=',
+        ], false);
+});
+
 test('a customer can be renamed', function () {
     $admin = User::factory()->admin()->create();
     $customer = Customer::factory()->create(['name' => 'The Alvarez hosue']);

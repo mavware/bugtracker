@@ -12,6 +12,16 @@ test('guests are redirected to the login page', function () {
     $this->get(route('surveillance.trends'))->assertRedirect(route('login'));
 });
 
+test('the page heading and subheading are rendered by the app layout', function () {
+    $this->actingAs(User::factory()->create())
+        ->get(route('surveillance.trends'))
+        ->assertSeeInOrder([
+            'Trends',
+            'Sightings per night, and whether what you did about them worked.',
+            '<section wire:snapshot=',
+        ], false);
+});
+
 test('the trends page charts each night and marks the interventions', function () {
     $user = User::factory()->create();
     $session = SurveillanceSession::factory()->for($user)->completed()->create(['started_at' => Carbon::parse('2026-09-01 23:00')]);

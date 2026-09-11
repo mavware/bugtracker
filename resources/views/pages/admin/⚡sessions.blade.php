@@ -7,11 +7,15 @@ use Flux\Flux;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-new #[Title('Admin · Sessions')] class extends Component {
+new #[Title('Admin · Sessions'), Layout('layouts::app', [
+    'heading' => 'Sessions',
+    'subHeading' => 'Every night recorded, across all accounts.',
+])] class extends Component {
     use WithPagination;
 
     public string $search = '';
@@ -86,14 +90,7 @@ new #[Title('Admin · Sessions')] class extends Component {
 }; ?>
 
 <section class="w-full">
-    <div class="flex flex-wrap items-center justify-between gap-4">
-        <div>
-            <flux:heading size="xl">{{ __('Sessions') }}</flux:heading>
-            <flux:text class="mt-2">{{ __('Every night recorded, across all accounts.') }}</flux:text>
-        </div>
-    </div>
-
-    <div class="mt-6 flex flex-wrap items-center gap-3">
+    <div class="flex flex-wrap items-center gap-3">
         <flux:input
             wire:model.live.debounce.300ms="search"
             icon="magnifying-glass"

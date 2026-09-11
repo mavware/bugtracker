@@ -23,6 +23,16 @@ test('the panel reports the sightings so far tonight, ignoring dismissed ones', 
         ->and($tonight['last_sighting_at']->format('H:i'))->toBe('01:30');
 });
 
+test('the panel opens the night\'s own page, never the capture page', function () {
+    $user = User::factory()->create();
+    $session = SurveillanceSession::factory()->for($user)->active()->create();
+
+    Livewire::actingAs($user)
+        ->test('surveillance.tonight')
+        ->assertSee(route('surveillance.report', $session))
+        ->assertDontSee(route('surveillance.capture', $session));
+});
+
 test('the panel warns when the capture device stops checking in', function () {
     $user = User::factory()->create();
     SurveillanceSession::factory()->for($user)->active()->create([

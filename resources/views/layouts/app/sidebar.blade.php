@@ -28,9 +28,6 @@
                     <flux:sidebar.item icon="chart-bar" :href="route('surveillance.trends')" :current="request()->routeIs('surveillance.trends')">
                         {{ __('Trends') }}
                     </flux:sidebar.item>
-                    <flux:sidebar.item icon="map-pin" :href="route('surveillance.heatmap')" :current="request()->routeIs('surveillance.heatmap')">
-                        {{ __('Entry points') }}
-                    </flux:sidebar.item>
                     <flux:sidebar.item icon="home-modern" :href="route('surveillance.rooms')" :current="request()->routeIs('surveillance.rooms')">
                         {{ __('Rooms') }}
                     </flux:sidebar.item>

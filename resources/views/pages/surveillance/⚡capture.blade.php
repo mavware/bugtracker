@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\SurveillanceSessionStatus;
 use App\Models\SurveillanceSession;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Title;
@@ -12,7 +13,13 @@ new #[Title('Capture')] class extends Component {
     {
         Gate::authorize('update', $session);
 
-        if ($session->status->isFinished()) {
+        /*
+         * Only a pending night belongs here. A finished one has its report, and
+         * an active one is being recorded on another device: showing Start again
+         * would re-upload the reference frame and reset started_at, mis-timing
+         * every sighting stored so far. Its page shows how it is going instead.
+         */
+        if ($session->status !== SurveillanceSessionStatus::Pending) {
             $this->redirectRoute('surveillance.report', $session);
 
             return;

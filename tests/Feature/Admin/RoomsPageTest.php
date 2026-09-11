@@ -20,6 +20,16 @@ test('rooms are grouped per owner and property', function () {
         ->and($groups->pluck('customer')->filter()->all())->toContain('The Alvarez house');
 });
 
+test('the page heading and subheading are rendered by the app layout', function () {
+    $this->actingAs(User::factory()->admin()->create())
+        ->get(route('admin.rooms'))
+        ->assertSeeInOrder([
+            'Rooms',
+            'Room labels in use, grouped by who recorded them and where.',
+            '<section wire:snapshot=',
+        ], false);
+});
+
 test('renaming a room only touches that owner and property\'s sessions', function () {
     $admin = User::factory()->admin()->create();
     $owner = User::factory()->create();

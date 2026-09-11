@@ -6,10 +6,14 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Customers')] class extends Component {
+new #[Title('Customers'), Layout('layouts::app', [
+    'heading' => 'Customers',
+    'subHeading' => 'Properties you watch on someone else\'s behalf. Nights are only ever compared within one customer.',
+])] class extends Component {
     public ?int $editingId = null;
 
     public string $name = '';
@@ -101,14 +105,7 @@ new #[Title('Customers')] class extends Component {
 }; ?>
 
 <section class="w-full">
-    <div class="flex flex-wrap items-center justify-between gap-4">
-        <div>
-            <flux:heading size="xl">{{ __('Customers') }}</flux:heading>
-            <flux:text class="mt-2">{{ __('Properties you watch on someone else\'s behalf. Nights are only ever compared within one customer.') }}</flux:text>
-        </div>
-    </div>
-
-    <form wire:submit="save" class="mt-6 flex flex-wrap items-start gap-3">
+    <form wire:submit="save" class="flex flex-wrap items-start gap-3">
         <flux:input
             wire:model="name"
             :label="__('Name')"

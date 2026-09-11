@@ -5,10 +5,14 @@ use App\Actions\Surveillance\RoomLabels;
 use Flux\Flux;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Admin · Rooms')] class extends Component {
+new #[Title('Admin · Rooms'), Layout('layouts::app', [
+    'heading' => 'Rooms',
+    'subHeading' => 'Room labels in use, grouped by who recorded them and where.',
+])] class extends Component {
     public ?string $editingKey = null;
 
     public string $roomName = '';
@@ -79,17 +83,10 @@ new #[Title('Admin · Rooms')] class extends Component {
 }; ?>
 
 <section class="w-full">
-    <div class="flex flex-wrap items-center justify-between gap-4">
-        <div>
-            <flux:heading size="xl">{{ __('Rooms') }}</flux:heading>
-            <flux:text class="mt-2">{{ __('Room labels in use, grouped by who recorded them and where.') }}</flux:text>
-        </div>
-    </div>
-
     @if ($this->roomGroups->isEmpty())
-        <flux:text class="mt-6">{{ __('No sessions have been given a room label yet.') }}</flux:text>
+        <flux:text>{{ __('No sessions have been given a room label yet.') }}</flux:text>
     @else
-        <flux:table class="mt-6">
+        <flux:table>
             <flux:table.columns>
                 <flux:table.column>{{ __('Room') }}</flux:table.column>
                 <flux:table.column>{{ __('Owner') }}</flux:table.column>

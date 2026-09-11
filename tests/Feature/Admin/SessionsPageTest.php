@@ -26,6 +26,16 @@ test('sessions can be filtered by status and searched by owner email', function 
         ->assertDontSee('Someone else\'s night');
 });
 
+test('the page heading and subheading are rendered by the app layout', function () {
+    $this->actingAs(User::factory()->admin()->create())
+        ->get(route('admin.sessions'))
+        ->assertSeeInOrder([
+            'Sessions',
+            'Every night recorded, across all accounts.',
+            '<section wire:snapshot=',
+        ], false);
+});
+
 test('a session stuck recording can be closed out and gets its analytics', function () {
     $admin = User::factory()->admin()->create();
     $session = SurveillanceSession::factory()->active()->create([

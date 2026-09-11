@@ -9,6 +9,16 @@ test('guests are redirected to the login page', function () {
     $this->get(route('surveillance.rooms'))->assertRedirect(route('login'));
 });
 
+test('the page heading and subheading are rendered by the app layout', function () {
+    $this->actingAs(User::factory()->create())
+        ->get(route('surveillance.rooms'))
+        ->assertSeeInOrder([
+            'Rooms',
+            'The room labels on your nights. Renaming one updates every night that carries it.',
+            '<section wire:snapshot=',
+        ], false);
+});
+
 test('the page lists only the labels on this account\'s nights', function () {
     $user = User::factory()->create();
     SurveillanceSession::factory()->for($user)->create(['room' => 'Kitchen']);

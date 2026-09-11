@@ -6,11 +6,15 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-new #[Title('Admin · Customers')] class extends Component {
+new #[Title('Admin · Customers'), Layout('layouts::app', [
+    'heading' => 'Customers',
+    'subHeading' => 'Properties recorded on someone else\'s behalf, across all accounts.',
+])] class extends Component {
     use WithPagination;
 
     public string $search = '';
@@ -100,18 +104,11 @@ new #[Title('Admin · Customers')] class extends Component {
 }; ?>
 
 <section class="w-full">
-    <div class="flex flex-wrap items-center justify-between gap-4">
-        <div>
-            <flux:heading size="xl">{{ __('Customers') }}</flux:heading>
-            <flux:text class="mt-2">{{ __('Properties recorded on someone else\'s behalf, across all accounts.') }}</flux:text>
-        </div>
-    </div>
-
     <flux:input
         wire:model.live.debounce.300ms="search"
         icon="magnifying-glass"
         :placeholder="__('Search by customer, address or owner email')"
-        class="mt-6 max-w-md"
+        class="max-w-md"
         data-test="customer-search"
     />
 

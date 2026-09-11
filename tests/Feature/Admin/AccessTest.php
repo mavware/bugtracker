@@ -8,6 +8,16 @@ test('guests are sent to the login page', function (string $route) {
     $this->get(route($route))->assertRedirect(route('login'));
 })->with(['admin.index', 'admin.users', 'admin.sessions', 'admin.rooms', 'admin.customers']);
 
+test('the page heading and subheading are rendered by the app layout', function () {
+    $this->actingAs(User::factory()->admin()->create())
+        ->get(route('admin.index'))
+        ->assertSeeInOrder([
+            'Site administration',
+            'Everything recorded across every account.',
+            '<section wire:snapshot=',
+        ], false);
+});
+
 test('an ordinary account is refused', function (string $route) {
     $this->actingAs(User::factory()->create())
         ->get(route($route))

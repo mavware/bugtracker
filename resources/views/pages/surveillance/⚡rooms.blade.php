@@ -6,10 +6,14 @@ use Flux\Flux;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Rooms')] class extends Component {
+new #[Title('Rooms'), Layout('layouts::app', [
+    'heading' => 'Rooms',
+    'subHeading' => 'The room labels on your nights. Renaming one updates every night that carries it.',
+])] class extends Component {
     public ?string $editingKey = null;
 
     public string $roomName = '';
@@ -79,22 +83,15 @@ new #[Title('Rooms')] class extends Component {
 }; ?>
 
 <section class="w-full">
-    <div class="flex flex-wrap items-center justify-between gap-4">
-        <div>
-            <flux:heading size="xl">{{ __('Rooms') }}</flux:heading>
-            <flux:text class="mt-2">{{ __('The room labels on your nights. Renaming one updates every night that carries it.') }}</flux:text>
-        </div>
-    </div>
-
     @php($showCustomer = $this->roomGroups->contains(fn (RoomLabel $group) => $group->customer !== null))
 
     @if ($this->roomGroups->isEmpty())
-        <flux:callout icon="map-pin" class="mt-6">
+        <flux:callout icon="map-pin">
             <flux:callout.heading>{{ __('No room labels yet') }}</flux:callout.heading>
             <flux:callout.text>{{ __('Name the room when you start a session and it will show up here, ready to correct.') }}</flux:callout.text>
         </flux:callout>
     @else
-        <flux:table class="mt-6">
+        <flux:table>
             <flux:table.columns>
                 <flux:table.column>{{ __('Room') }}</flux:table.column>
                 @if ($showCustomer)

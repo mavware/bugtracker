@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Surveillance\DescribeNightInProgress;
 use App\Enums\SurveillanceSessionStatus;
 use App\Models\SurveillanceSession;
 use Illuminate\Support\Carbon;
@@ -8,11 +9,6 @@ use Livewire\Attributes\Computed;
 use Livewire\Component;
 
 new class extends Component {
-    /**
-     * The capture device heartbeats every 60s; past this it has probably slept.
-     */
-    private const STALE_HEARTBEAT_MINUTES = 3;
-
     #[Computed]
     public function session(): ?SurveillanceSession
     {
@@ -25,12 +21,6 @@ new class extends Component {
     }
 
     /**
-     * A read-only glance at the night in progress, for checking from another device.
-     *
-     * A night that was told to end itself and has not is `overdue`: the device
-     * kept the deadline, so passing it with the session still active means the
-     * device never got to act on it — asleep, or the tab gone.
-     *
      * @return array{sightings: int, last_sighting_at: Carbon|null, heartbeat_stale: bool, overdue: bool}|null
      */
     #[Computed]
@@ -42,17 +32,7 @@ new class extends Component {
             return null;
         }
 
-        $lastOffsetMs = $session->tracks()->confirmed()->max('end_offset_ms');
-
-        return [
-            'sightings' => $session->tracks()->confirmed()->count(),
-            'last_sighting_at' => $lastOffsetMs !== null && $session->started_at !== null
-                ? $session->started_at->copy()->addMilliseconds((int) $lastOffsetMs)
-                : null,
-            'heartbeat_stale' => $session->last_heartbeat_at === null
-                || $session->last_heartbeat_at->lt(now()->subMinutes(self::STALE_HEARTBEAT_MINUTES)),
-            'overdue' => $session->planned_end_at !== null && $session->planned_end_at->isPast(),
-        ];
+        return app(DescribeNightInProgress::class)->handle($session);
     }
 }; ?>
 
@@ -96,8 +76,8 @@ new class extends Component {
                         <flux:text class="text-sm">{{ __('Last seen') }}</flux:text>
                         <flux:heading size="xl">{{ $tonight['last_sighting_at']?->format('H:i') ?? '—' }}</flux:heading>
                     </div>
-                    <flux:button size="sm" href="{{ route('surveillance.capture', $this->session) }}">
-                        {{ __('Open capture') }}
+                    <flux:button size="sm" href="{{ route('surveillance.report', $this->session) }}" data-test="tonight-open-night">
+                        {{ __('See how it\'s going') }}
                     </flux:button>
                 </div>
             </div>
@@ -106,7 +86,7 @@ new class extends Component {
                 <flux:callout variant="warning" icon="clock" class="mt-4" data-test="tonight-overdue">
                     <flux:callout.heading>{{ __('The night was due to end at :time', ['time' => $this->session->planned_end_at->format('H:i')]) }}</flux:callout.heading>
                     <flux:callout.text>
-                        {{ __('The capture device has not ended it, so its screen probably slept before then. Open the capture page on that device and press End night to get the report.') }}
+                        {{ __('The capture device has not ended it, so its screen probably slept before then. Open the capture page on that device and press End night to get the report, or end it from the night\'s page.') }}
                     </flux:callout.text>
                 </flux:callout>
             @elseif ($tonight['heartbeat_stale'])

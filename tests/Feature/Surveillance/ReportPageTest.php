@@ -4,6 +4,7 @@ use App\Enums\SurveillanceSessionStatus;
 use App\Models\BugTrack;
 use App\Models\SurveillanceSession;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
@@ -71,14 +72,97 @@ test('the report computes analytics lazily when missing', function () {
         ->and($session->analytics['track_count'])->toBe(1);
 });
 
-test('an unfinished session shows the still-recording state instead of a report', function () {
+test('a recording night shows how it is going instead of a report', function () {
     $user = User::factory()->create();
-    $session = SurveillanceSession::factory()->for($user)->active()->create();
+    $session = SurveillanceSession::factory()->for($user)->active()->create([
+        'started_at' => Carbon::parse('2026-09-02 23:00'),
+        'last_heartbeat_at' => now(),
+    ]);
+    BugTrack::factory()->count(2)->for($session, 'session')->create(['end_offset_ms' => 60000]);
+    BugTrack::factory()->for($session, 'session')->create(['end_offset_ms' => 9000000]);
+    BugTrack::factory()->for($session, 'session')->dismissed()->create(['end_offset_ms' => 20000000]);
 
     $this->actingAs($user)
         ->get(route('surveillance.report', $session))
-        ->assertOk()
-        ->assertSee(__('This session is still recording'));
+        ->assertSee('Recording now')
+        ->assertSeeInOrder(['Sightings so far', '3', 'Last seen', '01:30'])
+        ->assertDontSee('End night now')
+        ->assertDontSee('id="report-data"', false);
+});
+
+test('a night that has not started points at the capture page', function () {
+    $user = User::factory()->create();
+    $session = SurveillanceSession::factory()->for($user)->create();
+
+    $this->actingAs($user)
+        ->get(route('surveillance.report', $session))
+        ->assertSee('This night has not started yet')
+        ->assertSee(route('surveillance.capture', $session));
+});
+
+test('a recording night offers to be ended once its device goes quiet', function () {
+    $user = User::factory()->create();
+    $session = SurveillanceSession::factory()->for($user)->active()->create([
+        'last_heartbeat_at' => now()->subMinutes(10),
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('surveillance.report', $session))
+        ->assertSee('The capture device has gone quiet')
+        ->assertSee('End night now');
+});
+
+test('a night whose device went quiet can be ended at its last check-in', function () {
+    $user = User::factory()->create();
+    $lastHeartbeat = Carbon::parse('2026-09-03 03:15:00');
+    $session = SurveillanceSession::factory()->for($user)->active()->create([
+        'analytics' => null,
+        'last_heartbeat_at' => $lastHeartbeat,
+    ]);
+    BugTrack::factory()->for($session, 'session')->create();
+
+    Livewire::actingAs($user)
+        ->test('pages::surveillance.report', ['session' => $session])
+        ->call('endStuckNight')
+        ->assertRedirect(route('surveillance.report', $session));
+
+    $session->refresh();
+    expect($session->status)->toBe(SurveillanceSessionStatus::Completed)
+        ->and($session->ended_at->equalTo($lastHeartbeat))->toBeTrue()
+        ->and($session->analytics['track_count'])->toBe(1);
+});
+
+test('a night cannot be ended from its page while the device is still checking in', function () {
+    $user = User::factory()->create();
+    $session = SurveillanceSession::factory()->for($user)->active()->create(['last_heartbeat_at' => now()]);
+
+    Livewire::actingAs($user)
+        ->test('pages::surveillance.report', ['session' => $session])
+        ->call('endStuckNight')
+        ->assertNoRedirect();
+
+    expect($session->refresh()->status)->toBe(SurveillanceSessionStatus::Active)
+        ->and($session->ended_at)->toBeNull();
+});
+
+test('another user cannot end a quiet night', function () {
+    $session = SurveillanceSession::factory()->active()->create(['last_heartbeat_at' => now()->subMinutes(10)]);
+
+    Livewire::actingAs(User::factory()->create())
+        ->test('pages::surveillance.report', ['session' => $session])
+        ->assertForbidden();
+});
+
+test('the page reloads into the report once the device has ended the night', function () {
+    $user = User::factory()->create();
+    $session = SurveillanceSession::factory()->for($user)->active()->create();
+
+    $component = Livewire::actingAs($user)->test('pages::surveillance.report', ['session' => $session]);
+    $component->call('refreshNightInProgress')->assertNoRedirect();
+
+    $session->update(['status' => SurveillanceSessionStatus::Completed, 'ended_at' => now()]);
+
+    $component->call('refreshNightInProgress')->assertRedirect(route('surveillance.report', $session));
 });
 
 test('the report returns 403 for another user\'s session', function () {

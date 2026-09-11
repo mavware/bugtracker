@@ -7,11 +7,15 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-new #[Title('Admin · Users')] class extends Component {
+new #[Title('Admin · Users'), Layout('layouts::app', [
+    'heading' => 'Users',
+    'subHeading' => 'Every account on the site.',
+])] class extends Component {
     use WithPagination;
 
     public string $search = '';
@@ -72,18 +76,11 @@ new #[Title('Admin · Users')] class extends Component {
 }; ?>
 
 <section class="w-full">
-    <div class="flex flex-wrap items-center justify-between gap-4">
-        <div>
-            <flux:heading size="xl">{{ __('Users') }}</flux:heading>
-            <flux:text class="mt-2">{{ __('Every account on the site.') }}</flux:text>
-        </div>
-    </div>
-
     <flux:input
         wire:model.live.debounce.300ms="search"
         icon="magnifying-glass"
         :placeholder="__('Search by name or email')"
-        class="mt-6 max-w-md"
+        class="max-w-md"
         data-test="user-search"
     />
 

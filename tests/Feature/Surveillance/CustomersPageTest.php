@@ -10,6 +10,16 @@ test('guests are redirected to the login page', function () {
     $this->get(route('surveillance.customers'))->assertRedirect(route('login'));
 });
 
+test('the page heading and subheading are rendered by the app layout', function () {
+    $this->actingAs(User::factory()->create())
+        ->get(route('surveillance.customers'))
+        ->assertSeeInOrder([
+            'Customers',
+            'Properties you watch on someone else&#039;s behalf. Nights are only ever compared within one customer.',
+            '<section wire:snapshot=',
+        ], false);
+});
+
 test('the page lists only the current user\'s customers', function () {
     $user = User::factory()->create();
     Customer::factory()->for($user)->create(['name' => 'The Alvarez house']);

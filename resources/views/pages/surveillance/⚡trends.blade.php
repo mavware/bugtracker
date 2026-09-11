@@ -6,11 +6,15 @@ use Flux\Flux;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
-new #[Title('Trends')] class extends Component {
+new #[Title('Trends'), Layout('layouts::app', [
+    'heading' => 'Trends',
+    'subHeading' => 'Sightings per night, and whether what you did about them worked.',
+])] class extends Component {
     /** Empty means every customer. */
     #[Url]
     public string $customer = '';
@@ -211,29 +215,23 @@ new #[Title('Trends')] class extends Component {
 }; ?>
 
 <section class="w-full">
-    <div class="flex flex-wrap items-center justify-between gap-4">
-        <div>
-            <flux:heading size="xl">{{ __('Trends') }}</flux:heading>
-            <flux:text class="mt-2">{{ __('Sightings per night, and whether what you did about them worked.') }}</flux:text>
-        </div>
-        <div class="flex items-center gap-3">
-            @if ($this->customers->isNotEmpty())
-                <flux:select wire:model.live="customer" size="sm" class="max-w-48" data-test="customer-filter">
-                    <flux:select.option value="">{{ __('All customers') }}</flux:select.option>
-                    @foreach ($this->customers as $customerOption)
-                        <flux:select.option value="{{ $customerOption->id }}">{{ $customerOption->name }}</flux:select.option>
-                    @endforeach
-                </flux:select>
-            @endif
-            @if ($this->rooms !== [])
-                <flux:select wire:model.live="room" size="sm" class="max-w-44" data-test="room-filter">
-                    <flux:select.option value="">{{ __('All rooms') }}</flux:select.option>
-                    @foreach ($this->rooms as $roomOption)
-                        <flux:select.option value="{{ $roomOption }}">{{ $roomOption }}</flux:select.option>
-                    @endforeach
-                </flux:select>
-            @endif
-        </div>
+    <div class="flex flex-wrap items-center gap-3">
+        @if ($this->customers->isNotEmpty())
+            <flux:select wire:model.live="customer" size="sm" class="max-w-48" data-test="customer-filter">
+                <flux:select.option value="">{{ __('All customers') }}</flux:select.option>
+                @foreach ($this->customers as $customerOption)
+                    <flux:select.option value="{{ $customerOption->id }}">{{ $customerOption->name }}</flux:select.option>
+                @endforeach
+            </flux:select>
+        @endif
+        @if ($this->rooms !== [])
+            <flux:select wire:model.live="room" size="sm" class="max-w-44" data-test="room-filter">
+                <flux:select.option value="">{{ __('All rooms') }}</flux:select.option>
+                @foreach ($this->rooms as $roomOption)
+                    <flux:select.option value="{{ $roomOption }}">{{ $roomOption }}</flux:select.option>
+                @endforeach
+            </flux:select>
+        @endif
     </div>
 
     @if ($this->trend['nights'] === [])

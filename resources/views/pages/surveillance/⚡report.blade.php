@@ -1,9 +1,13 @@
 <?php
 
-use App\Enums\SurveillanceSessionStatus;
 use App\Actions\Surveillance\ComputeSessionAnalytics;
+use App\Actions\Surveillance\DescribeNightInProgress;
+use App\Enums\SurveillanceSessionStatus;
 use App\Models\SurveillanceSession;
+use Flux\Flux;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -20,6 +24,62 @@ class extends Component {
         if ($session->status->isFinished() && $session->analytics === null) {
             $analytics->handle($session);
         }
+    }
+
+    /**
+     * How the night is going while the camera is still on it. Null once it is over.
+     *
+     * @return array{sightings: int, last_sighting_at: Carbon|null, heartbeat_stale: bool, overdue: bool}|null
+     */
+    #[Computed]
+    public function nightInProgress(): ?array
+    {
+        if ($this->session->status !== SurveillanceSessionStatus::Active) {
+            return null;
+        }
+
+        return app(DescribeNightInProgress::class)->handle($this->session);
+    }
+
+    /**
+     * Polled while the night runs. Once the device has ended it, reload so the
+     * report and its replay script start from a full page rather than a morph.
+     */
+    public function refreshNightInProgress(): void
+    {
+        if ($this->session->status->isFinished()) {
+            $this->redirectRoute('surveillance.report', $this->session);
+        }
+    }
+
+    /**
+     * Close a night whose device has gone quiet. The device owns the night while
+     * it is checking in — ending it from here then would 409 its uploads and lose
+     * the tracks still on it — so this is refused until the heartbeat is stale.
+     * The night ends at the last check-in, the last moment anything was watching.
+     */
+    public function endStuckNight(ComputeSessionAnalytics $analytics): void
+    {
+        Gate::authorize('update', $this->session);
+
+        if ($this->session->status !== SurveillanceSessionStatus::Active) {
+            return;
+        }
+
+        if (! $this->nightInProgress['heartbeat_stale']) {
+            Flux::toast(variant: 'warning', text: __('The capture device is still checking in. End the night from that device.'));
+
+            return;
+        }
+
+        $this->session->update([
+            'status' => SurveillanceSessionStatus::Completed,
+            'ended_at' => $this->session->last_heartbeat_at ?? $this->session->started_at ?? now(),
+        ]);
+
+        $analytics->handle($this->session);
+
+        $this->redirectRoute('surveillance.report', $this->session);
     }
 
     /**
@@ -82,16 +142,79 @@ class extends Component {
 }; ?>
 
 <section class="w-full">
-    @if (! $session->status->isFinished())
+    @if ($session->status === SurveillanceSessionStatus::Pending)
         <flux:heading size="xl">{{ $session->name }}</flux:heading>
-        <flux:callout icon="video-camera" class="mt-6">
-            <flux:callout.heading>{{ __('This session is still recording') }}</flux:callout.heading>
+        <flux:callout icon="video-camera" class="mt-6" data-test="night-not-started">
+            <flux:callout.heading>{{ __('This night has not started yet') }}</flux:callout.heading>
             <flux:callout.text>
-                {{ __('The report is generated once the night ends.') }}
-                <flux:link
-                    href="{{ route('surveillance.capture', $session) }}">{{ __('Go to the capture page') }}</flux:link>
+                {{ __('Set the camera up on the device that will watch the room.') }}
+                <flux:link href="{{ route('surveillance.capture', $session) }}">{{ __('Go to the capture page') }}</flux:link>
             </flux:callout.text>
         </flux:callout>
+    @elseif ($session->status === SurveillanceSessionStatus::Active)
+        @php($night = $this->nightInProgress)
+
+        <div wire:poll.30s="refreshNightInProgress" data-test="night-in-progress">
+            <div class="flex items-center gap-2">
+                <span class="relative flex size-2.5">
+                    <span class="absolute inline-flex size-full animate-ping rounded-full bg-green-400 opacity-75"></span>
+                    <span class="relative inline-flex size-2.5 rounded-full bg-green-500"></span>
+                </span>
+                <flux:text class="text-sm font-medium">{{ __('Recording now') }}</flux:text>
+            </div>
+            <flux:heading size="xl" class="mt-2">{{ $session->name }}</flux:heading>
+            <flux:text class="mt-2">
+                {{ __('Started :time', ['time' => $session->started_at?->format('H:i') ?? '—']) }}
+                @if ($session->planned_end_at !== null)
+                    <span class="text-zinc-400">&middot;</span>
+                    {{ __('ends :time', ['time' => $session->planned_end_at->format('H:i')]) }}
+                @endif
+                <span class="text-zinc-400">&middot;</span>
+                {{ __('The report is written once the night ends. This page checks every 30 seconds.') }}
+            </flux:text>
+
+            <div class="mt-6 grid gap-4 sm:grid-cols-3">
+                <div class="rounded-xl border border-zinc-200 p-4 dark:border-zinc-700">
+                    <flux:text class="text-sm">{{ __('Sightings so far') }}</flux:text>
+                    <flux:heading size="xl" data-test="night-sightings">{{ $night['sightings'] }}</flux:heading>
+                </div>
+                <div class="rounded-xl border border-zinc-200 p-4 dark:border-zinc-700">
+                    <flux:text class="text-sm">{{ __('Last seen') }}</flux:text>
+                    <flux:heading size="xl">{{ $night['last_sighting_at']?->format('H:i') ?? '—' }}</flux:heading>
+                </div>
+                <div class="rounded-xl border border-zinc-200 p-4 dark:border-zinc-700">
+                    <flux:text class="text-sm">{{ __('Last check-in') }}</flux:text>
+                    <flux:heading size="xl">{{ $session->last_heartbeat_at?->format('H:i') ?? '—' }}</flux:heading>
+                </div>
+            </div>
+
+            {{-- Only a quiet device can be ended from here; a live one is ending itself on its next tick. --}}
+            @if ($night['heartbeat_stale'])
+                <flux:callout variant="warning" icon="{{ $night['overdue'] ? 'clock' : 'exclamation-triangle' }}" class="mt-6" data-test="night-stuck">
+                    <flux:callout.heading>
+                        @if ($night['overdue'])
+                            {{ __('The night was due to end at :time', ['time' => $session->planned_end_at->format('H:i')]) }}
+                        @else
+                            {{ __('The capture device has gone quiet') }}
+                        @endif
+                    </flux:callout.heading>
+                    <flux:callout.text>
+                        {{ __('No check-in since :time, so the screen probably slept or the tab was closed and sightings are no longer being recorded. If that device is still to hand, press End night there. Otherwise end the night here: it closes at the last check-in and the report is written from everything it sent before then.', [
+                            'time' => $session->last_heartbeat_at?->diffForHumans() ?? __('the session started'),
+                        ]) }}
+                    </flux:callout.text>
+                    <x-slot name="actions">
+                        <flux:button
+                            variant="primary"
+                            icon="stop-circle"
+                            wire:click="endStuckNight"
+                            wire:confirm="{{ __('End this night now? Anything still on the capture device will not make it into the report.') }}"
+                            data-test="end-night-button"
+                        >{{ __('End night now') }}</flux:button>
+                    </x-slot>
+                </flux:callout>
+            @endif
+        </div>
     @else
         <div class="flex items-center justify-between">
             <div>

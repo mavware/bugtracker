@@ -12,7 +12,6 @@ export default defineConfig({
                 'resources/js/passkeys.js',
                 'resources/js/surveillance/capture.js',
                 'resources/js/surveillance/claim.js',
-                'resources/js/surveillance/heatmap.js',
                 'resources/js/surveillance/localNights.js',
                 'resources/js/surveillance/localReport.js',
                 'resources/js/surveillance/report.js',

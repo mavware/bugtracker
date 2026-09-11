@@ -23,7 +23,6 @@ test('the dashboard panel links to every section from the sidebar', function () 
     foreach ([
         'surveillance.customers',
         'surveillance.trends',
-        'surveillance.heatmap',
         'surveillance.rooms',
     ] as $route) {
         $response->assertSee(route($route));
@@ -42,7 +41,7 @@ test('the sidebar reaches the other sections from a section page too', function 
 test('section pages carry no back-to-dashboard button of their own', function () {
     $user = User::factory()->create();
 
-    foreach (['surveillance.trends', 'surveillance.rooms', 'surveillance.customers', 'surveillance.heatmap'] as $route) {
+    foreach (['surveillance.trends', 'surveillance.rooms', 'surveillance.customers'] as $route) {
         $content = $this->actingAs($user)->get(route($route))->assertOk()->getContent();
 
         expect(preg_match('/<a href="'.preg_quote(route('dashboard'), '/').'"[^>]*data-flux-button/', $content))->toBe(0, $route);

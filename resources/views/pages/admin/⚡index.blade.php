@@ -7,10 +7,14 @@ use App\Models\Intervention;
 use App\Models\SurveillanceSession;
 use App\Models\User;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Admin')] class extends Component {
+new #[Title('Admin'), Layout('layouts::app', [
+    'heading' => 'Site administration',
+    'subHeading' => 'Everything recorded across every account.',
+])] class extends Component {
     /**
      * @return array<string, int>
      */
@@ -30,14 +34,7 @@ new #[Title('Admin')] class extends Component {
 }; ?>
 
 <section class="w-full">
-    <div class="flex flex-wrap items-center justify-between gap-4">
-        <div>
-            <flux:heading size="xl">{{ __('Site administration') }}</flux:heading>
-            <flux:text class="mt-2">{{ __('Everything recorded across every account.') }}</flux:text>
-        </div>
-    </div>
-
-    <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         @foreach ([
             ['label' => __('Users'), 'value' => $this->totals['users'], 'note' => trans_choice(':count admin|:count admins', $this->totals['admins'], ['count' => $this->totals['admins']])],
             ['label' => __('Customers'), 'value' => $this->totals['customers'], 'note' => null],
