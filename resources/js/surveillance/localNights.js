@@ -3,6 +3,7 @@
 // visitor, offers to save nights to the account.
 import { claimNight } from './claimNight.js';
 import { claimSummary } from './claimLogic.js';
+import { NIGHTS_PER_PAGE, paginate, pageSummary } from './localNightsLogic.js';
 import { finalizeInterruptedNight, nightRows, openNightStore, VOLATILE_STORE_MESSAGE } from '@mavware/bug-surveillance';
 
 const root = document.getElementById('local-nights');
@@ -35,15 +36,27 @@ async function initLocalNights(root) {
         }
     };
 
+    // The page on show. Kept across renders so removing a night or saving one
+    // does not throw the reader back to the first page; paginate() pulls it back
+    // if the page it names no longer exists.
+    let page = 1;
+
     const render = async () => {
-        const rows = nightRows(await store.listNights(), { reportUrlTemplate: config.routes.report });
+        const all = nightRows(await store.listNights(), { reportUrlTemplate: config.routes.report });
+        const current = paginate(all, page, NIGHTS_PER_PAGE);
         const template = el('row-template');
         const body = el('rows');
 
-        root.classList.toggle('hidden', rows.length === 0 && !store.volatile);
+        page = current.page;
+        root.classList.toggle('hidden', all.length === 0 && !store.volatile);
         body.replaceChildren();
 
-        for (const row of rows) {
+        el('pager').classList.toggle('hidden', current.pageCount <= 1);
+        el('page-summary').textContent = pageSummary(current);
+        el('prev').toggleAttribute('disabled', current.page <= 1);
+        el('next').toggleAttribute('disabled', current.page >= current.pageCount);
+
+        for (const row of current.rows) {
             const fragment = template.content.cloneNode(true);
             const tr = fragment.querySelector('[data-night-id]');
             const cell = (name) => tr.querySelector(`[data-cell="${name}"]`);
@@ -112,6 +125,16 @@ async function initLocalNights(root) {
         } else if (button.dataset.cell === 'claim') {
             await claimMany([await store.getNight(nightId)]);
         }
+    });
+
+    el('prev').addEventListener('click', async () => {
+        page--;
+        await render();
+    });
+
+    el('next').addEventListener('click', async () => {
+        page++;
+        await render();
     });
 
     el('claim-all')?.addEventListener('click', async () => {

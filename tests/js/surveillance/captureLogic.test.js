@@ -29,6 +29,22 @@ describe('buildReferenceForm', () => {
         expect(form.get('settings[procWidth]')).toBe('320');
         expect(form.get('settings[diffThreshold]')).toBe('22');
     });
+
+    test('sends no planned end for a night that runs until ended', () => {
+        expect(form.has('planned_end_at')).toBe(false);
+    });
+
+    test('sends a planned end as an ISO timestamp', () => {
+        const timed = buildReferenceForm({
+            blob: new Blob(['jpeg'], { type: 'image/jpeg' }),
+            frameWidth: 1280,
+            frameHeight: 720,
+            settings: {},
+            plannedEndAt: Date.UTC(2026, 8, 12, 6, 30),
+        });
+
+        expect(timed.get('planned_end_at')).toBe('2026-09-12T06:30:00.000Z');
+    });
 });
 
 describe('captureMode', () => {

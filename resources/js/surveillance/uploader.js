@@ -20,11 +20,11 @@ export class Uploader {
     }
 
     /** Upload the reference frame, which is what starts the session server-side. */
-    async storeReference({ blob, frameWidth, frameHeight, settings }) {
+    async storeReference({ blob, frameWidth, frameHeight, settings, plannedEndAt = null }) {
         const response = await fetch(this.routes.reference, {
             method: 'POST',
             headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': this.csrfToken },
-            body: buildReferenceForm({ blob, frameWidth, frameHeight, settings }),
+            body: buildReferenceForm({ blob, frameWidth, frameHeight, settings, plannedEndAt }),
         });
 
         if (!response.ok) {

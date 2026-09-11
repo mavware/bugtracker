@@ -45,6 +45,20 @@ describe('Uploader', () => {
         expect(options.body.get('frame_height')).toBe('720');
         expect(options.body.get('settings[procWidth]')).toBe('320');
         expect(options.body.get('image')).toBeInstanceOf(Blob);
+        expect(options.body.has('planned_end_at')).toBe(false);
+    });
+
+    test('a planned end rides along with the reference frame', async () => {
+        await uploader.storeReference({
+            blob: new Blob(['jpeg'], { type: 'image/jpeg' }),
+            frameWidth: 1280,
+            frameHeight: 720,
+            settings: {},
+            plannedEndAt: Date.UTC(2026, 8, 12, 6, 30),
+        });
+
+        const [, options] = fetch.mock.calls[0];
+        expect(options.body.get('planned_end_at')).toBe('2026-09-12T06:30:00.000Z');
     });
 
     test('a refused reference frame throws with the status, so the page can show it', async () => {

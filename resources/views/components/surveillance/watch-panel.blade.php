@@ -123,6 +123,24 @@
         <flux:table.rows data-nights="rows"></flux:table.rows>
     </flux:table>
 
+    {{-- Five nights a page. localNights.js fills the summary, disables the
+         button at either end, and hides the whole pager while one page holds
+         everything. The outer element carries `hidden` and the inner the flex,
+         since the two fight over display on one element. --}}
+    <div data-nights="pager" class="mt-4 hidden">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <flux:text class="text-sm tabular-nums" data-nights="page-summary"></flux:text>
+            <div class="flex items-center gap-2">
+                <flux:button size="sm" variant="subtle" icon="chevron-left" data-nights="prev" data-test="nights-prev">
+                    {{ __('Previous') }}
+                </flux:button>
+                <flux:button size="sm" variant="subtle" icon-trailing="chevron-right" data-nights="next" data-test="nights-next">
+                    {{ __('Next') }}
+                </flux:button>
+            </div>
+        </div>
+    </div>
+
     <template data-nights="row-template">
         <flux:table.row data-night-id="">
             <flux:table.cell variant="strong" data-cell="name"></flux:table.cell>

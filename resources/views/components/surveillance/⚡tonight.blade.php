@@ -27,7 +27,11 @@ new class extends Component {
     /**
      * A read-only glance at the night in progress, for checking from another device.
      *
-     * @return array{sightings: int, last_sighting_at: Carbon|null, heartbeat_stale: bool}|null
+     * A night that was told to end itself and has not is `overdue`: the device
+     * kept the deadline, so passing it with the session still active means the
+     * device never got to act on it — asleep, or the tab gone.
+     *
+     * @return array{sightings: int, last_sighting_at: Carbon|null, heartbeat_stale: bool, overdue: bool}|null
      */
     #[Computed]
     public function tonight(): ?array
@@ -47,6 +51,7 @@ new class extends Component {
                 : null,
             'heartbeat_stale' => $session->last_heartbeat_at === null
                 || $session->last_heartbeat_at->lt(now()->subMinutes(self::STALE_HEARTBEAT_MINUTES)),
+            'overdue' => $session->planned_end_at !== null && $session->planned_end_at->isPast(),
         ];
     }
 }; ?>
@@ -75,6 +80,10 @@ new class extends Component {
                     </flux:heading>
                     <flux:text class="mt-1 text-sm">
                         {{ __('Started :time', ['time' => $this->session->started_at?->format('H:i') ?? '—']) }}
+                        @if ($this->session->planned_end_at !== null)
+                            <span class="text-zinc-400">&middot;</span>
+                            <span data-test="tonight-planned-end">{{ __('ends :time', ['time' => $this->session->planned_end_at->format('H:i')]) }}</span>
+                        @endif
                     </flux:text>
                 </div>
 
@@ -93,7 +102,14 @@ new class extends Component {
                 </div>
             </div>
 
-            @if ($tonight['heartbeat_stale'])
+            @if ($tonight['overdue'])
+                <flux:callout variant="warning" icon="clock" class="mt-4" data-test="tonight-overdue">
+                    <flux:callout.heading>{{ __('The night was due to end at :time', ['time' => $this->session->planned_end_at->format('H:i')]) }}</flux:callout.heading>
+                    <flux:callout.text>
+                        {{ __('The capture device has not ended it, so its screen probably slept before then. Open the capture page on that device and press End night to get the report.') }}
+                    </flux:callout.text>
+                </flux:callout>
+            @elseif ($tonight['heartbeat_stale'])
                 <flux:callout variant="warning" icon="exclamation-triangle" class="mt-4">
                     <flux:callout.heading>{{ __('The capture device has gone quiet') }}</flux:callout.heading>
                     <flux:callout.text>

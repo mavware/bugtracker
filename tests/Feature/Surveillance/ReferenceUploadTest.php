@@ -45,6 +45,43 @@ test('omitting settings leaves the session without any', function () {
     expect($session->refresh()->settings)->toBeNull();
 });
 
+// The capture device keeps the deadline and ends the night itself; the server is
+// told so the dashboard can show it. A night with no deadline sends nothing.
+test('a planned end is kept when sent and null when not', function () {
+    Storage::fake('local');
+    $user = User::factory()->create();
+    $timed = SurveillanceSession::factory()->for($user)->create();
+    $open = SurveillanceSession::factory()->for($user)->create();
+
+    $this->actingAs($user)->postJson(route('surveillance.reference.store', $timed), [
+        'image' => UploadedFile::fake()->image('reference.jpg', 1280, 720),
+        'frame_width' => 1280,
+        'frame_height' => 720,
+        'planned_end_at' => '2026-09-12T06:30:00.000Z',
+    ])->assertOk();
+
+    $this->actingAs($user)->postJson(route('surveillance.reference.store', $open), [
+        'image' => UploadedFile::fake()->image('reference.jpg', 1280, 720),
+        'frame_width' => 1280,
+        'frame_height' => 720,
+    ])->assertOk();
+
+    expect($timed->refresh()->planned_end_at?->toIso8601ZuluString())->toBe('2026-09-12T06:30:00Z')
+        ->and($open->refresh()->planned_end_at)->toBeNull();
+});
+
+test('a planned end that is not a date is rejected', function () {
+    $user = User::factory()->create();
+    $session = SurveillanceSession::factory()->for($user)->create();
+
+    $this->actingAs($user)->postJson(route('surveillance.reference.store', $session), [
+        'image' => UploadedFile::fake()->image('reference.jpg', 1280, 720),
+        'frame_width' => 1280,
+        'frame_height' => 720,
+        'planned_end_at' => 'eight hours',
+    ])->assertUnprocessable()->assertJsonValidationErrors(['planned_end_at']);
+});
+
 test('reference upload rejects a missing image and out-of-range dimensions', function () {
     $user = User::factory()->create();
     $session = SurveillanceSession::factory()->for($user)->create();

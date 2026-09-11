@@ -311,6 +311,13 @@ function initCaptureApp(root) {
 
         const settings = { ...DEFAULT_PARAMS, diffThreshold: calibration.diffThreshold };
 
+        // The night starts, for offsets and the deadline alike, when the reference
+        // frame goes up: that is the moment the server stamps started_at too.
+        app.sessionStartTime = Date.now();
+
+        const autoEndMs = autoEndAfterMs({ enabled: ui.autoEnd.checked, hours: ui.autoEndHours.value });
+        app.autoEndAt = autoEndMs === null ? null : app.sessionStartTime + autoEndMs;
+
         app.sink = await buildSink();
         setState(referenceStoreState(captureMode(config)));
         await app.sink.storeReference({
@@ -318,12 +325,9 @@ function initCaptureApp(root) {
             frameWidth: app.camera.frameWidth,
             frameHeight: app.camera.frameHeight,
             settings,
+            plannedEndAt: app.autoEndAt,
         });
 
-        app.sessionStartTime = Date.now();
-
-        const autoEndMs = autoEndAfterMs({ enabled: ui.autoEnd.checked, hours: ui.autoEndHours.value });
-        app.autoEndAt = autoEndMs === null ? null : app.sessionStartTime + autoEndMs;
         app.detector = new Detector(settings);
         app.tracker = new Tracker({
             scale: app.camera.scale,

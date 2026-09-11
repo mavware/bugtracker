@@ -34,7 +34,7 @@ use Illuminate\Support\Facades\Storage;
  * @property-read int|null $confirmed_tracks_count Only loaded by queries that withCount() the confirmed tracks.
  * @property-read int|null $sessions_count Only loaded by queries that group sessions and count each group.
  */
-#[Fillable(['customer_id', 'imported_local_id', 'name', 'room', 'status', 'started_at', 'ended_at', 'last_heartbeat_at', 'reference_image_path', 'frame_width', 'frame_height', 'settings', 'analytics'])]
+#[Fillable(['customer_id', 'imported_local_id', 'name', 'room', 'status', 'started_at', 'ended_at', 'last_heartbeat_at', 'planned_end_at', 'reference_image_path', 'frame_width', 'frame_height', 'settings', 'analytics'])]
 class SurveillanceSession extends Model
 {
     /** @use HasFactory<SurveillanceSessionFactory> */
@@ -59,6 +59,7 @@ class SurveillanceSession extends Model
             'started_at' => 'datetime',
             'ended_at' => 'datetime',
             'last_heartbeat_at' => 'datetime',
+            'planned_end_at' => 'datetime',
             'settings' => 'array',
             'analytics' => 'array',
         ];

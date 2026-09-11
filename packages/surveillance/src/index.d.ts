@@ -472,6 +472,8 @@ export interface NightSink {
         frameWidth: number;
         frameHeight: number;
         settings: Record<string, unknown>;
+        /** Epoch ms the night will end itself at, or null for one that runs until ended. */
+        plannedEndAt?: number | null;
     }): Promise<void>;
 
     start(): void;
@@ -501,6 +503,8 @@ export declare class LocalNightSink implements NightSink {
         frameWidth: number;
         frameHeight: number;
         settings: Record<string, unknown>;
+        /** Epoch ms the night will end itself at, or null for one that runs until ended. */
+        plannedEndAt?: number | null;
     }): Promise<void>;
     start(): void;
     stop(): void;

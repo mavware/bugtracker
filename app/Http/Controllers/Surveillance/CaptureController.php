@@ -36,6 +36,7 @@ class CaptureController extends Controller
             'frame_width' => $validated->integer('frame_width'),
             'frame_height' => $validated->integer('frame_height'),
             'settings' => $validated->has('settings') ? $validated->array('settings') : null,
+            'planned_end_at' => $validated->date('planned_end_at'),
             'status' => SurveillanceSessionStatus::Active,
             'started_at' => now(),
             'last_heartbeat_at' => now(),

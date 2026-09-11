@@ -34,6 +34,7 @@ trait SurveillanceValidationRules
             'frame_width' => ['required', 'integer', 'between:160,4096'],
             'frame_height' => ['required', 'integer', 'between:160,4096'],
             'settings' => ['sometimes', 'array'],
+            'planned_end_at' => ['sometimes', 'nullable', 'date'],
         ];
     }
 

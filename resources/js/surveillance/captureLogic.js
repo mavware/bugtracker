@@ -23,8 +23,10 @@ export const AUTH_LOST_MESSAGE =
 /**
  * The multipart body for the reference frame. Detection settings are flattened
  * into settings[key] entries, which is the shape the server's validation expects.
+ * A planned end goes up as an ISO timestamp so the dashboard can show it; a
+ * night without one sends nothing, which the server reads as null.
  */
-export function buildReferenceForm({ blob, frameWidth, frameHeight, settings }) {
+export function buildReferenceForm({ blob, frameWidth, frameHeight, settings, plannedEndAt = null }) {
     const form = new FormData();
 
     form.append('image', blob, 'reference.jpg');
@@ -33,6 +35,10 @@ export function buildReferenceForm({ blob, frameWidth, frameHeight, settings }) 
 
     for (const [key, value] of Object.entries(settings)) {
         form.append(`settings[${key}]`, value);
+    }
+
+    if (plannedEndAt !== null) {
+        form.append('planned_end_at', new Date(plannedEndAt).toISOString());
     }
 
     return form;

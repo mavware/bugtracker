@@ -36,6 +36,11 @@ function mountPage() {
             <div data-nights="banner" class="hidden"></div>
             <p data-nights="progress" class="hidden"></p>
             <table><tbody data-nights="rows"></tbody></table>
+            <div data-nights="pager" class="hidden">
+                <span data-nights="page-summary"></span>
+                <button data-nights="prev">Previous</button>
+                <button data-nights="next">Next</button>
+            </div>
             <template data-nights="row-template"><table><tbody>
                 <tr data-night-id="">
                     <td data-cell="name"></td>
@@ -155,6 +160,66 @@ describe('local nights list', () => {
 
         expect(el('progress').textContent).toContain('1 night saved to your account, 1 could not be saved.');
         expect(el('progress').textContent).toContain('HTTP 500');
+    });
+
+    describe('paging', () => {
+        const seedNights = async (count) => {
+            for (let i = 0; i < count; i++) {
+                await stubs.store.putNight(night(`n${i}`, new Date(2026, 8, 1 + i, 22, 0).getTime()));
+            }
+        };
+
+        const settle = () => new Promise((resolve) => setTimeout(resolve, 5));
+
+        test('one page of nights needs no pager', async () => {
+            await seedNights(5);
+            await bootPage();
+
+            expect(rows()).toHaveLength(5);
+            expect(el('pager').classList.contains('hidden')).toBe(true);
+        });
+
+        test('shows five newest first, says which, and steps through the rest', async () => {
+            await seedNights(7);
+            await bootPage();
+
+            expect(el('pager').classList.contains('hidden')).toBe(false);
+            expect(rows()).toHaveLength(5);
+            expect(rows()[0].dataset.nightId).toBe('n6');
+            expect(el('page-summary').textContent).toBe('Showing 1–5 of 7 nights');
+            expect(el('prev').hasAttribute('disabled')).toBe(true);
+            expect(el('next').hasAttribute('disabled')).toBe(false);
+
+            el('next').click();
+            await settle();
+
+            expect(rows()).toHaveLength(2);
+            expect([...rows()].map((row) => row.dataset.nightId)).toEqual(['n1', 'n0']);
+            expect(el('page-summary').textContent).toBe('Showing 6–7 of 7 nights');
+            expect(el('next').hasAttribute('disabled')).toBe(true);
+
+            el('prev').click();
+            await settle();
+
+            expect(rows()[0].dataset.nightId).toBe('n6');
+        });
+
+        // Removing the last night on the last page must not leave an empty page
+        // on show with nowhere to go.
+        test('emptying the last page falls back to the one before it', async () => {
+            await seedNights(6);
+            await bootPage();
+
+            el('next').click();
+            await settle();
+            expect(rows()).toHaveLength(1);
+
+            rows()[0].querySelector('[data-cell="remove"]').click();
+            await settle();
+
+            expect(rows()).toHaveLength(5);
+            expect(el('pager').classList.contains('hidden')).toBe(true);
+        });
     });
 
     test('warns when the browser will not keep nights between visits', async () => {

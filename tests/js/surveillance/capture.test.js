@@ -238,6 +238,7 @@ describe('capture page', () => {
             frameWidth: 1280,
             frameHeight: 720,
             settings: expect.objectContaining({ procWidth: 320, diffThreshold: 20 }),
+            plannedEndAt: null,
         });
         expect(stubs.localSinkStoreReference).not.toHaveBeenCalled();
     });
@@ -812,6 +813,11 @@ describe('capture page', () => {
             chooseAutoEnd(2);
 
             await startWatching();
+
+            // The server is told, so the dashboard can say when the night ends.
+            const [{ plannedEndAt }] = stubs.uploaderStoreReference.mock.calls[0];
+            expect(plannedEndAt - Date.now()).toBeGreaterThan(2 * HOUR - 10_000);
+            expect(plannedEndAt - Date.now()).toBeLessThanOrEqual(2 * HOUR);
 
             // Said in the header and again in the night-time reading, from one clock.
             const notes = document.querySelectorAll('[data-capture="auto-end-note"]');

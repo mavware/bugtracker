@@ -64,7 +64,7 @@
                                 <li class="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
                                     <span class="flex size-9 items-center justify-center rounded-full bg-zinc-900 text-sm font-semibold text-white dark:bg-white dark:text-zinc-900">1</span>
                                     <flux:heading size="lg" level="3">{{ __('Prop up a camera') }}</flux:heading>
-                                    <flux:text>{{ __('Open the capture page on any phone or laptop, name the room, and aim it at the floor where you have seen activity. Plug it in and leave the screen on.') }}</flux:text>
+                                    <flux:text>{{ __('On any phone or laptop, aim the camera at the floor where you have seen activity, run through the room checklist, and press Start. Plug the device in and leave the screen on.') }}</flux:text>
                                 </li>
                                 <li class="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
                                     <span class="flex size-9 items-center justify-center rounded-full bg-zinc-900 text-sm font-semibold text-white dark:bg-white dark:text-zinc-900">2</span>
