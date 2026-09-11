@@ -77,7 +77,6 @@ new #[Title('Admin · Users')] class extends Component {
             <flux:heading size="xl">{{ __('Users') }}</flux:heading>
             <flux:text class="mt-2">{{ __('Every account on the site.') }}</flux:text>
         </div>
-        <flux:button href="{{ route('dashboard') }}" icon="arrow-left">{{ __('Dashboard') }}</flux:button>
     </div>
 
     <flux:input

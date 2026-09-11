@@ -84,7 +84,6 @@ new #[Title('Admin · Rooms')] class extends Component {
             <flux:heading size="xl">{{ __('Rooms') }}</flux:heading>
             <flux:text class="mt-2">{{ __('Room labels in use, grouped by who recorded them and where.') }}</flux:text>
         </div>
-        <flux:button href="{{ route('dashboard') }}" icon="arrow-left">{{ __('Dashboard') }}</flux:button>
     </div>
 
     @if ($this->roomGroups->isEmpty())

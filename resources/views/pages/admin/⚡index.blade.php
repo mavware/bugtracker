@@ -35,7 +35,6 @@ new #[Title('Admin')] class extends Component {
             <flux:heading size="xl">{{ __('Site administration') }}</flux:heading>
             <flux:text class="mt-2">{{ __('Everything recorded across every account.') }}</flux:text>
         </div>
-        <flux:button href="{{ route('dashboard') }}" icon="arrow-left">{{ __('Dashboard') }}</flux:button>
     </div>
 
     <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

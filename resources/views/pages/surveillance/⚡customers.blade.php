@@ -106,7 +106,6 @@ new #[Title('Customers')] class extends Component {
             <flux:heading size="xl">{{ __('Customers') }}</flux:heading>
             <flux:text class="mt-2">{{ __('Properties you watch on someone else\'s behalf. Nights are only ever compared within one customer.') }}</flux:text>
         </div>
-        <flux:button href="{{ route('dashboard') }}" icon="arrow-left">{{ __('Dashboard') }}</flux:button>
     </div>
 
     <form wire:submit="save" class="mt-6 flex flex-wrap items-start gap-3">

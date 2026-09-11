@@ -109,7 +109,6 @@ class extends Component {
                 >
                     {{ $session->status === SurveillanceSessionStatus::Aborted ? __('Keep this night') : __('Discard night') }}
                 </flux:button>
-                <flux:button href="{{ route('dashboard') }}" icon="arrow-left">{{ __('Dashboard') }}</flux:button>
             </div>
         </div>
 

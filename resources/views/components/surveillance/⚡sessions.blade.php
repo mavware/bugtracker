@@ -144,13 +144,9 @@ new class extends Component {
     }
 }; ?>
 
+{{-- The title is the dashboard's, above the panels; this starts at the form. --}}
 <section class="w-full">
-    <div>
-        <flux:heading size="lg">{{ __('Surveillance') }}</flux:heading>
-        <flux:text class="mt-2">{{ __('Overnight bug watching sessions') }}</flux:text>
-    </div>
-
-    <form wire:submit="startSession" class="mt-4 flex flex-wrap items-end gap-3">
+    <form wire:submit="startSession" class="flex flex-wrap items-end gap-3">
         @if ($this->customers->isNotEmpty())
             <flux:select wire:model="customer" :label="__('Customer')" class="max-w-52" data-test="session-customer">
                 <flux:select.option value="">{{ __('No customer') }}</flux:select.option>

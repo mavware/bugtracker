@@ -84,7 +84,6 @@ new #[Title('Rooms')] class extends Component {
             <flux:heading size="xl">{{ __('Rooms') }}</flux:heading>
             <flux:text class="mt-2">{{ __('The room labels on your nights. Renaming one updates every night that carries it.') }}</flux:text>
         </div>
-        <flux:button href="{{ route('dashboard') }}" icon="arrow-left">{{ __('Dashboard') }}</flux:button>
     </div>
 
     @php($showCustomer = $this->roomGroups->contains(fn (RoomLabel $group) => $group->customer !== null))

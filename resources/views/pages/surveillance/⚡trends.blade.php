@@ -233,7 +233,6 @@ new #[Title('Trends')] class extends Component {
                     @endforeach
                 </flux:select>
             @endif
-            <flux:button href="{{ route('dashboard') }}" icon="arrow-left">{{ __('Dashboard') }}</flux:button>
         </div>
     </div>
 

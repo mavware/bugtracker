@@ -37,6 +37,29 @@ test('the sidebar reaches the other sections from a section page too', function 
         ->assertSee(route('surveillance.rooms'));
 });
 
+// The sidebar is the way between sections; a back button in every page title
+// said the same thing twice.
+test('section pages carry no back-to-dashboard button of their own', function () {
+    $user = User::factory()->create();
+
+    foreach (['surveillance.trends', 'surveillance.rooms', 'surveillance.customers', 'surveillance.heatmap'] as $route) {
+        $content = $this->actingAs($user)->get(route($route))->assertOk()->getContent();
+
+        expect(preg_match('/<a href="'.preg_quote(route('dashboard'), '/').'"[^>]*data-flux-button/', $content))->toBe(0, $route);
+    }
+});
+
+// The title sits at the top of the page, above the night-in-progress and import
+// panels, the way every other section titles itself — not inside the sessions list.
+test('the dashboard is titled at the top like the other sections', function () {
+    $content = $this->actingAs(User::factory()->create())->get(route('dashboard'))->assertOk()->getContent();
+
+    expect(Str::before($content, 'id="claim-nights"'))
+        ->toContain('Surveillance')
+        ->toContain('Overnight bug watching sessions');
+    expect(substr_count($content, 'Overnight bug watching sessions'))->toBe(1);
+});
+
 // Nights recorded in this browser before the user had an account can be pulled
 // in from the dashboard; claim.js reads the import route from this panel.
 test('the dashboard carries the panel that imports device-local nights, hidden until the script finds some', function () {

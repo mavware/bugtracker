@@ -91,7 +91,6 @@ new #[Title('Admin · Sessions')] class extends Component {
             <flux:heading size="xl">{{ __('Sessions') }}</flux:heading>
             <flux:text class="mt-2">{{ __('Every night recorded, across all accounts.') }}</flux:text>
         </div>
-        <flux:button href="{{ route('dashboard') }}" icon="arrow-left">{{ __('Dashboard') }}</flux:button>
     </div>
 
     <div class="mt-6 flex flex-wrap items-center gap-3">

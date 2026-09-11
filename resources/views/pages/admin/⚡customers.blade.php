@@ -105,7 +105,6 @@ new #[Title('Admin · Customers')] class extends Component {
             <flux:heading size="xl">{{ __('Customers') }}</flux:heading>
             <flux:text class="mt-2">{{ __('Properties recorded on someone else\'s behalf, across all accounts.') }}</flux:text>
         </div>
-        <flux:button href="{{ route('dashboard') }}" icon="arrow-left">{{ __('Dashboard') }}</flux:button>
     </div>
 
     <flux:input
