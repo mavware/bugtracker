@@ -35,6 +35,8 @@
             {{ $slot }}
         </main>
 
+        <x-confirm-dialog />
+
         @fluxScripts
     </body>
 </html>

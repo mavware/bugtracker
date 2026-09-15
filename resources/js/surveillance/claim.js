@@ -3,6 +3,7 @@
 // saved. Shown only while the night store holds something; otherwise the panel
 // stays hidden and the dashboard is as it was.
 import { claimNight } from './claimNight.js';
+import { confirmDialog } from '../confirmDialog.js';
 import { finalizeInterruptedNight, nightRows, openNightStore } from '@mavware/bug-surveillance';
 
 const root = document.getElementById('claim-nights');
@@ -122,9 +123,11 @@ async function initClaimPanel(root) {
         window.Livewire?.dispatch('night-imported');
     };
 
+    // The click lands on whatever is inside the button (its label span, the
+    // icon), so look for the button itself, not the nearest data-cell.
     root.addEventListener('click', async (event) => {
         const row = event.target.closest('[data-night-id]');
-        const button = event.target.closest('[data-cell]');
+        const button = event.target.closest('[data-cell="import"], [data-cell="discard"], [data-cell="remove"]');
 
         if (row === null || button === null) {
             return;
@@ -132,8 +135,22 @@ async function initClaimPanel(root) {
 
         if (button.dataset.cell === 'import') {
             await importOne(row);
+        } else if (button.dataset.cell === 'discard') {
+            const accepted = await confirmDialog(
+                'Delete this night from this device? It was never saved to your account, so there is no way to get it back.',
+                { confirmLabel: 'Delete night', destructive: true },
+            );
+
+            if (accepted) {
+                await store.deleteNight(row.dataset.nightId);
+                await render();
+            }
         } else if (button.dataset.cell === 'remove') {
-            if (window.confirm('Remove this night from this device? Its copy in your account stays.')) {
+            const accepted = await confirmDialog('Remove this night from this device? Its copy in your account stays.', {
+                confirmLabel: 'Remove local copy',
+            });
+
+            if (accepted) {
                 await store.deleteNight(row.dataset.nightId);
                 await render();
             }

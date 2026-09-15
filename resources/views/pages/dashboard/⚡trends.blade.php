@@ -425,6 +425,8 @@ new #[Title('Trends'), Layout('layouts::app', [
                         icon="trash"
                         wire:click="deleteIntervention({{ $intervention['id'] }})"
                         wire:confirm="{{ __('Remove this intervention?') }}"
+                        data-confirm-label="{{ __('Remove intervention') }}"
+                        data-confirm-destructive
                         data-test="delete-intervention-button"
                     />
                 </div>

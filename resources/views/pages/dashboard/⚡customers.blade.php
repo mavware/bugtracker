@@ -169,6 +169,8 @@ new #[Title('Customers'), Layout('layouts::app', [
                                     icon="trash"
                                     wire:click="deleteCustomer({{ $customer->id }})"
                                     wire:confirm="{{ __('Remove this customer? Their recorded nights are kept, but no longer grouped.') }}"
+                                    data-confirm-label="{{ __('Remove customer') }}"
+                                    data-confirm-destructive
                                     data-test="delete-customer-button"
                                 />
                             </div>

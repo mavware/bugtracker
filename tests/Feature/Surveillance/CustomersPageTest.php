@@ -35,7 +35,7 @@ test('a customer can be added', function () {
     $user = User::factory()->create();
 
     Livewire::actingAs($user)
-        ->test('pages::surveillance.customers')
+        ->test('pages::dashboard.customers')
         ->set('name', 'The Alvarez house')
         ->set('address', '12 Oak Street')
         ->call('save')
@@ -50,7 +50,7 @@ test('a customer needs a name', function () {
     $user = User::factory()->create();
 
     Livewire::actingAs($user)
-        ->test('pages::surveillance.customers')
+        ->test('pages::dashboard.customers')
         ->call('save')
         ->assertHasErrors(['name' => 'required']);
 
@@ -63,7 +63,7 @@ test('the same customer name cannot be added twice, but two users may share one'
     Customer::factory()->create(['name' => 'The Alvarez house']);
 
     Livewire::actingAs($user)
-        ->test('pages::surveillance.customers')
+        ->test('pages::dashboard.customers')
         ->set('name', 'The Alvarez house')
         ->call('save')
         ->assertHasErrors(['name' => 'unique']);
@@ -76,7 +76,7 @@ test('a customer can be renamed without tripping its own uniqueness rule', funct
     $customer = Customer::factory()->for($user)->create(['name' => 'The Alvarez house', 'address' => '12 Oak Street']);
 
     Livewire::actingAs($user)
-        ->test('pages::surveillance.customers')
+        ->test('pages::dashboard.customers')
         ->call('edit', $customer->id)
         ->assertSet('name', 'The Alvarez house')
         ->set('address', '14 Oak Street')
@@ -93,7 +93,7 @@ test('removing a customer keeps their recorded nights and un-groups them', funct
     $session = SurveillanceSession::factory()->for($user)->completed()->create(['customer_id' => $customer->id]);
 
     Livewire::actingAs($user)
-        ->test('pages::surveillance.customers')
+        ->test('pages::dashboard.customers')
         ->call('deleteCustomer', $customer->id);
 
     expect(Customer::query()->find($customer->id))->toBeNull()
@@ -104,7 +104,7 @@ test('another user\'s customer cannot be edited', function () {
     $customer = Customer::factory()->create();
 
     Livewire::actingAs(User::factory()->create())
-        ->test('pages::surveillance.customers')
+        ->test('pages::dashboard.customers')
         ->call('edit', $customer->id);
 })->throws(ModelNotFoundException::class);
 
@@ -112,6 +112,6 @@ test('another user\'s customer cannot be removed', function () {
     $customer = Customer::factory()->create();
 
     Livewire::actingAs(User::factory()->create())
-        ->test('pages::surveillance.customers')
+        ->test('pages::dashboard.customers')
         ->call('deleteCustomer', $customer->id);
 })->throws(ModelNotFoundException::class);

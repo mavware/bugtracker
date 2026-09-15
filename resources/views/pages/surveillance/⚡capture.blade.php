@@ -55,6 +55,13 @@ new #[Title('Capture')] class extends Component {
     :name="$session->name"
     mode="server"
 >
+    {{-- Where the night is filed, edited before it starts. In the setup column
+         because it goes with the aiming advice: once the night is under way the
+         column is hidden and the fields with it. --}}
+    <x-slot:setupHelp>
+        <livewire:surveillance.night-details :session="$session" />
+    </x-slot:setupHelp>
+
     {{-- Night-time reading, so it is in the slot that appears once the night is
          under way rather than the one that leaves with the hero. The panel's own
          box beside it already says to keep the device plugged in and awake. --}}

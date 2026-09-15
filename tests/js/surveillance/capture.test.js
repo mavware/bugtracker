@@ -401,6 +401,29 @@ describe('capture page', () => {
         expect(el('start').hasAttribute('disabled')).toBe(false);
     });
 
+    // The panel fills the dialog box, so a click that reaches the dialog element
+    // itself landed on the backdrop; a click inside the panel stays open.
+    test('a click inside the checklist panel leaves it open', async () => {
+        el('start').click();
+
+        el('auto-end-fields').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+        expect(el('preflight').open).toBe(true);
+        el('preflight-cancel').click();
+    });
+
+    test('a click on the backdrop closes the checklist without starting', async () => {
+        el('start').click();
+        expect(el('preflight').open).toBe(true);
+
+        el('preflight').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        await vi.advanceTimersByTimeAsync(LEAVE_ROOM_SECONDS * 1000);
+
+        expect(el('preflight').open).toBe(false);
+        expect(stubs.cameraStart).not.toHaveBeenCalled();
+        expect(el('start').hasAttribute('disabled')).toBe(false);
+    });
+
     test('nothing is measured until the user has had five seconds to leave', async () => {
         el('start').click();
         el('preflight-start').click();

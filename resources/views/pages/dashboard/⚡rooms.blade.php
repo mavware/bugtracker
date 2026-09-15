@@ -138,6 +138,8 @@ new #[Title('Rooms'), Layout('layouts::app', [
                                     icon="x-mark"
                                     wire:click="clearRoom('{{ $group->key }}')"
                                     wire:confirm="{{ __('Remove this label from :count nights? The recordings are kept.', ['count' => $group->sessionsCount]) }}"
+                                    data-confirm-label="{{ __('Remove label') }}"
+                                    data-confirm-destructive
                                     data-test="clear-room-button"
                                 />
                             </div>

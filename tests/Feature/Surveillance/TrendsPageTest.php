@@ -49,7 +49,7 @@ test('recording an intervention attaches it to the room being viewed', function 
     $user = User::factory()->create();
 
     Livewire::actingAs($user)
-        ->test('pages::surveillance.trends')
+        ->test('pages::dashboard.trends')
         ->set('room', 'Kitchen')
         ->set('performedOn', '2026-09-01')
         ->set('description', 'Placed gel bait under the sink')
@@ -66,7 +66,7 @@ test('an intervention recorded without a room filter applies everywhere', functi
     $user = User::factory()->create();
 
     Livewire::actingAs($user)
-        ->test('pages::surveillance.trends')
+        ->test('pages::dashboard.trends')
         ->set('description', 'Sealed the front door sweep')
         ->call('addIntervention')
         ->assertHasNoErrors();
@@ -78,7 +78,7 @@ test('an intervention needs a description and cannot be dated in the future', fu
     $user = User::factory()->create();
 
     Livewire::actingAs($user)
-        ->test('pages::surveillance.trends')
+        ->test('pages::dashboard.trends')
         ->set('description', 'Placed gel bait')
         ->set($field, $value)
         ->call('addIntervention')
@@ -96,7 +96,7 @@ test('an intervention can be removed', function () {
     $intervention = Intervention::factory()->for($user)->create();
 
     Livewire::actingAs($user)
-        ->test('pages::surveillance.trends')
+        ->test('pages::dashboard.trends')
         ->call('deleteIntervention', $intervention->id);
 
     expect(Intervention::find($intervention->id))->toBeNull();
@@ -106,6 +106,6 @@ test('another user\'s intervention cannot be removed', function () {
     $intervention = Intervention::factory()->create();
 
     Livewire::actingAs(User::factory()->create())
-        ->test('pages::surveillance.trends')
+        ->test('pages::dashboard.trends')
         ->call('deleteIntervention', $intervention->id);
 })->throws(ModelNotFoundException::class);

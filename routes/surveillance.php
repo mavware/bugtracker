@@ -12,9 +12,9 @@ Route::get('watch', [WatchController::class, 'capture'])->name('watch.capture');
 Route::get('watch/{localId}/report', [WatchController::class, 'report'])->whereUuid('localId')->name('watch.report');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::livewire('surveillance/customers', 'pages::surveillance.customers')->name('surveillance.customers');
-    Route::livewire('surveillance/rooms', 'pages::surveillance.rooms')->name('surveillance.rooms');
-    Route::livewire('surveillance/trends', 'pages::surveillance.trends')->name('surveillance.trends');
+    Route::livewire('surveillance/customers', 'pages::dashboard.customers')->name('surveillance.customers');
+    Route::livewire('surveillance/rooms', 'pages::dashboard.rooms')->name('surveillance.rooms');
+    Route::livewire('surveillance/trends', 'pages::dashboard.trends')->name('surveillance.trends');
     Route::livewire('surveillance/{session}/capture', 'pages::surveillance.capture')->name('surveillance.capture');
     Route::livewire('surveillance/{session}/report', 'pages::surveillance.report')->name('surveillance.report');
 

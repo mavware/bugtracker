@@ -130,6 +130,8 @@ new #[Title('Admin · Users'), Layout('layouts::app', [
                                     icon="trash"
                                     wire:click="deleteUser({{ $user->id }})"
                                     wire:confirm="{{ __('Delete this account and every night it recorded? This cannot be undone.') }}"
+                                    data-confirm-label="{{ __('Delete account') }}"
+                                    data-confirm-destructive
                                     data-test="delete-user-button"
                                 />
                             </div>

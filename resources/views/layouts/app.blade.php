@@ -1,6 +1,6 @@
 <x-layouts::app.sidebar :title="$title ?? null">
-    <flux:main class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl">
-        <div>
+    <flux:main>
+        <div class="mb-5">
             @if(!empty($heading))
                 <flux:heading size="xl">{{ $heading }}</flux:heading>
             @endif

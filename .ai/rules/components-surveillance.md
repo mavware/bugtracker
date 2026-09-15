@@ -1,6 +1,8 @@
 ---
 paths:
   - 'resources/views/components/surveillance/**'
+  - resources/views/components/surveillance/⚡sessions.blade.php
+  - resources/views/components/surveillance/⚡night-details.blade.php
 ---
 
 # Components Surveillance
@@ -19,3 +21,9 @@ The capture panel's "Ends HH:MM" note appears in the card header and again in th
 
 ## The dashboard import panel is the x-surveillance.claim-nights component, script included
 CORRECTION to "The dashboard import panel is one row a night…": the #claim-nights markup no longer lives in dashboard.blade.php. It is resources/views/components/surveillance/claim-nights.blade.php, which carries the panel, its data-config (csrfToken, import route, the user's customers) and the @vite('resources/js/surveillance/claim.js') include — the same self-contained shape as capture-panel. The dashboard renders it with one tag. Everything else in that rule (row cells, choice snapshot in render(), 'night-imported' Livewire event, max-h-80 scroll, hidden while the store is empty) still holds; DashboardTest's assertions on the hooks run against the component through the dashboard route.
+
+## The dashboard sessions list sorts through a whitelist and "Started" falls back to created_at
+⚡sessions sorts via sort(string $column) against the SORTABLE_COLUMNS map (name, customer, room, status, tracks, started); unknown keys are ignored and the direction is whitelisted before orderByRaw, so never pass user input straight to orderBy. 'customer' orders on the customer_name subselect added with addSelect. 'started' is COALESCE(started_at, created_at) on purpose: a pending night has no started_at, and plain started_at DESC sank a night just set up beneath every finished one. Default is started desc, which is what "newest first" meant before sorting existed. The customerFilter/roomFilter selects use 'none' as the sentinel for NULL (nights filed under nobody / with no room label), distinct from '' meaning any; the start form's $customer/$room are separate properties and must stay so. Rooms come from the user's own sessions (distinct room), so the filter never lists another account's labels.
+
+## A night's room and customer are set on the capture page, saving on change, not on the dashboard start form
+The dashboard's ⚡sessions start form is only a button (decided 2026-09-11); startSession copies room/customer_id from the account's latest night so the usual case needs no typing. Editing happens in ⚡night-details, rendered by pages/surveillance/capture inside the capture-panel setupHelp slot, so it disappears with the rest of the setup reading when the night starts. It is a nested Livewire component on purpose: the capture page itself never re-renders, so Livewire never morphs the DOM capture.js owns (hidden toggles, check-camera preview). Do not move these fields into the capture page component with wire:model; that re-render would revert capture.js's state. Fields are wire:model.live (customer) and wire:model.live.debounce.500ms (room); updatedRoom/updatedCustomer call save(), which Gate-authorizes update, validates (room max 80, customer Rule::exists scoped to Auth::id()) and updates the night. Do not put the fields back on the dashboard.

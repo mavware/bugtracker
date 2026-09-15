@@ -3,6 +3,7 @@
 // visitor, offers to save nights to the account.
 import { claimNight } from './claimNight.js';
 import { claimSummary } from './claimLogic.js';
+import { confirmDialog } from '../confirmDialog.js';
 import { NIGHTS_PER_PAGE, paginate, pageSummary } from './localNightsLogic.js';
 import { finalizeInterruptedNight, nightRows, openNightStore, VOLATILE_STORE_MESSAGE } from '@mavware/bug-surveillance';
 
@@ -118,7 +119,12 @@ async function initLocalNights(root) {
             event.preventDefault();
             window.location.assign(button.getAttribute('href'));
         } else if (button.dataset.cell === 'remove') {
-            if (window.confirm('Remove this night from this device? There is no way to get it back.')) {
+            const accepted = await confirmDialog('Remove this night from this device? There is no way to get it back.', {
+                confirmLabel: 'Remove night',
+                destructive: true,
+            });
+
+            if (accepted) {
                 await store.deleteNight(nightId);
                 await render();
             }

@@ -3,23 +3,24 @@
      Self-contained: the markup claim.js reads, the config it needs, and the
      script itself, so a page shows the panel with one tag. Saving removes the
      local copy, so a row that reads "saved" is one claimed from its own report
-     page, which keeps the copy it is showing. claim.js fills the list from the
-     night store and hides the whole panel while the store holds nothing. The
-     customers go in the config so the script can offer them per row. --}}
+     page, which keeps the copy it is showing. An unsaved night can also be
+     dropped from the device without importing it. claim.js fills the list from
+     the night store and hides the whole panel while the store holds nothing.
+     The customers go in the config so the script can offer them per row. --}}
 <div
     id="claim-nights"
-    class="hidden"
+    class="hidden mb-4"
     data-config="{{ json_encode([
         'csrfToken' => csrf_token(),
         'routes' => ['import' => route('surveillance.import')],
         'customers' => auth()->user()->customers()->orderBy('name')->get(['id', 'name'])->map(fn ($customer) => ['id' => $customer->id, 'name' => $customer->name])->all(),
     ]) }}"
 >
-    <div class="rounded-xl border border-zinc-200 p-4 dark:border-zinc-700" data-test="claim-nights-panel">
+    <div class="rounded-xl border border-amber-500/50 p-4" data-test="claim-nights-panel">
         <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
-                <flux:heading size="lg" class="flex items-center gap-2">
-                    <flux:icon name="cloud-arrow-up" variant="mini" class="text-zinc-400" />
+                <flux:heading size="lg" class="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                    <flux:icon name="cloud-arrow-up" variant="mini" />
                     {{ __('Unsaved Sessions') }}
                 </flux:heading>
                 <flux:text class="mt-1 text-sm">
@@ -60,6 +61,7 @@
                     <flux:button size="sm" variant="primary" icon="cloud-arrow-up" data-cell="import">
                         <span data-cell="import-label">{{ __('Import') }}</span>
                     </flux:button>
+                    <flux:button size="sm" variant="subtle" icon="trash" data-cell="discard">{{ __('Remove') }}</flux:button>
                 </div>
 
                 <div data-cell="saved" class="hidden">

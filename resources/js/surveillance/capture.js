@@ -108,6 +108,13 @@ function initCaptureApp(root) {
     }));
     ui.endButton.addEventListener('click', () => endNight());
     ui.preflightCancel.addEventListener('click', () => ui.preflight.close(''));
+    // The panel fills the dialog box, so a click whose target is the dialog itself
+    // landed on the backdrop: that backs out, the same as Cancel or Escape.
+    ui.preflight.addEventListener('click', (event) => {
+        if (event.target === ui.preflight) {
+            ui.preflight.close('');
+        }
+    });
     // The hours field only means anything while the box is ticked, so it only shows then.
     ui.autoEnd.addEventListener('change', () => ui.autoEndFields.classList.toggle('hidden', !ui.autoEnd.checked));
     // The back button and closing the tab reach past the locked chrome, and either

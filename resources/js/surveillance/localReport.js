@@ -3,6 +3,7 @@
 // report's Livewire actions do: dismissing a track recomputes the analytics
 // and rebuilds the replay.
 import { claimNight } from './claimNight.js';
+import { confirmDialog } from '../confirmDialog.js';
 import {
     buildLocalReportPayload,
     finalizeInterruptedNight,
@@ -147,7 +148,12 @@ async function initLocalReport(root) {
     });
 
     el('delete').addEventListener('click', async () => {
-        if (!window.confirm('Delete this night from this device? There is no way to get it back.')) {
+        const accepted = await confirmDialog('Delete this night from this device? There is no way to get it back.', {
+            confirmLabel: 'Delete night',
+            destructive: true,
+        });
+
+        if (!accepted) {
             return;
         }
 

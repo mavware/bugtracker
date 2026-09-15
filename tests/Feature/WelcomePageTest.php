@@ -34,14 +34,20 @@ test('guests can start a night from the hero', function () {
 
 test('a signed-in visitor is told a night started here stays on the device', function () {
     $this->actingAs(User::factory()->create())
-        ->get(route('home'))
+        ->get(route('welcome'))
         ->assertOk()
         ->assertSee('data-test="watch-signed-in-notice"', false)
         ->assertSee('data-test="watch-hero-start"', false);
 });
 
-test('authenticated users are sent to the dashboard instead', function () {
-    $response = $this->actingAs(User::factory()->create())->get(route('home'));
+test('authenticated users are sent from the front door to the dashboard', function () {
+    $this->actingAs(User::factory()->create())
+        ->get(route('home'))
+        ->assertRedirect(route('dashboard'));
+});
+
+test('authenticated users can still open the welcome page directly', function () {
+    $response = $this->actingAs(User::factory()->create())->get(route('welcome'));
 
     $response->assertOk()
         ->assertSee(route('dashboard'))

@@ -324,7 +324,7 @@ new #[Title('Security settings')] class extends Component {
 
             <div class="flex gap-3 justify-end">
                 <flux:button
-                    variant="outline"
+                    variant="filled"
                     wire:click="closeDeleteModal"
                 >
                     {{ __('Cancel') }}

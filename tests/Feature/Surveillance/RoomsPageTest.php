@@ -35,7 +35,7 @@ test('renaming a label updates every night that carries it', function () {
     $first = SurveillanceSession::factory()->for($user)->create(['room' => 'Kitchan']);
     $second = SurveillanceSession::factory()->for($user)->create(['room' => 'Kitchan']);
 
-    $component = Livewire::actingAs($user)->test('pages::surveillance.rooms');
+    $component = Livewire::actingAs($user)->test('pages::dashboard.rooms');
     $key = $component->instance()->roomGroups->firstWhere('room', 'Kitchan')->key;
 
     $component
@@ -55,7 +55,7 @@ test('the same label at another property is left alone', function () {
     $atCustomer = SurveillanceSession::factory()->for($user)->create(['room' => 'Kitchen', 'customer_id' => $customer->id]);
     $atHome = SurveillanceSession::factory()->for($user)->create(['room' => 'Kitchen', 'customer_id' => null]);
 
-    $component = Livewire::actingAs($user)->test('pages::surveillance.rooms');
+    $component = Livewire::actingAs($user)->test('pages::dashboard.rooms');
     $key = $component->instance()->roomGroups->firstWhere('customerId', $customer->id)->key;
 
     $component
@@ -72,12 +72,12 @@ test('renaming onto a label already in use merges the two', function () {
     SurveillanceSession::factory()->count(2)->for($user)->create(['room' => 'Kitchen']);
     SurveillanceSession::factory()->for($user)->create(['room' => 'Kitchan']);
 
-    $component = Livewire::actingAs($user)->test('pages::surveillance.rooms');
+    $component = Livewire::actingAs($user)->test('pages::dashboard.rooms');
     $key = $component->instance()->roomGroups->firstWhere('room', 'Kitchan')->key;
 
     $component->call('startRename', $key)->set('roomName', 'Kitchen')->call('renameRoom');
 
-    $groups = Livewire::actingAs($user)->test('pages::surveillance.rooms')->instance()->roomGroups;
+    $groups = Livewire::actingAs($user)->test('pages::dashboard.rooms')->instance()->roomGroups;
     expect($groups)->toHaveCount(1)
         ->and($groups->first()->sessionsCount)->toBe(3);
 });
@@ -86,7 +86,7 @@ test('a renamed label cannot be left blank', function () {
     $user = User::factory()->create();
     $session = SurveillanceSession::factory()->for($user)->create(['room' => 'Kitchen']);
 
-    $component = Livewire::actingAs($user)->test('pages::surveillance.rooms');
+    $component = Livewire::actingAs($user)->test('pages::dashboard.rooms');
     $key = $component->instance()->roomGroups->firstWhere('room', 'Kitchen')->key;
 
     $component
@@ -102,7 +102,7 @@ test('clearing a label keeps the nights themselves', function () {
     $user = User::factory()->create();
     $session = SurveillanceSession::factory()->for($user)->create(['room' => 'Kitchen']);
 
-    $component = Livewire::actingAs($user)->test('pages::surveillance.rooms');
+    $component = Livewire::actingAs($user)->test('pages::dashboard.rooms');
     $key = $component->instance()->roomGroups->firstWhere('room', 'Kitchen')->key;
 
     $component->call('clearRoom', $key);
@@ -115,11 +115,11 @@ test('another account\'s room cannot be renamed, even with its key', function ()
     $owner = User::factory()->create();
     $theirs = SurveillanceSession::factory()->for($owner)->create(['room' => 'Kitchen']);
     $foreignKey = Livewire::actingAs($owner)
-        ->test('pages::surveillance.rooms')
+        ->test('pages::dashboard.rooms')
         ->instance()->roomGroups->firstWhere('room', 'Kitchen')->key;
 
     Livewire::actingAs(User::factory()->create())
-        ->test('pages::surveillance.rooms')
+        ->test('pages::dashboard.rooms')
         ->call('clearRoom', $foreignKey)
         ->assertNotFound();
 

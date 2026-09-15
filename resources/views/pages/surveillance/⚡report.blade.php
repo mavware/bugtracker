@@ -209,6 +209,7 @@ class extends Component {
                             icon="stop-circle"
                             wire:click="endStuckNight"
                             wire:confirm="{{ __('End this night now? Anything still on the capture device will not make it into the report.') }}"
+                            data-confirm-label="{{ __('End night now') }}"
                             data-test="end-night-button"
                         >{{ __('End night now') }}</flux:button>
                     </x-slot>

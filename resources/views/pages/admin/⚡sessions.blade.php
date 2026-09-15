@@ -143,6 +143,7 @@ new #[Title('Admin · Sessions'), Layout('layouts::app', [
                                     variant="subtle"
                                     wire:click="endSession({{ $session->id }})"
                                     wire:confirm="{{ __('Close out this session as if the night had ended?') }}"
+                                    data-confirm-label="{{ __('Close out') }}"
                                     data-test="end-session-button"
                                 >{{ __('Close out') }}</flux:button>
                             @endif
@@ -152,6 +153,8 @@ new #[Title('Admin · Sessions'), Layout('layouts::app', [
                                 icon="trash"
                                 wire:click="deleteSession({{ $session->id }})"
                                 wire:confirm="{{ __('Delete this session and its stored images?') }}"
+                                data-confirm-label="{{ __('Delete session') }}"
+                                data-confirm-destructive
                                 data-test="delete-session-button"
                             />
                         </div>

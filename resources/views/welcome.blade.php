@@ -161,6 +161,8 @@
             </footer>
         </div>
 
+        <x-confirm-dialog />
+
         @fluxScripts
     </body>
 </html>

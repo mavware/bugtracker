@@ -3,6 +3,7 @@
 use App\Models\Customer;
 use App\Models\User;
 use Illuminate\Support\Str;
+use Livewire\Livewire;
 
 test('guests are redirected to the login page', function () {
     $response = $this->get(route('dashboard'));
@@ -17,6 +18,17 @@ test('authenticated users can visit the dashboard', function () {
     $response->assertOk();
 });
 
+// The dashboard is a page component of its own, so the panels it composes
+// mount within it rather than under a plain view.
+test('the dashboard component renders the tonight, import and sessions panels', function () {
+    Livewire::actingAs(User::factory()->create())
+        ->test('pages::dashboard.surveillance')
+        ->assertOk()
+        ->assertSeeLivewire('surveillance.tonight')
+        ->assertSeeLivewire('surveillance.sessions')
+        ->assertSeeHtml('id="claim-nights"');
+});
+
 test('the dashboard panel links to every section from the sidebar', function () {
     $response = $this->actingAs(User::factory()->create())->get(route('dashboard'));
 
@@ -27,6 +39,11 @@ test('the dashboard panel links to every section from the sidebar', function () 
     ] as $route) {
         $response->assertSee(route($route));
     }
+
+    // The starter kit's link to the framework docs is gone: it said nothing to
+    // someone using the app to watch a room.
+    $response->assertDontSee('laravel.com/docs')
+        ->assertDontSee(__('Documentation'));
 });
 
 test('the sidebar reaches the other sections from a section page too', function () {
@@ -72,6 +89,7 @@ test('the dashboard carries the panel that imports device-local nights, hidden u
         ->assertSee('data-cell="customer"', false)
         ->assertSee('data-cell="room"', false)
         ->assertSee('data-cell="import"', false)
+        ->assertSee('data-cell="discard"', false)
         ->assertSee('max-h-80 overflow-y-auto', false);
 
     // Hidden in the markup: nothing to show until claim.js has read the store.

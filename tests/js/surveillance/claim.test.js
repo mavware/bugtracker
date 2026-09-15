@@ -45,6 +45,7 @@ function mountPage(config = CONFIG) {
                         <select data-cell="customer" class="hidden"><option value="">No customer</option></select>
                         <input data-cell="room" />
                         <button data-cell="import"><span data-cell="import-label">Import</span></button>
+                        <button data-cell="discard">Remove</button>
                     </div>
                     <div data-cell="saved" class="hidden"><button data-cell="remove">Remove local copy</button></div>
                 </li>
@@ -148,6 +149,78 @@ describe('dashboard import list', () => {
         expect(cell(rows()[0], 'room').value).toBe('Hall');
         expect(cell(rows()[0], 'customer').value).toBe('7');
         expect(window.Livewire.dispatch).toHaveBeenCalledWith('night-imported');
+    });
+
+    // A real click lands on the label span inside the button, which has its own
+    // data-cell; the handler has to find the button, not the span.
+    test('clicking the label inside the Import button imports the night', async () => {
+        await stubs.store.putNight(night('n1', new Date(2026, 8, 8, 22, 0).getTime()));
+        await bootPage();
+
+        cell(rows()[0], 'import-label').click();
+        await settle();
+
+        expect(stubs.claimNight).toHaveBeenCalledTimes(1);
+        expect(stubs.claimNight.mock.calls[0][1]).toBe('n1');
+    });
+
+    test('an unsaved night can be removed from the device without importing it', async () => {
+        await stubs.store.putNight(night('n1', new Date(2026, 8, 8, 22, 0).getTime()));
+        await stubs.store.putNight(night('n2', new Date(2026, 8, 9, 22, 0).getTime()));
+        await bootPage();
+
+        cell(rows()[0], 'discard').click();
+        await settle();
+
+        expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('never saved'));
+        expect(stubs.claimNight).not.toHaveBeenCalled();
+        expect(await stubs.store.getNight('n2')).toBeNull();
+        expect([...rows()].map((row) => row.dataset.nightId)).toEqual(['n1']);
+    });
+
+    // On a page with the layout's dialog the question is asked there, in the
+    // app's own clothes, and the browser box never appears.
+    test('removal asks through the themed dialog when the page has one', async () => {
+        document.body.insertAdjacentHTML('beforeend', `
+            <dialog data-confirm-dialog>
+                <span data-confirm="icon"></span>
+                <h2 data-confirm="title"></h2>
+                <p data-confirm="detail" class="hidden"></p>
+                <button data-confirm="cancel"><span data-confirm="cancel-label">Cancel</span></button>
+                <button data-confirm="accept"><span data-confirm="accept-label">Confirm</span></button>
+                <button data-confirm="accept-danger" class="hidden"><span data-confirm="accept-danger-label">Confirm</span></button>
+            </dialog>
+        `);
+        await stubs.store.putNight(night('n1', new Date(2026, 8, 8, 22, 0).getTime()));
+        await bootPage();
+
+        cell(rows()[0], 'discard').click();
+        await settle();
+
+        const dialog = document.querySelector('dialog[data-confirm-dialog]');
+        expect(dialog.open).toBe(true);
+        expect(document.querySelector('[data-confirm="title"]').textContent).toBe('Delete this night from this device?');
+        expect(document.querySelector('[data-confirm="accept-danger-label"]').textContent).toBe('Delete night');
+        expect(window.confirm).not.toHaveBeenCalled();
+        expect(await stubs.store.getNight('n1')).not.toBeNull();
+
+        document.querySelector('[data-confirm="accept-danger"]').click();
+        await settle();
+
+        expect(await stubs.store.getNight('n1')).toBeNull();
+        expect(rows()).toHaveLength(0);
+    });
+
+    test('declining the removal keeps the night', async () => {
+        window.confirm = vi.fn(() => false);
+        await stubs.store.putNight(night('n1', new Date(2026, 8, 8, 22, 0).getTime()));
+        await bootPage();
+
+        cell(rows()[0], 'discard').click();
+        await settle();
+
+        expect(await stubs.store.getNight('n1')).not.toBeNull();
+        expect(rows()).toHaveLength(1);
     });
 
     test('importing the last night hides the panel', async () => {

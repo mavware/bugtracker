@@ -97,6 +97,16 @@
     ::file-selector-button {
         border-color: var(--color-gray-200, currentColor);
     }
+
+    /* Tailwind v4 stopped giving buttons a pointer cursor; the app wants one on
+       anything that acts like a button. Disabled controls keep the arrow — Flux
+       sets disabled:cursor-default on its buttons and utilities win over base. */
+    button:not(:disabled),
+    [role="button"]:not([aria-disabled="true"]),
+    input:where([type="button"], [type="submit"], [type="reset"]):not(:disabled),
+    summary {
+        cursor: pointer;
+    }
 }
 
 [data-flux-field]:not(ui-radio, ui-checkbox) {
