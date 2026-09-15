@@ -22,9 +22,11 @@
                     <flux:sidebar.item icon="squares-2x2" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
                         {{ __('Surveillance') }}
                     </flux:sidebar.item>
-                    <flux:sidebar.item icon="users" :href="route('surveillance.customers')" :current="request()->routeIs('surveillance.customers')">
-                        {{ __('Customers') }}
-                    </flux:sidebar.item>
+                    @can(\App\Enums\Permission::ManageCustomers->value)
+                        <flux:sidebar.item icon="users" :href="route('surveillance.customers')" :current="request()->routeIs('surveillance.customers')">
+                            {{ __('Customers') }}
+                        </flux:sidebar.item>
+                    @endcan
                     <flux:sidebar.item icon="chart-bar" :href="route('surveillance.trends')" :current="request()->routeIs('surveillance.trends')">
                         {{ __('Trends') }}
                     </flux:sidebar.item>
@@ -33,7 +35,7 @@
                     </flux:sidebar.item>
                 </flux:sidebar.group>
 
-                @if (auth()->user()?->is_admin)
+                @can(\App\Enums\Permission::AccessAdmin->value)
                     <flux:sidebar.group
                         expandable
                         icon="shield-check"
@@ -56,7 +58,7 @@
                             {{ __('Customers') }}
                         </flux:sidebar.item>
                     </flux:sidebar.group>
-                @endif
+                @endcan
             </flux:sidebar.nav>
 
             <flux:spacer />

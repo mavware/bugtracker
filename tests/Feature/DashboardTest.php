@@ -30,7 +30,7 @@ test('the dashboard component renders the tonight, import and sessions panels', 
 });
 
 test('the dashboard panel links to every section from the sidebar', function () {
-    $response = $this->actingAs(User::factory()->create())->get(route('dashboard'));
+    $response = $this->actingAs(User::factory()->professional()->create())->get(route('dashboard'));
 
     foreach ([
         'surveillance.customers',
@@ -46,6 +46,15 @@ test('the dashboard panel links to every section from the sidebar', function () 
         ->assertDontSee(__('Documentation'));
 });
 
+// Asserting on the URL: the word "Customers" also appears in page copy.
+test('a homeowner is not offered the customers section', function () {
+    $this->actingAs(User::factory()->create())
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee(route('surveillance.trends'))
+        ->assertDontSee(route('surveillance.customers'));
+});
+
 test('the sidebar reaches the other sections from a section page too', function () {
     $response = $this->actingAs(User::factory()->create())->get(route('surveillance.trends'));
 
@@ -56,7 +65,7 @@ test('the sidebar reaches the other sections from a section page too', function 
 // The sidebar is the way between sections; a back button in every page title
 // said the same thing twice.
 test('section pages carry no back-to-dashboard button of their own', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->professional()->create();
 
     foreach (['surveillance.trends', 'surveillance.rooms', 'surveillance.customers'] as $route) {
         $content = $this->actingAs($user)->get(route($route))->assertOk()->getContent();

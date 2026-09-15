@@ -1,8 +1,9 @@
 <?php
 
+use App\Enums\Permission;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->group(function () {
+Route::middleware(['auth', 'verified', 'can:'.Permission::AccessAdmin->value])->prefix('admin')->group(function () {
     Route::livewire('/', 'pages::admin.index')->name('admin.index');
     Route::livewire('users', 'pages::admin.users')->name('admin.users');
     Route::livewire('sessions', 'pages::admin.sessions')->name('admin.sessions');

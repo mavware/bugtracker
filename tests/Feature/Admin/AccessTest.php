@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\UserRole;
 use App\Models\SurveillanceSession;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
@@ -18,11 +19,12 @@ test('the page heading and subheading are rendered by the app layout', function 
         ], false);
 });
 
-test('an ordinary account is refused', function (string $route) {
-    $this->actingAs(User::factory()->create())
+test('a homeowner or professional account is refused', function (string $route, UserRole $role) {
+    $this->actingAs(User::factory()->create(['role' => $role]))
         ->get(route($route))
         ->assertForbidden();
-})->with(['admin.index', 'admin.users', 'admin.sessions', 'admin.rooms', 'admin.customers']);
+})->with(['admin.index', 'admin.users', 'admin.sessions', 'admin.rooms', 'admin.customers'])
+    ->with(['homeowner' => UserRole::Homeowner, 'professional' => UserRole::Professional]);
 
 test('an admin gets in', function (string $route) {
     $this->actingAs(User::factory()->admin()->create())
@@ -62,10 +64,10 @@ test('being an admin does not open another account\'s recordings', function () {
         ->assertForbidden();
 });
 
-test('admin access cannot be granted by mass assignment', function () {
+test('a role cannot be granted by mass assignment', function () {
     $user = User::factory()->create();
 
-    $user->fill(['is_admin' => true])->save();
+    $user->fill(['role' => UserRole::Admin])->save();
 
-    expect($user->refresh()->is_admin)->toBeFalse();
+    expect($user->refresh()->role)->toBe(UserRole::Homeowner);
 });

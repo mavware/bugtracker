@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Admin\DeleteUserAccount;
+use App\Enums\UserRole;
 use App\Models\User;
 use Flux\Flux;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -43,20 +44,22 @@ new #[Title('Admin · Users'), Layout('layouts::app', [
     }
 
     /**
-     * Grant or revoke admin access. Admins cannot change their own, which keeps
-     * the last one from locking everybody out by accident.
+     * Change what an account is: homeowner, professional or admin. Admins cannot
+     * change their own role, which keeps the last one from locking everybody
+     * out by accident.
      */
-    public function toggleAdmin(int $userId): void
+    public function setRole(int $userId, string $role): void
     {
         abort_if($userId === Auth::id(), 403);
 
+        $newRole = UserRole::tryFrom($role);
+        abort_if($newRole === null, 422);
+
         $user = User::findOrFail($userId);
-        $user->is_admin = ! $user->is_admin;
+        $user->role = $newRole;
         $user->save();
 
-        Flux::toast(text: $user->is_admin
-            ? __(':name is now an admin.', ['name' => $user->name])
-            : __(':name is no longer an admin.', ['name' => $user->name]));
+        Flux::toast(text: __(':name is now a :role.', ['name' => $user->name, 'role' => strtolower($newRole->label())]));
     }
 
     /**
@@ -88,6 +91,7 @@ new #[Title('Admin · Users'), Layout('layouts::app', [
         <flux:table.columns>
             <flux:table.column>{{ __('Name') }}</flux:table.column>
             <flux:table.column>{{ __('Email') }}</flux:table.column>
+            <flux:table.column>{{ __('Role') }}</flux:table.column>
             <flux:table.column>{{ __('Sessions') }}</flux:table.column>
             <flux:table.column>{{ __('Customers') }}</flux:table.column>
             <flux:table.column>{{ __('Joined') }}</flux:table.column>
@@ -99,9 +103,6 @@ new #[Title('Admin · Users'), Layout('layouts::app', [
                 <flux:table.row wire:key="user-{{ $user->id }}">
                     <flux:table.cell variant="strong">
                         {{ $user->name }}
-                        @if ($user->is_admin)
-                            <flux:badge size="sm" color="purple" class="ms-2">{{ __('Admin') }}</flux:badge>
-                        @endif
                         @if ($user->id === auth()->id())
                             <flux:badge size="sm" color="zinc" class="ms-2">{{ __('You') }}</flux:badge>
                         @endif
@@ -112,18 +113,28 @@ new #[Title('Admin · Users'), Layout('layouts::app', [
                             <flux:badge size="sm" color="amber" class="ms-2">{{ __('Unverified') }}</flux:badge>
                         @endunless
                     </flux:table.cell>
+                    <flux:table.cell>
+                        @if ($user->id === auth()->id())
+                            <flux:badge size="sm" :color="$user->isAdmin() ? 'purple' : 'zinc'" data-test="own-role">{{ $user->role->label() }}</flux:badge>
+                        @else
+                            <flux:select
+                                size="sm"
+                                class="max-w-40"
+                                wire:change="setRole({{ $user->id }}, $event.target.value)"
+                                data-test="role-select"
+                            >
+                                @foreach (UserRole::cases() as $roleOption)
+                                    <flux:select.option value="{{ $roleOption->value }}" :selected="$user->role === $roleOption">{{ $roleOption->label() }}</flux:select.option>
+                                @endforeach
+                            </flux:select>
+                        @endif
+                    </flux:table.cell>
                     <flux:table.cell>{{ $user->surveillance_sessions_count }}</flux:table.cell>
                     <flux:table.cell>{{ $user->customers_count }}</flux:table.cell>
                     <flux:table.cell>{{ $user->created_at?->format('M j, Y') ?? '—' }}</flux:table.cell>
                     <flux:table.cell>
                         @if ($user->id !== auth()->id())
                             <div class="flex justify-end gap-2">
-                                <flux:button
-                                    size="sm"
-                                    variant="subtle"
-                                    wire:click="toggleAdmin({{ $user->id }})"
-                                    data-test="toggle-admin-button"
-                                >{{ $user->is_admin ? __('Revoke admin') : __('Make admin') }}</flux:button>
                                 <flux:button
                                     size="sm"
                                     variant="danger"

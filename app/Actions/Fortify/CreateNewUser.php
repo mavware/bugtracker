@@ -4,8 +4,10 @@ namespace App\Actions\Fortify;
 
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
+use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 
 class CreateNewUser implements CreatesNewUsers
@@ -19,16 +21,23 @@ class CreateNewUser implements CreatesNewUsers
      */
     public function create(array $input): User
     {
-        Validator::make($input, [
+        $validated = Validator::make($input, [
             ...$this->profileRules(),
             'password' => $this->passwordRules(),
+            'role' => ['nullable', Rule::enum(UserRole::class)->only(UserRole::selfAssignable())],
         ])->validate();
 
-        return User::query()
-            ->create([
-                'name' => $input['name'],
-                'email' => $input['email'],
-                'password' => $input['password'],
-            ]);
+        $user = new User([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => $validated['password'],
+        ]);
+
+        // role is not fillable, so it is set by hand — and only from the roles an
+        // account may choose for itself; admin is never one of them.
+        $user->role = UserRole::tryFrom($input['role'] ?? '') ?? UserRole::Homeowner;
+        $user->save();
+
+        return $user;
     }
 }

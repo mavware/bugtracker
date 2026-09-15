@@ -10,8 +10,20 @@ test('guests are redirected to the login page', function () {
     $this->get(route('surveillance.customers'))->assertRedirect(route('login'));
 });
 
-test('the page heading and subheading are rendered by the app layout', function () {
+test('a homeowner is refused: customers are a professional feature', function () {
     $this->actingAs(User::factory()->create())
+        ->get(route('surveillance.customers'))
+        ->assertForbidden();
+});
+
+test('an admin has the professional features too', function () {
+    $this->actingAs(User::factory()->admin()->create())
+        ->get(route('surveillance.customers'))
+        ->assertOk();
+});
+
+test('the page heading and subheading are rendered by the app layout', function () {
+    $this->actingAs(User::factory()->professional()->create())
         ->get(route('surveillance.customers'))
         ->assertSeeInOrder([
             'Customers',
@@ -21,7 +33,7 @@ test('the page heading and subheading are rendered by the app layout', function 
 });
 
 test('the page lists only the current user\'s customers', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->professional()->create();
     Customer::factory()->for($user)->create(['name' => 'The Alvarez house']);
     Customer::factory()->create(['name' => 'Another firm\'s account']);
 
@@ -32,7 +44,7 @@ test('the page lists only the current user\'s customers', function () {
 });
 
 test('a customer can be added', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->professional()->create();
 
     Livewire::actingAs($user)
         ->test('pages::dashboard.customers')
@@ -47,7 +59,7 @@ test('a customer can be added', function () {
 });
 
 test('a customer needs a name', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->professional()->create();
 
     Livewire::actingAs($user)
         ->test('pages::dashboard.customers')
@@ -58,7 +70,7 @@ test('a customer needs a name', function () {
 });
 
 test('the same customer name cannot be added twice, but two users may share one', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->professional()->create();
     Customer::factory()->for($user)->create(['name' => 'The Alvarez house']);
     Customer::factory()->create(['name' => 'The Alvarez house']);
 
@@ -72,7 +84,7 @@ test('the same customer name cannot be added twice, but two users may share one'
 });
 
 test('a customer can be renamed without tripping its own uniqueness rule', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->professional()->create();
     $customer = Customer::factory()->for($user)->create(['name' => 'The Alvarez house', 'address' => '12 Oak Street']);
 
     Livewire::actingAs($user)
@@ -88,7 +100,7 @@ test('a customer can be renamed without tripping its own uniqueness rule', funct
 });
 
 test('removing a customer keeps their recorded nights and un-groups them', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->professional()->create();
     $customer = Customer::factory()->for($user)->create();
     $session = SurveillanceSession::factory()->for($user)->completed()->create(['customer_id' => $customer->id]);
 
@@ -103,7 +115,7 @@ test('removing a customer keeps their recorded nights and un-groups them', funct
 test('another user\'s customer cannot be edited', function () {
     $customer = Customer::factory()->create();
 
-    Livewire::actingAs(User::factory()->create())
+    Livewire::actingAs(User::factory()->professional()->create())
         ->test('pages::dashboard.customers')
         ->call('edit', $customer->id);
 })->throws(ModelNotFoundException::class);
@@ -111,7 +123,7 @@ test('another user\'s customer cannot be edited', function () {
 test('another user\'s customer cannot be removed', function () {
     $customer = Customer::factory()->create();
 
-    Livewire::actingAs(User::factory()->create())
+    Livewire::actingAs(User::factory()->professional()->create())
         ->test('pages::dashboard.customers')
         ->call('deleteCustomer', $customer->id);
 })->throws(ModelNotFoundException::class);

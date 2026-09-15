@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\UserRole;
 use App\Models\Customer;
 use App\Models\SurveillanceSession;
 use App\Models\User;
@@ -28,30 +29,48 @@ test('the page heading and subheading are rendered by the app layout', function 
         ], false);
 });
 
-test('an admin can grant and revoke admin access', function () {
+test('an admin can change another account\'s role', function (string $role) {
     $admin = User::factory()->admin()->create();
     $member = User::factory()->create();
 
-    $component = Livewire::actingAs($admin)
+    Livewire::actingAs($admin)
         ->test('pages::admin.users')
-        ->call('toggleAdmin', $member->id);
+        ->call('setRole', $member->id, $role);
 
-    expect($member->refresh()->is_admin)->toBeTrue();
+    expect($member->refresh()->role)->toBe(UserRole::from($role));
+})->with(['admin', 'professional', 'homeowner']);
 
-    $component->call('toggleAdmin', $member->id);
+test('an unknown role is rejected', function () {
+    $admin = User::factory()->admin()->create();
+    $member = User::factory()->create();
 
-    expect($member->refresh()->is_admin)->toBeFalse();
+    Livewire::actingAs($admin)
+        ->test('pages::admin.users')
+        ->call('setRole', $member->id, 'superuser')
+        ->assertStatus(422);
+
+    expect($member->refresh()->role)->toBe(UserRole::Homeowner);
 });
 
-test('an admin cannot revoke their own access', function () {
+test('an admin cannot change their own role', function () {
     $admin = User::factory()->admin()->create();
 
     Livewire::actingAs($admin)
         ->test('pages::admin.users')
-        ->call('toggleAdmin', $admin->id)
+        ->call('setRole', $admin->id, UserRole::Homeowner->value)
         ->assertForbidden();
 
-    expect($admin->refresh()->is_admin)->toBeTrue();
+    expect($admin->refresh()->role)->toBe(UserRole::Admin);
+});
+
+test('every other account gets a role picker and the admin\'s own row a badge', function () {
+    $admin = User::factory()->admin()->create();
+    User::factory()->professional()->create();
+
+    Livewire::actingAs($admin)
+        ->test('pages::admin.users')
+        ->assertSeeHtml('data-test="own-role"')
+        ->assertSeeHtml('data-test="role-select"');
 });
 
 test('an admin cannot delete their own account from here', function () {

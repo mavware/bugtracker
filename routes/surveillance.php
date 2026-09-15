@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Permission;
 use App\Http\Controllers\Surveillance\CaptureController;
 use App\Http\Controllers\Surveillance\ImageController;
 use App\Http\Controllers\Surveillance\ImportController;
@@ -12,7 +13,9 @@ Route::get('watch', [WatchController::class, 'capture'])->name('watch.capture');
 Route::get('watch/{localId}/report', [WatchController::class, 'report'])->whereUuid('localId')->name('watch.report');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::livewire('surveillance/customers', 'pages::dashboard.customers')->name('surveillance.customers');
+    Route::livewire('surveillance/customers', 'pages::dashboard.customers')
+        ->middleware('can:'.Permission::ManageCustomers->value)
+        ->name('surveillance.customers');
     Route::livewire('surveillance/rooms', 'pages::dashboard.rooms')->name('surveillance.rooms');
     Route::livewire('surveillance/trends', 'pages::dashboard.trends')->name('surveillance.trends');
     Route::livewire('surveillance/{session}/capture', 'pages::surveillance.capture')->name('surveillance.capture');

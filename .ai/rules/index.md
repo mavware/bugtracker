@@ -7,6 +7,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Actions/Surveillance/** | .ai/rules/actions-surveillance.md |
 | resources/views/components/surveillance/**, resources/views/components/surveillance/⚡sessions.blade.php, resources/views/components/surveillance/⚡night-details.blade.php | .ai/rules/components-surveillance.md |
 | resources/views/pages/dashboard/** | .ai/rules/dashboard.md |
+| app/Enums/** | .ai/rules/enums.md |
 | resources/js/surveillance/** | .ai/rules/js-surveillance.md |
 | resources/js/** | .ai/rules/js.md |
 | resources/views/layouts/** | .ai/rules/layouts.md |

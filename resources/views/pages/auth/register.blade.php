@@ -42,6 +42,13 @@
                 viewable
             />
 
+            <!-- Account type -->
+            <flux:radio.group name="role" :label="__('I am')" variant="cards" class="max-sm:flex-col" :value="old('role', \App\Enums\UserRole::Homeowner->value)">
+                @foreach (\App\Enums\UserRole::selfAssignable() as $roleOption)
+                    <flux:radio :value="$roleOption->value" :label="$roleOption->label()" :description="$roleOption->description()" data-test="register-role-{{ $roleOption->value }}" />
+                @endforeach
+            </flux:radio.group>
+
             <!-- Confirm Password -->
             <flux:input
                 name="password_confirmation"

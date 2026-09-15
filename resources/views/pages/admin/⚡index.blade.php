@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\SurveillanceSessionStatus;
+use App\Enums\UserRole;
 use App\Models\BugTrack;
 use App\Models\Customer;
 use App\Models\Intervention;
@@ -23,7 +24,7 @@ new #[Title('Admin'), Layout('layouts::app', [
     {
         return [
             'users' => User::count(),
-            'admins' => User::where('is_admin', true)->count(),
+            'admins' => User::where('role', UserRole::Admin)->count(),
             'customers' => Customer::count(),
             'sessions' => SurveillanceSession::count(),
             'recording' => SurveillanceSession::where('status', SurveillanceSessionStatus::Active)->count(),

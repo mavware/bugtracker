@@ -3,6 +3,8 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\Permission;
+use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -21,7 +23,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property string $name
  * @property string $email
  * @property Carbon|null $email_verified_at
- * @property bool $is_admin
+ * @property UserRole $role
  * @property string $password
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
@@ -30,14 +32,23 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-// is_admin is deliberately absent: keeping it out of mass assignment means no
-// request payload can promote its own account.
+// role is deliberately absent: keeping it out of mass assignment means no
+// request payload can promote its own account. Assign it explicitly.
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+
+    /**
+     * The model's default attribute values.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'role' => UserRole::Homeowner,
+    ];
 
     /**
      * Get the attributes that should be cast.
@@ -48,7 +59,7 @@ class User extends Authenticatable implements PasskeyUser
     {
         return [
             'email_verified_at' => 'datetime',
-            'is_admin' => 'boolean',
+            'role' => UserRole::class,
             'password' => 'hashed',
         ];
     }
@@ -75,6 +86,20 @@ class User extends Authenticatable implements PasskeyUser
     public function customers(): HasMany
     {
         return $this->hasMany(Customer::class);
+    }
+
+    /**
+     * Whether this account's role grants a permission. Every authorization
+     * decision that is about the role, not about owning a record, goes here.
+     */
+    public function hasPermission(Permission $permission): bool
+    {
+        return $this->role->grants($permission);
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === UserRole::Admin;
     }
 
     /**

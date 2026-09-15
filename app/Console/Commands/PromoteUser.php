@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Console\Command;
 
@@ -12,14 +13,14 @@ class PromoteUser extends Command
      *
      * @var string
      */
-    protected $signature = 'user:promote {email : The email address of the user} {--demote : Take admin access away instead}';
+    protected $signature = 'user:promote {email : The email address of the user} {--role=admin : The role to grant: admin or professional} {--demote : Make the account a plain homeowner instead}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Grant or revoke site admin access. Needed once to create the first admin.';
+    protected $description = 'Set an account\'s role. Needed once to create the first admin.';
 
     /**
      * Execute the console command.
@@ -35,14 +36,24 @@ class PromoteUser extends Command
             return self::FAILURE;
         }
 
-        $demoting = (bool) $this->option('demote');
+        $role = (bool) $this->option('demote')
+            ? UserRole::Homeowner
+            : UserRole::tryFrom((string) $this->option('role'));
 
-        $user->is_admin = ! $demoting;
+        if ($role === null) {
+            $this->error('The role must be one of: '.implode(', ', array_column(UserRole::cases(), 'value')).'.');
+
+            return self::FAILURE;
+        }
+
+        $user->role = $role;
         $user->save();
 
-        $this->info($demoting
-            ? "$user->email is no longer a site admin."
-            : "$user->email is now a site admin.");
+        $this->info(match ($role) {
+            UserRole::Admin => "$user->email is now a site admin.",
+            UserRole::Professional => "$user->email is now a professional.",
+            UserRole::Homeowner => "$user->email is no longer a site admin or professional; the account is a homeowner.",
+        });
 
         return self::SUCCESS;
     }
