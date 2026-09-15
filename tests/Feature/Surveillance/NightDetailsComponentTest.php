@@ -11,7 +11,7 @@ use Livewire\Livewire;
 test('the capture page carries the night\'s room and customer in the setup reading', function () {
     $user = User::factory()->create();
     Customer::factory()->for($user)->create(['name' => 'The Alvarez house']);
-    $session = SurveillanceSession::factory()->for($user)->create(['room' => 'Kitchen']);
+    $session = SurveillanceSession::factory()->for($user)->inRoom('Kitchen')->create();
 
     $response = $this->actingAs($user)
         ->get(route('surveillance.capture', $session))
@@ -29,7 +29,7 @@ test('the capture page carries the night\'s room and customer in the setup readi
 
 test('changing the room saves it to the night straight away', function () {
     $user = User::factory()->create();
-    $session = SurveillanceSession::factory()->for($user)->create(['room' => null]);
+    $session = SurveillanceSession::factory()->for($user)->create();
 
     Livewire::actingAs($user)
         ->test('surveillance.night-details', ['session' => $session])
@@ -37,12 +37,12 @@ test('changing the room saves it to the night straight away', function () {
         ->assertHasNoErrors()
         ->assertDispatched('night-details-saved');
 
-    expect($session->refresh()->room)->toBe('Kitchen');
+    expect($session->refresh()->room?->name)->toBe('Kitchen');
 });
 
 test('clearing the room leaves the night without one', function () {
     $user = User::factory()->create();
-    $session = SurveillanceSession::factory()->for($user)->create(['room' => 'Kitchen']);
+    $session = SurveillanceSession::factory()->for($user)->inRoom('Kitchen')->create();
 
     Livewire::actingAs($user)
         ->test('surveillance.night-details', ['session' => $session])
@@ -50,7 +50,7 @@ test('clearing the room leaves the night without one', function () {
         ->set('room', '')
         ->assertHasNoErrors();
 
-    expect($session->refresh()->room)->toBeNull();
+    expect($session->refresh()->room_id)->toBeNull();
 });
 
 test('changing the customer files the night under them, and clearing it under nobody', function () {
@@ -86,22 +86,22 @@ test('a night cannot be filed under another user\'s customer', function () {
 
 test('a room label longer than the column is refused rather than truncated', function () {
     $user = User::factory()->create();
-    $session = SurveillanceSession::factory()->for($user)->create(['room' => 'Kitchen']);
+    $session = SurveillanceSession::factory()->for($user)->inRoom('Kitchen')->create();
 
     Livewire::actingAs($user)
         ->test('surveillance.night-details', ['session' => $session])
         ->set('room', str_repeat('a', 81))
         ->assertHasErrors('room');
 
-    expect($session->refresh()->room)->toBe('Kitchen');
+    expect($session->refresh()->room?->name)->toBe('Kitchen');
 });
 
 test('another user cannot change a night\'s details', function () {
-    $session = SurveillanceSession::factory()->create(['room' => 'Kitchen']);
+    $session = SurveillanceSession::factory()->inRoom('Kitchen')->create();
 
     Livewire::actingAs(User::factory()->create())
         ->test('surveillance.night-details', ['session' => $session])
         ->assertForbidden();
 
-    expect($session->refresh()->room)->toBe('Kitchen');
+    expect($session->refresh()->room?->name)->toBe('Kitchen');
 });

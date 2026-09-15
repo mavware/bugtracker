@@ -14,12 +14,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('role', 20)->default(UserRole::Homeowner->value)->after('email_verified_at');
+            // An account holds any number of roles; a JSON list keeps them on
+            // the row, since a role is an enum case rather than a record.
+            $table->json('roles')->nullable()->after('email_verified_at');
         });
 
-        DB::table('users')->where('is_admin', true)->update(['role' => UserRole::Admin->value]);
+        DB::table('users')->where('is_admin', false)->update(['roles' => json_encode([UserRole::Homeowner->value])]);
+        DB::table('users')->where('is_admin', true)->update(['roles' => json_encode([UserRole::Admin->value])]);
 
         Schema::table('users', function (Blueprint $table) {
+            $table->json('roles')->nullable(false)->change();
             $table->dropColumn('is_admin');
         });
     }
@@ -33,10 +37,10 @@ return new class extends Migration
             $table->boolean('is_admin')->default(false)->after('email_verified_at');
         });
 
-        DB::table('users')->where('role', UserRole::Admin->value)->update(['is_admin' => true]);
+        DB::table('users')->whereJsonContains('roles', UserRole::Admin->value)->update(['is_admin' => true]);
 
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('role');
+            $table->dropColumn('roles');
         });
     }
 };

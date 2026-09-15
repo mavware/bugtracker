@@ -1,23 +1,24 @@
 <?php
 
 use App\Models\Customer;
+use App\Models\Room;
 use App\Models\SurveillanceSession;
 use App\Models\User;
 use Livewire\Livewire;
 
-test('rooms are grouped per owner and property', function () {
+test('rooms are listed per owner and property', function () {
     $admin = User::factory()->admin()->create();
     $owner = User::factory()->create();
     $customer = Customer::factory()->for($owner)->create(['name' => 'The Alvarez house']);
-    SurveillanceSession::factory()->count(2)->for($owner)->create(['room' => 'Kitchen', 'customer_id' => $customer->id]);
-    SurveillanceSession::factory()->for($owner)->create(['room' => 'Kitchen', 'customer_id' => null]);
-    SurveillanceSession::factory()->create(['room' => null]);
+    SurveillanceSession::factory()->count(2)->for($owner)->inRoom('Kitchen')->create(['customer_id' => $customer->id]);
+    SurveillanceSession::factory()->for($owner)->inRoom('Kitchen')->create(['customer_id' => null]);
+    SurveillanceSession::factory()->create();
 
-    $groups = Livewire::actingAs($admin)->test('pages::admin.rooms')->instance()->roomGroups;
+    $rooms = Livewire::actingAs($admin)->test('pages::admin.rooms')->instance()->rooms;
 
-    expect($groups)->toHaveCount(2)
-        ->and($groups->pluck('sessionsCount')->sort()->values()->all())->toBe([1, 2])
-        ->and($groups->pluck('customer')->filter()->all())->toContain('The Alvarez house');
+    expect($rooms)->toHaveCount(2)
+        ->and($rooms->pluck('surveillance_sessions_count')->sort()->values()->all())->toBe([1, 2])
+        ->and($rooms->map(fn (Room $room) => $room->customer?->name)->filter()->all())->toContain('The Alvarez house');
 });
 
 test('the page heading and subheading are rendered by the app layout', function () {
@@ -25,7 +26,7 @@ test('the page heading and subheading are rendered by the app layout', function 
         ->get(route('admin.rooms'))
         ->assertSeeInOrder([
             'Rooms',
-            'Room labels in use, grouped by who recorded them and where.',
+            'Every room recorded in, grouped by who recorded it and where.',
             '<section wire:snapshot=',
         ], false);
 });
@@ -34,58 +35,56 @@ test('renaming a room only touches that owner and property\'s sessions', functio
     $admin = User::factory()->admin()->create();
     $owner = User::factory()->create();
     $customer = Customer::factory()->for($owner)->create();
-    $renamed = SurveillanceSession::factory()->for($owner)->create(['room' => 'Kitchan', 'customer_id' => $customer->id]);
-    $sameLabelElsewhere = SurveillanceSession::factory()->for($owner)->create(['room' => 'Kitchan', 'customer_id' => null]);
-    $otherUsersRoom = SurveillanceSession::factory()->create(['room' => 'Kitchan']);
+    $renamed = SurveillanceSession::factory()->for($owner)->inRoom('Kitchan')->create(['customer_id' => $customer->id]);
+    $sameNameElsewhere = SurveillanceSession::factory()->for($owner)->inRoom('Kitchan')->create(['customer_id' => null]);
+    $otherUsersRoom = SurveillanceSession::factory()->inRoom('Kitchan')->create();
 
     $component = Livewire::actingAs($admin)->test('pages::admin.rooms');
-    $key = $component->instance()->roomGroups->firstWhere('customerId', $customer->id)->key;
+    $roomId = $component->instance()->rooms->firstWhere('customer_id', $customer->id)->id;
 
     $component
-        ->call('startRename', $key)
+        ->call('startRename', $roomId)
         ->set('roomName', 'Kitchen')
         ->call('renameRoom')
         ->assertHasNoErrors();
 
-    expect($renamed->refresh()->room)->toBe('Kitchen')
-        ->and($sameLabelElsewhere->refresh()->room)->toBe('Kitchan')
-        ->and($otherUsersRoom->refresh()->room)->toBe('Kitchan');
+    expect($renamed->refresh()->room?->name)->toBe('Kitchen')
+        ->and($sameNameElsewhere->refresh()->room?->name)->toBe('Kitchan')
+        ->and($otherUsersRoom->refresh()->room?->name)->toBe('Kitchan');
 });
 
 test('a renamed room needs a name', function () {
     $admin = User::factory()->admin()->create();
-    $session = SurveillanceSession::factory()->create(['room' => 'Kitchen']);
+    $session = SurveillanceSession::factory()->inRoom('Kitchen')->create();
 
     $component = Livewire::actingAs($admin)->test('pages::admin.rooms');
-    $key = $component->instance()->roomGroups->firstWhere('room', 'Kitchen')->key;
 
     $component
-        ->call('startRename', $key)
+        ->call('startRename', $session->room_id)
         ->set('roomName', '')
         ->call('renameRoom')
         ->assertHasErrors(['roomName' => 'required']);
 
-    expect($session->refresh()->room)->toBe('Kitchen');
+    expect($session->refresh()->room?->name)->toBe('Kitchen');
 });
 
-test('clearing a room label keeps the sessions', function () {
+test('removing a room keeps the sessions', function () {
     $admin = User::factory()->admin()->create();
-    $session = SurveillanceSession::factory()->create(['room' => 'Kitchen']);
+    $session = SurveillanceSession::factory()->inRoom('Kitchen')->create();
 
-    $component = Livewire::actingAs($admin)->test('pages::admin.rooms');
-    $key = $component->instance()->roomGroups->firstWhere('room', 'Kitchen')->key;
-
-    $component->call('clearRoom', $key);
+    Livewire::actingAs($admin)
+        ->test('pages::admin.rooms')
+        ->call('removeRoom', $session->room_id);
 
     expect(SurveillanceSession::find($session->id))->not->toBeNull()
-        ->and($session->refresh()->room)->toBeNull();
+        ->and($session->refresh()->room_id)->toBeNull();
 });
 
-test('an unknown room group is a 404', function () {
+test('an unknown room is a 404', function () {
     $admin = User::factory()->admin()->create();
 
     Livewire::actingAs($admin)
         ->test('pages::admin.rooms')
-        ->call('clearRoom', 'not-a-real-key')
+        ->call('removeRoom', 999999)
         ->assertNotFound();
 });

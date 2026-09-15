@@ -3,8 +3,9 @@
 namespace App\Enums;
 
 /**
- * What an account is for. A role is the only thing stored; what it may do is
- * derived here, so adding a permission never touches the database.
+ * What an account is for. An account holds any number of roles and may do
+ * whatever any of them grants; what a role may do is derived here, so adding a
+ * permission never touches the database.
  */
 enum UserRole: string
 {
@@ -14,7 +15,7 @@ enum UserRole: string
     /** A pest technician watching properties on customers' behalf. */
     case Professional = 'professional';
 
-    /** Runs the site. Also has everything a professional has. */
+    /** Runs the site. Also has everything a professional has, on its own. */
     case Admin = 'admin';
 
     /**

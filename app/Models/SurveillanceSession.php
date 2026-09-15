@@ -17,9 +17,9 @@ use Illuminate\Support\Facades\Storage;
  * @property int $id
  * @property int $user_id
  * @property int|null $customer_id
+ * @property int|null $room_id
  * @property string|null $imported_local_id The browser's uuid for a night imported from a device-local recording.
  * @property string $name
- * @property string|null $room
  * @property SurveillanceSessionStatus $status
  * @property Carbon|null $started_at
  * @property Carbon|null $ended_at
@@ -32,9 +32,8 @@ use Illuminate\Support\Facades\Storage;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read int|null $confirmed_tracks_count Only loaded by queries that withCount() the confirmed tracks.
- * @property-read int|null $sessions_count Only loaded by queries that group sessions and count each group.
  */
-#[Fillable(['customer_id', 'imported_local_id', 'name', 'room', 'status', 'started_at', 'ended_at', 'last_heartbeat_at', 'planned_end_at', 'reference_image_path', 'frame_width', 'frame_height', 'settings', 'analytics'])]
+#[Fillable(['customer_id', 'room_id', 'imported_local_id', 'name', 'status', 'started_at', 'ended_at', 'last_heartbeat_at', 'planned_end_at', 'reference_image_path', 'frame_width', 'frame_height', 'settings', 'analytics'])]
 class SurveillanceSession extends Model
 {
     /** @use HasFactory<SurveillanceSessionFactory> */
@@ -86,6 +85,34 @@ class SurveillanceSession extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    /**
+     * Where the camera stood. Nights shot from one room are the ones that can
+     * be read together.
+     *
+     * @return BelongsTo<Room, $this>
+     */
+    public function room(): BelongsTo
+    {
+        return $this->belongsTo(Room::class);
+    }
+
+    /**
+     * File the night in the room with this name at its own property, creating
+     * the room if it is new, and drop the room it leaves if nothing else uses
+     * it. Blank means no room.
+     */
+    public function moveToRoomNamed(?string $name): void
+    {
+        $previous = $this->room;
+        $room = Room::resolve($this->user_id, $this->customer_id, $name);
+
+        $this->update(['room_id' => $room?->id]);
+
+        if ($previous !== null && $previous->isNot($room)) {
+            $previous->deleteIfUnused();
+        }
     }
 
     /**

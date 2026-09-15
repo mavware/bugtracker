@@ -243,3 +243,20 @@ test('a stored crop streams for the owner', function () {
         ->get(route('surveillance.crop.show', [$session, $track, 'start']))
         ->assertOk();
 });
+
+test('every state of the report offers a way back to the dashboard', function (?string $state) {
+    $user = User::factory()->create();
+    $factory = SurveillanceSession::factory()->for($user);
+    $session = ($state !== null ? $factory->{$state}() : $factory)->create();
+
+    $this->actingAs($user)
+        ->get(route('surveillance.report', $session))
+        ->assertOk()
+        ->assertSeeHtml('data-test="back-to-dashboard-button"')
+        ->assertSeeInOrder(['data-test="back-to-dashboard-button"', 'Back to dashboard'], false)
+        ->assertSee(route('dashboard'));
+})->with([
+    'finished' => 'completed',
+    'recording' => 'active',
+    'not started' => null,
+]);

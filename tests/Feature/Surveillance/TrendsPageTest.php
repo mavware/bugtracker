@@ -2,6 +2,7 @@
 
 use App\Models\BugTrack;
 use App\Models\Intervention;
+use App\Models\Room;
 use App\Models\SurveillanceSession;
 use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -47,17 +48,18 @@ test('the trends page shows an empty state before any night finishes', function 
 
 test('recording an intervention attaches it to the room being viewed', function () {
     $user = User::factory()->create();
+    $kitchen = Room::factory()->for($user)->create(['name' => 'Kitchen']);
 
     Livewire::actingAs($user)
         ->test('pages::dashboard.trends')
-        ->set('room', 'Kitchen')
+        ->set('room', (string) $kitchen->id)
         ->set('performedOn', '2026-09-01')
         ->set('description', 'Placed gel bait under the sink')
         ->call('addIntervention')
         ->assertHasNoErrors();
 
     $intervention = $user->interventions()->sole();
-    expect($intervention->room)->toBe('Kitchen')
+    expect($intervention->room_id)->toBe($kitchen->id)
         ->and($intervention->description)->toBe('Placed gel bait under the sink')
         ->and($intervention->performed_on->toDateString())->toBe('2026-09-01');
 });
@@ -71,7 +73,7 @@ test('an intervention recorded without a room filter applies everywhere', functi
         ->call('addIntervention')
         ->assertHasNoErrors();
 
-    expect($user->interventions()->sole()->room)->toBeNull();
+    expect($user->interventions()->sole()->room_id)->toBeNull();
 });
 
 test('an intervention needs a description and cannot be dated in the future', function (string $field, mixed $value, string $rule) {

@@ -10,9 +10,14 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Admin · Rooms'), Layout('layouts::app', [
+/**
+ * The rooms of a client's properties, editable the same way the professional
+ * edits their own. Only rooms of linked properties are listed, so an id from
+ * anywhere else is simply not found and 404s.
+ */
+new #[Title('Rooms'), Layout('layouts::app', [
     'heading' => 'Rooms',
-    'subHeading' => 'Every room recorded in, grouped by who recorded it and where.',
+    'subHeading' => 'The rooms of your properties that nights have been recorded in. Renaming one updates every night filed in it.',
 ])] class extends Component {
     public ?int $editingId = null;
 
@@ -24,7 +29,7 @@ new #[Title('Admin · Rooms'), Layout('layouts::app', [
     #[Computed]
     public function rooms(): Collection
     {
-        return app(ManageRooms::class)->everywhere();
+        return app(ManageRooms::class)->linkedTo(Auth::user());
     }
 
     public function startRename(int $roomId): void
@@ -80,15 +85,21 @@ new #[Title('Admin · Rooms'), Layout('layouts::app', [
 }; ?>
 
 <section class="w-full">
+    @php($showProperty = $this->rooms->pluck('customer_id')->unique()->count() > 1)
+
     @if ($this->rooms->isEmpty())
-        <flux:text>{{ __('No sessions have been filed in a room yet.') }}</flux:text>
+        <flux:callout icon="map-pin">
+            <flux:callout.heading>{{ __('No rooms yet') }}</flux:callout.heading>
+            <flux:callout.text>{{ __('Rooms show up here once a night at one of your properties has one. You can also name the room on each night from the properties page.') }}</flux:callout.text>
+        </flux:callout>
     @else
         <flux:table>
             <flux:table.columns>
                 <flux:table.column>{{ __('Room') }}</flux:table.column>
-                <flux:table.column>{{ __('Owner') }}</flux:table.column>
-                <flux:table.column>{{ __('Customer') }}</flux:table.column>
-                <flux:table.column>{{ __('Sessions') }}</flux:table.column>
+                @if ($showProperty)
+                    <flux:table.column>{{ __('Property') }}</flux:table.column>
+                @endif
+                <flux:table.column>{{ __('Nights') }}</flux:table.column>
                 <flux:table.column></flux:table.column>
             </flux:table.columns>
 
@@ -110,8 +121,9 @@ new #[Title('Admin · Rooms'), Layout('layouts::app', [
                                 {{ $room->name }}
                             @endif
                         </flux:table.cell>
-                        <flux:table.cell>{{ $room->user?->email ?? '—' }}</flux:table.cell>
-                        <flux:table.cell>{{ $room->customer?->name ?? '—' }}</flux:table.cell>
+                        @if ($showProperty)
+                            <flux:table.cell>{{ $room->customer?->name ?? '—' }}</flux:table.cell>
+                        @endif
                         <flux:table.cell>{{ $room->surveillance_sessions_count }}</flux:table.cell>
                         <flux:table.cell>
                             <div class="flex justify-end gap-2">
@@ -127,7 +139,7 @@ new #[Title('Admin · Rooms'), Layout('layouts::app', [
                                     variant="danger"
                                     icon="x-mark"
                                     wire:click="removeRoom({{ $room->id }})"
-                                    wire:confirm="{{ __('Remove this room from :count sessions? The recordings are kept.', ['count' => $room->surveillance_sessions_count]) }}"
+                                    wire:confirm="{{ __('Remove this room from :count nights? The recordings are kept.', ['count' => $room->surveillance_sessions_count]) }}"
                                     data-confirm-label="{{ __('Remove room') }}"
                                     data-confirm-destructive
                                     data-test="remove-room-button"
@@ -139,5 +151,8 @@ new #[Title('Admin · Rooms'), Layout('layouts::app', [
             </flux:table.rows>
         </flux:table>
 
+        <flux:text class="mt-4 text-sm">
+            {{ __('Renaming onto a room already in use merges the two, which is how a typo gets cleaned up. Rooms are kept separate per property, so the same room name in two homes stays two rooms.') }}
+        </flux:text>
     @endif
 </section>

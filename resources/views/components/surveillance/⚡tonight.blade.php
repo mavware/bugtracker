@@ -56,7 +56,7 @@ new class extends Component {
                         @else
                             {{ $this->session->name }}
                         @endif
-                        @if ($this->session->room) <span class="text-zinc-400">&middot; {{ $this->session->room }}</span>@endif
+                        @if ($this->session->room) <span class="text-zinc-400">&middot; {{ $this->session->room->name }}</span>@endif
                     </flux:heading>
                     <flux:text class="mt-1 text-sm">
                         {{ __('Started :time', ['time' => $this->session->started_at?->format('H:i') ?? '—']) }}

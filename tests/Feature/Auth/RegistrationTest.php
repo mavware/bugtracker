@@ -13,7 +13,42 @@ test('registration screen can be rendered', function () {
 
     $response->assertOk()
         ->assertSeeHtml('data-test="register-role-homeowner"')
-        ->assertSeeHtml('data-test="register-role-professional"');
+        ->assertSeeHtml('data-test="register-role-professional"')
+        ->assertDontSee('name="password_confirmation"', false);
+});
+
+test('the homeowner card is ticked before anything is chosen', function () {
+    $html = $this->get(route('register'))->getContent();
+
+    preg_match('/<ui-radio[^>]*data-test="register-role-homeowner"[^>]*>/', $html, $homeowner);
+    preg_match('/<ui-radio[^>]*data-test="register-role-professional"[^>]*>/', $html, $professional);
+
+    // The checked attribute itself, as opposed to the data-checked: styling every card carries.
+    expect($homeowner[0] ?? '')->toMatch('/\schecked="checked"/')
+        ->and($professional[0] ?? '')->not->toMatch('/\schecked="checked"/');
+});
+
+test('the professional card stays ticked when the form comes back with errors', function () {
+    $html = $this->from(route('register'))
+        ->post(route('register.store'), ['name' => '', 'email' => 'not-an-email', 'password' => 'password', 'role' => 'professional'])
+        ->assertSessionHasErrors(['name', 'email'])
+        ->assertRedirect(route('register'));
+
+    $html = $this->get(route('register'))->getContent();
+    preg_match('/<ui-radio[^>]*data-test="register-role-professional"[^>]*>/', $html, $professional);
+
+    expect($professional[0] ?? '')->toMatch('/\schecked="checked"/');
+});
+
+test('registration does not ask for the password twice', function () {
+    $this->post(route('register.store'), [
+        'name' => 'John Doe',
+        'email' => 'test@example.com',
+        'password' => 'password',
+        'password_confirmation' => 'something-else',
+    ])->assertSessionHasNoErrors();
+
+    $this->assertAuthenticated();
 });
 
 test(
@@ -24,7 +59,6 @@ test(
             'name' => 'John Doe',
             'email' => 'test@example.com',
             'password' => 'password',
-            'password_confirmation' => 'password',
         ]);
 
         $response->assertSessionHasNoErrors()
@@ -38,10 +72,9 @@ test('a new account is a homeowner unless it says otherwise', function () {
         'name' => 'John Doe',
         'email' => 'test@example.com',
         'password' => 'password',
-        'password_confirmation' => 'password',
     ])->assertSessionHasNoErrors();
 
-    expect(User::where('email', 'test@example.com')->sole()->role)->toBe(UserRole::Homeowner);
+    expect(User::where('email', 'test@example.com')->sole()->roles->all())->toBe([UserRole::Homeowner]);
 });
 
 test('a new account can register as a professional', function () {
@@ -49,11 +82,10 @@ test('a new account can register as a professional', function () {
         'name' => 'Dana Alvarez',
         'email' => 'dana@example.com',
         'password' => 'password',
-        'password_confirmation' => 'password',
         'role' => 'professional',
     ])->assertSessionHasNoErrors();
 
-    expect(User::where('email', 'dana@example.com')->sole()->role)->toBe(UserRole::Professional);
+    expect(User::where('email', 'dana@example.com')->sole()->roles->all())->toBe([UserRole::Professional]);
 });
 
 test('nobody can register as an admin', function (string $role) {
@@ -61,7 +93,6 @@ test('nobody can register as an admin', function (string $role) {
         'name' => 'Dana Alvarez',
         'email' => 'dana@example.com',
         'password' => 'password',
-        'password_confirmation' => 'password',
         'role' => $role,
     ])->assertSessionHasErrors('role');
 

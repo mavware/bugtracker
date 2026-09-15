@@ -16,13 +16,13 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property int $user_id
  * @property int|null $customer_id
- * @property string|null $room
+ * @property int|null $room_id
  * @property Carbon $performed_on
  * @property string $description
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['customer_id', 'room', 'performed_on', 'description'])]
+#[Fillable(['customer_id', 'room_id', 'performed_on', 'description'])]
 class Intervention extends Model
 {
     /** @use HasFactory<InterventionFactory> */
@@ -54,5 +54,15 @@ class Intervention extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    /**
+     * The room it was done in; null means it applies to every room of the property.
+     *
+     * @return BelongsTo<Room, $this>
+     */
+    public function room(): BelongsTo
+    {
+        return $this->belongsTo(Room::class);
     }
 }

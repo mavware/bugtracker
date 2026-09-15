@@ -20,7 +20,7 @@ test('the page heading and subheading are rendered by the app layout', function 
 });
 
 test('a homeowner or professional account is refused', function (string $route, UserRole $role) {
-    $this->actingAs(User::factory()->create(['role' => $role]))
+    $this->actingAs(User::factory()->withRoles([$role])->create())
         ->get(route($route))
         ->assertForbidden();
 })->with(['admin.index', 'admin.users', 'admin.sessions', 'admin.rooms', 'admin.customers'])
@@ -67,7 +67,7 @@ test('being an admin does not open another account\'s recordings', function () {
 test('a role cannot be granted by mass assignment', function () {
     $user = User::factory()->create();
 
-    $user->fill(['role' => UserRole::Admin])->save();
+    $user->fill(['roles' => [UserRole::Admin]])->save();
 
-    expect($user->refresh()->role)->toBe(UserRole::Homeowner);
+    expect($user->refresh()->roles->all())->toBe([UserRole::Homeowner]);
 });

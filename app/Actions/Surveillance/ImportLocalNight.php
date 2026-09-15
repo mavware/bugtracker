@@ -3,6 +3,7 @@
 namespace App\Actions\Surveillance;
 
 use App\Enums\SurveillanceSessionStatus;
+use App\Models\Room;
 use App\Models\SurveillanceSession;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -40,14 +41,19 @@ class ImportLocalNight
                 throw new InvalidArgumentException('An imported night needs both of its timestamps.');
             }
 
-            $room = $validated->string('room')->trim()->toString();
+            $customerId = $validated->filled('customer_id') ? $validated->integer('customer_id') : null;
 
-            $session = $user->surveillanceSessions()->firstOrCreate(
+            $session = $user->surveillanceSessions()->firstOrNew(
                 ['imported_local_id' => $validated->string('local_id')->toString()],
-                [
+            );
+
+            $created = ! $session->exists;
+
+            if ($created) {
+                $session->fill([
                     'name' => __('Night of :date', ['date' => SurveillanceSession::nightDateFor($startedAt)->format('M j')]),
-                    'room' => $room !== '' ? $room : null,
-                    'customer_id' => $validated->filled('customer_id') ? $validated->integer('customer_id') : null,
+                    'customer_id' => $customerId,
+                    'room_id' => Room::resolve($user->id, $customerId, $validated->string('room')->toString())?->id,
                     'status' => $validated->boolean('aborted')
                         ? SurveillanceSessionStatus::Aborted
                         : SurveillanceSessionStatus::Completed,
@@ -57,10 +63,8 @@ class ImportLocalNight
                     'frame_width' => $validated->integer('frame_width'),
                     'frame_height' => $validated->integer('frame_height'),
                     'settings' => $validated->has('settings') ? $validated->array('settings') : null,
-                ],
-            );
-
-            $created = $session->wasRecentlyCreated;
+                ])->save();
+            }
 
             if ($session->reference_image_path === null) {
                 $this->storeReference($session, $validated->string('reference_image')->toString());

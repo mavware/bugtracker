@@ -142,6 +142,14 @@ class extends Component {
 }; ?>
 
 <section class="w-full">
+    {{-- The report is the one link for a night in any state, so the way back to
+         the dashboard sits above every branch below rather than in each one. --}}
+    <div class="mb-4">
+        <flux:button :href="route('dashboard')" variant="ghost" size="sm" icon="arrow-left" data-test="back-to-dashboard-button">
+            {{ __('Back to dashboard') }}
+        </flux:button>
+    </div>
+
     @if ($session->status === SurveillanceSessionStatus::Pending)
         <flux:heading size="xl">{{ $session->name }}</flux:heading>
         <flux:callout icon="video-camera" class="mt-6" data-test="night-not-started">

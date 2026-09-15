@@ -63,8 +63,8 @@ test('a session started after midnight is named for the evening it began', funct
 test('a new session carries over the latest night\'s room and customer', function () {
     $user = User::factory()->create();
     $customer = Customer::factory()->for($user)->create();
-    SurveillanceSession::factory()->for($user)->create(['room' => 'Garage', 'customer_id' => null, 'created_at' => now()->subDays(2)]);
-    SurveillanceSession::factory()->for($user)->create(['room' => 'Kitchen', 'customer_id' => $customer->id, 'created_at' => now()->subDay()]);
+    SurveillanceSession::factory()->for($user)->inRoom('Garage')->create(['customer_id' => null, 'created_at' => now()->subDays(2)]);
+    SurveillanceSession::factory()->for($user)->inRoom('Kitchen')->create(['customer_id' => $customer->id, 'created_at' => now()->subDay()]);
 
     Livewire::actingAs($user)
         ->test('surveillance.sessions')
@@ -72,7 +72,7 @@ test('a new session carries over the latest night\'s room and customer', functio
 
     $session = SurveillanceSession::latest('id')->first();
     expect($session->customer_id)->toBe($customer->id)
-        ->and($session->room)->toBe('Kitchen');
+        ->and($session->room?->name)->toBe('Kitchen');
 });
 
 // The header row is the same whatever the list holds: a first night has to be
@@ -88,14 +88,14 @@ test('search and Start are on the page even before the first session', function 
 
 test('the Filters button counts the selects in effect, not the search', function () {
     $user = User::factory()->create();
-    SurveillanceSession::factory()->for($user)->create(['room' => 'Kitchen']);
+    $session = SurveillanceSession::factory()->for($user)->inRoom('Kitchen')->create();
 
     Livewire::actingAs($user)
         ->test('surveillance.sessions')
         ->set('search', 'Kitchen')
         ->assertDontSee('data-test="filter-count"', false)
         ->set('status', SurveillanceSessionStatus::Pending->value)
-        ->set('roomFilter', 'Kitchen')
+        ->set('roomFilter', (string) $session->room_id)
         ->assertSeeHtml('data-test="filter-count">2<');
 });
 
@@ -113,14 +113,12 @@ test('the dashboard no longer asks for a room or customer before starting', func
 test('the list can be searched by night, room or customer', function (string $term) {
     $user = User::factory()->create();
     $customer = Customer::factory()->for($user)->create(['name' => 'The Alvarez house']);
-    SurveillanceSession::factory()->for($user)->create([
+    SurveillanceSession::factory()->for($user)->inRoom('Kitchen')->create([
         'name' => 'Night of Sep 2',
-        'room' => 'Kitchen',
         'customer_id' => $customer->id,
     ]);
-    SurveillanceSession::factory()->for($user)->create([
+    SurveillanceSession::factory()->for($user)->inRoom('Garage')->create([
         'name' => 'Night of Aug 30',
-        'room' => 'Garage',
         'customer_id' => null,
     ]);
 
@@ -137,7 +135,7 @@ test('the list can be searched by night, room or customer', function (string $te
 
 test('a search never reaches another account\'s sessions', function () {
     $user = User::factory()->create();
-    SurveillanceSession::factory()->create(['name' => 'Someone elses Kitchen night', 'room' => 'Kitchen']);
+    SurveillanceSession::factory()->inRoom('Kitchen')->create(['name' => 'Someone elses Kitchen night']);
 
     Livewire::actingAs($user)
         ->test('surveillance.sessions')
@@ -176,14 +174,14 @@ test('the list can be filtered by customer, including nights filed under nobody'
 
 test('the list can be filtered by room, including nights without one', function () {
     $user = User::factory()->create();
-    SurveillanceSession::factory()->for($user)->create(['name' => 'Kitchen night', 'room' => 'Kitchen']);
-    SurveillanceSession::factory()->for($user)->create(['name' => 'Garage night', 'room' => 'Garage']);
-    SurveillanceSession::factory()->for($user)->create(['name' => 'Unlabelled night', 'room' => null]);
+    $kitchen = SurveillanceSession::factory()->for($user)->inRoom('Kitchen')->create(['name' => 'Kitchen night']);
+    SurveillanceSession::factory()->for($user)->inRoom('Garage')->create(['name' => 'Garage night']);
+    SurveillanceSession::factory()->for($user)->create(['name' => 'Unlabelled night']);
 
     Livewire::actingAs($user)
         ->test('surveillance.sessions')
         ->assertSee('data-test="room-filter"', false)
-        ->set('roomFilter', 'Kitchen')
+        ->set('roomFilter', (string) $kitchen->room_id)
         ->assertSee('Kitchen night')
         ->assertDontSee('Garage night')
         ->assertDontSee('Unlabelled night')
@@ -194,18 +192,18 @@ test('the list can be filtered by room, including nights without one', function 
 
 test('the room filter only offers this account\'s rooms', function () {
     $user = User::factory()->create();
-    SurveillanceSession::factory()->for($user)->create(['room' => 'Kitchen']);
-    SurveillanceSession::factory()->create(['room' => 'Someone elses attic']);
+    SurveillanceSession::factory()->for($user)->inRoom('Kitchen')->create();
+    SurveillanceSession::factory()->inRoom('Someone elses attic')->create();
 
     $component = Livewire::actingAs($user)->test('surveillance.sessions');
 
-    expect($component->instance()->rooms->all())->toBe(['Kitchen']);
+    expect($component->instance()->rooms->pluck('name')->all())->toBe(['Kitchen']);
 });
 
 test('the list can be sorted by a column and the direction flips on a second click', function () {
     $user = User::factory()->create();
-    SurveillanceSession::factory()->for($user)->create(['name' => 'Bravo night', 'room' => 'Kitchen', 'created_at' => now()->subDay()]);
-    SurveillanceSession::factory()->for($user)->create(['name' => 'Alpha night', 'room' => 'Garage', 'created_at' => now()]);
+    SurveillanceSession::factory()->for($user)->inRoom('Kitchen')->create(['name' => 'Bravo night', 'created_at' => now()->subDay()]);
+    SurveillanceSession::factory()->for($user)->inRoom('Garage')->create(['name' => 'Alpha night', 'created_at' => now()]);
 
     $component = Livewire::actingAs($user)->test('surveillance.sessions');
 

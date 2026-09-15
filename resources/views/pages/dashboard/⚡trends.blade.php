@@ -2,6 +2,7 @@
 
 use App\Actions\Surveillance\ComputeNightlyTrend;
 use App\Models\Customer;
+use App\Models\Room;
 use Flux\Flux;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -19,7 +20,7 @@ new #[Title('Trends'), Layout('layouts::app', [
     #[Url]
     public string $customer = '';
 
-    /** Empty means every room. */
+    /** A room id; empty means every room. */
     #[Url]
     public string $room = '';
 
@@ -38,14 +39,14 @@ new #[Title('Trends'), Layout('layouts::app', [
     #[Computed]
     public function trend(): array
     {
-        return app(ComputeNightlyTrend::class)->handle(Auth::user(), $this->selectedRoom(), $this->selectedCustomerId());
+        return app(ComputeNightlyTrend::class)->handle(Auth::user(), $this->selectedRoomId(), $this->selectedCustomerId());
     }
 
     /**
-     * @return array<int, string>
+     * @return Collection<int, Room>
      */
     #[Computed]
-    public function rooms(): array
+    public function rooms(): Collection
     {
         return app(ComputeNightlyTrend::class)->rooms(Auth::user(), $this->selectedCustomerId());
     }
@@ -72,9 +73,9 @@ new #[Title('Trends'), Layout('layouts::app', [
         return $this->customer !== '' ? (int) $this->customer : null;
     }
 
-    private function selectedRoom(): ?string
+    private function selectedRoomId(): ?int
     {
-        return $this->room !== '' ? $this->room : null;
+        return $this->room !== '' ? (int) $this->room : null;
     }
 
     /**
@@ -90,7 +91,7 @@ new #[Title('Trends'), Layout('layouts::app', [
 
         Auth::user()->interventions()->create([
             'customer_id' => $this->selectedCustomerId(),
-            'room' => $this->selectedRoom(),
+            'room_id' => $this->selectedRoomId(),
             'performed_on' => $validated['performedOn'],
             'description' => $validated['description'],
         ]);
@@ -224,11 +225,11 @@ new #[Title('Trends'), Layout('layouts::app', [
                 @endforeach
             </flux:select>
         @endif
-        @if ($this->rooms !== [])
+        @if ($this->rooms->isNotEmpty())
             <flux:select wire:model.live="room" size="sm" class="max-w-44" data-test="room-filter">
                 <flux:select.option value="">{{ __('All rooms') }}</flux:select.option>
                 @foreach ($this->rooms as $roomOption)
-                    <flux:select.option value="{{ $roomOption }}">{{ $roomOption }}</flux:select.option>
+                    <flux:select.option value="{{ $roomOption->id }}">{{ $this->customer !== '' ? $roomOption->name : $roomOption->label() }}</flux:select.option>
                 @endforeach
             </flux:select>
         @endif
@@ -378,7 +379,7 @@ new #[Title('Trends'), Layout('layouts::app', [
     @php
         $scope = collect([
             $this->customer !== '' ? $this->customers->firstWhere('id', (int) $this->customer)?->name : null,
-            $this->room !== '' ? $this->room : null,
+            $this->room !== '' ? $this->rooms->firstWhere('id', (int) $this->room)?->name : null,
         ])->filter()->implode(' · ');
     @endphp
 

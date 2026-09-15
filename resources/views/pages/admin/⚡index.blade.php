@@ -24,7 +24,7 @@ new #[Title('Admin'), Layout('layouts::app', [
     {
         return [
             'users' => User::count(),
-            'admins' => User::where('role', UserRole::Admin)->count(),
+            'admins' => User::whereJsonContains('roles', UserRole::Admin->value)->count(),
             'customers' => Customer::count(),
             'sessions' => SurveillanceSession::count(),
             'recording' => SurveillanceSession::where('status', SurveillanceSessionStatus::Active)->count(),

@@ -38,12 +38,24 @@ class UserFactory extends Factory
     }
 
     /**
+     * Give the account exactly these roles.
+     *
+     * @param  list<UserRole>  $roles
+     */
+    public function withRoles(array $roles): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'roles' => $roles,
+        ]);
+    }
+
+    /**
      * Indicate that the user administers the site.
      */
     public function admin(): static
     {
         return $this->state(fn (array $attributes) => [
-            'role' => UserRole::Admin,
+            'roles' => [UserRole::Admin],
         ]);
     }
 
@@ -53,7 +65,7 @@ class UserFactory extends Factory
     public function professional(): static
     {
         return $this->state(fn (array $attributes) => [
-            'role' => UserRole::Professional,
+            'roles' => [UserRole::Professional],
         ]);
     }
 

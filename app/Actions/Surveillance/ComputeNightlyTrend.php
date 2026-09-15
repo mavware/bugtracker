@@ -5,8 +5,10 @@ namespace App\Actions\Surveillance;
 use App\Enums\SurveillanceSessionStatus;
 use App\Models\BugTrack;
 use App\Models\Intervention;
+use App\Models\Room;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 
 class ComputeNightlyTrend
 {
@@ -30,13 +32,13 @@ class ComputeNightlyTrend
      *     previous: array{date: string, label: string, count: int, session_count: int}|null,
      * }
      */
-    public function handle(User $user, ?string $room = null, ?int $customerId = null): array
+    public function handle(User $user, ?int $roomId = null, ?int $customerId = null): array
     {
         $sessions = $user->surveillanceSessions()
             ->where('status', SurveillanceSessionStatus::Completed)
             ->whereNotNull('started_at')
             ->when($customerId !== null, fn (Builder $query) => $query->where('customer_id', $customerId))
-            ->when($room !== null, fn (Builder $query) => $query->where('room', $room))
+            ->when($roomId !== null, fn (Builder $query) => $query->where('room_id', $roomId))
             ->withCount(['tracks as confirmed_tracks_count' => $this->onlyConfirmed(...)])
             ->oldest('started_at')
             ->get();
@@ -68,7 +70,7 @@ class ComputeNightlyTrend
 
         return [
             'nights' => $nights,
-            'interventions' => $this->positionInterventions($user, $room, $customerId, $nights),
+            'interventions' => $this->positionInterventions($user, $roomId, $customerId, $nights),
             'total_sightings' => array_sum(array_column($nights, 'count')),
             'busiest' => $this->busiestNight($nights),
             'latest' => $nights !== [] ? $nights[count($nights) - 1] : null,
@@ -87,28 +89,19 @@ class ComputeNightlyTrend
     }
 
     /**
-     * The rooms the user has recorded, for the room filter.
+     * The rooms the user has recorded in, for the room filter: one customer's
+     * when a customer is given, otherwise every room of every property.
      *
-     * @return array<int, string>
+     * @return Collection<int, Room>
      */
-    public function rooms(User $user, ?int $customerId = null): array
+    public function rooms(User $user, ?int $customerId = null): Collection
     {
-        $rooms = [];
-
-        $sessions = $user->surveillanceSessions()
-            ->whereNotNull('room')
+        return $user->rooms()
+            ->with('customer:id,name')
             ->when($customerId !== null, fn (Builder $query) => $query->where('customer_id', $customerId))
-            ->distinct()
-            ->orderBy('room')
-            ->get(['room']);
-
-        foreach ($sessions as $session) {
-            if ($session->room !== null) {
-                $rooms[] = $session->room;
-            }
-        }
-
-        return $rooms;
+            ->orderBy('name')
+            ->orderBy('id')
+            ->get();
     }
 
     /**
@@ -123,12 +116,12 @@ class ComputeNightlyTrend
      * @param  array<int, array{date: string, label: string, count: int, session_count: int}>  $nights
      * @return array<int, array{id: int, performed_on: string, label: string, description: string, marker: int, position: int}>
      */
-    private function positionInterventions(User $user, ?string $room, ?int $customerId, array $nights): array
+    private function positionInterventions(User $user, ?int $roomId, ?int $customerId, array $nights): array
     {
         $interventions = $user->interventions()
             ->when($customerId !== null, fn (Builder $query) => $query->where('customer_id', $customerId))
-            ->when($room !== null, fn (Builder $query) => $query->where(
-                fn (Builder $scoped) => $scoped->where('room', $room)->orWhereNull('room')
+            ->when($roomId !== null, fn (Builder $query) => $query->where(
+                fn (Builder $scoped) => $scoped->where('room_id', $roomId)->orWhereNull('room_id')
             ))
             ->oldest('performed_on')
             ->orderBy('id')

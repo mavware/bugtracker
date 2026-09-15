@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Portal\CustomerPortalAccess;
 use App\Models\Customer;
 use Flux\Flux;
 use Illuminate\Support\Collection;
@@ -29,9 +30,44 @@ new #[Title('Customers'), Layout('layouts::app', [
     public function customers(): Collection
     {
         return Auth::user()->customers()
+            ->with('clientUser:id,name,email')
             ->withCount('surveillanceSessions')
             ->orderBy('name')
             ->get();
+    }
+
+    /**
+     * Make an invitation link for the customer to open. Making another replaces
+     * the first, which is also how a link sent astray is cancelled.
+     */
+    public function invite(CustomerPortalAccess $portalAccess, int $customerId): void
+    {
+        $portalAccess->invite(Auth::user()->customers()->findOrFail($customerId));
+
+        unset($this->customers);
+
+        Flux::toast(variant: 'success', text: __('Invitation link ready. Copy it and send it to your customer.'));
+    }
+
+    public function revokeInvitation(CustomerPortalAccess $portalAccess, int $customerId): void
+    {
+        $portalAccess->revoke(Auth::user()->customers()->findOrFail($customerId));
+
+        unset($this->customers);
+
+        Flux::toast(text: __('Invitation link cancelled.'));
+    }
+
+    /**
+     * Take the customer's portal access away; their account is untouched.
+     */
+    public function unlinkClient(CustomerPortalAccess $portalAccess, int $customerId): void
+    {
+        $portalAccess->unlink(Auth::user()->customers()->findOrFail($customerId));
+
+        unset($this->customers);
+
+        Flux::toast(text: __('Portal access removed.'));
     }
 
     /**
@@ -140,6 +176,7 @@ new #[Title('Customers'), Layout('layouts::app', [
                 <flux:table.column>{{ __('Customer') }}</flux:table.column>
                 <flux:table.column>{{ __('Address') }}</flux:table.column>
                 <flux:table.column>{{ __('Nights') }}</flux:table.column>
+                <flux:table.column>{{ __('Portal') }}</flux:table.column>
                 <flux:table.column></flux:table.column>
             </flux:table.columns>
 
@@ -149,6 +186,36 @@ new #[Title('Customers'), Layout('layouts::app', [
                         <flux:table.cell variant="strong">{{ $customer->name }}</flux:table.cell>
                         <flux:table.cell>{{ $customer->address ?? '—' }}</flux:table.cell>
                         <flux:table.cell>{{ $customer->surveillance_sessions_count }}</flux:table.cell>
+                        <flux:table.cell data-test="customer-portal">
+                            @if ($customer->clientUser !== null)
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <flux:badge size="sm" color="green" icon="key">{{ $customer->clientUser->email }}</flux:badge>
+                                    <flux:button
+                                        size="sm"
+                                        variant="subtle"
+                                        wire:click="unlinkClient({{ $customer->id }})"
+                                        wire:confirm="{{ __('Remove this customer\'s portal access? Their account is kept, but the property leaves their portal.') }}"
+                                        data-confirm-label="{{ __('Remove access') }}"
+                                        data-confirm-destructive
+                                        data-test="unlink-client-button"
+                                    >{{ __('Remove access') }}</flux:button>
+                                </div>
+                            @elseif (($invitationUrl = app(CustomerPortalAccess::class)->invitationUrl($customer)) !== null)
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <flux:input :value="$invitationUrl" size="sm" class="max-w-64" readonly copyable data-test="invitation-link" />
+                                    <flux:button size="sm" variant="subtle" wire:click="revokeInvitation({{ $customer->id }})" data-test="revoke-invitation-button">
+                                        {{ __('Cancel') }}
+                                    </flux:button>
+                                </div>
+                                <flux:text size="sm" class="mt-1">
+                                    {{ __('Send this link to your customer. It works for :days days.', ['days' => CustomerPortalAccess::INVITATION_DAYS]) }}
+                                </flux:text>
+                            @else
+                                <flux:button size="sm" variant="subtle" icon="key" wire:click="invite({{ $customer->id }})" data-test="invite-client-button">
+                                    {{ __('Invite') }}
+                                </flux:button>
+                            @endif
+                        </flux:table.cell>
                         <flux:table.cell>
                             <div class="flex justify-end gap-2">
                                 <flux:button

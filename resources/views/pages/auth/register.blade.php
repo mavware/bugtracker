@@ -42,24 +42,20 @@
                 viewable
             />
 
-            <!-- Account type -->
-            <flux:radio.group name="role" :label="__('I am')" variant="cards" class="max-sm:flex-col" :value="old('role', \App\Enums\UserRole::Homeowner->value)">
+            {{-- Homeowner is pre-selected: the card itself carries checked, since the
+                 group's value alone does not tick a card before the form is touched. --}}
+            @php($chosenRole = old('role', \App\Enums\UserRole::Homeowner->value))
+            <flux:radio.group name="role" :label="__('I am')" variant="cards" class="max-sm:flex-col" :value="$chosenRole">
                 @foreach (\App\Enums\UserRole::selfAssignable() as $roleOption)
-                    <flux:radio :value="$roleOption->value" :label="$roleOption->label()" :description="$roleOption->description()" data-test="register-role-{{ $roleOption->value }}" />
+                    <flux:radio
+                        :value="$roleOption->value"
+                        :label="$roleOption->label()"
+                        :description="$roleOption->description()"
+                        :checked="$chosenRole === $roleOption->value"
+                        data-test="register-role-{{ $roleOption->value }}"
+                    />
                 @endforeach
             </flux:radio.group>
-
-            <!-- Confirm Password -->
-            <flux:input
-                name="password_confirmation"
-                :label="__('Confirm password')"
-                type="password"
-                required
-                autocomplete="new-password"
-                :placeholder="__('Confirm password')"
-                passwordrules="{{ \Illuminate\Validation\Rules\Password::defaults()->toPasswordRulesString() }}"
-                viewable
-            />
 
             <div class="flex items-center justify-end">
                 <flux:button type="submit" variant="primary" class="w-full" data-test="register-user-button">

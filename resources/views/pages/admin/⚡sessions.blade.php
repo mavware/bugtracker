@@ -39,13 +39,13 @@ new #[Title('Admin · Sessions'), Layout('layouts::app', [
     public function sessions(): LengthAwarePaginator
     {
         return SurveillanceSession::query()
-            ->with(['user', 'customer'])
+            ->with(['user', 'customer', 'room'])
             ->withCount('tracks')
             ->when($this->status !== '', fn (Builder $query) => $query->where('status', $this->status))
             ->when($this->search !== '', fn (Builder $query) => $query->where(
                 fn (Builder $search) => $search
                     ->where('name', 'like', "%{$this->search}%")
-                    ->orWhere('room', 'like', "%{$this->search}%")
+                    ->orWhereHas('room', fn (Builder $room) => $room->where('name', 'like', "%{$this->search}%"))
                     ->orWhereHas('user', fn (Builder $user) => $user->where('email', 'like', "%{$this->search}%"))
             ))
             ->orderByDesc('created_at')
@@ -124,7 +124,7 @@ new #[Title('Admin · Sessions'), Layout('layouts::app', [
                     <flux:table.cell variant="strong">{{ $session->name }}</flux:table.cell>
                     <flux:table.cell>{{ $session->user?->email ?? '—' }}</flux:table.cell>
                     <flux:table.cell>{{ $session->customer?->name ?? '—' }}</flux:table.cell>
-                    <flux:table.cell>{{ $session->room ?? '—' }}</flux:table.cell>
+                    <flux:table.cell>{{ $session->room?->name ?? '—' }}</flux:table.cell>
                     <flux:table.cell>
                         <flux:badge size="sm" :color="match ($session->status) {
                             SurveillanceSessionStatus::Pending => 'zinc',

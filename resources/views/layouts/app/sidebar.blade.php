@@ -35,6 +35,24 @@
                     </flux:sidebar.item>
                 </flux:sidebar.group>
 
+                {{-- Access to the portal is a matter of record, not role: it appears once
+                     a professional has linked a property to this account. --}}
+                @if (auth()->user()->isPortalClient())
+                    <flux:sidebar.group
+                        expandable
+                        icon="key"
+                        :heading="__('Client portal')"
+                        :expanded="request()->routeIs('portal.*')"
+                    >
+                        <flux:sidebar.item icon="building-office-2" :href="route('portal.index')" :current="request()->routeIs('portal.index')">
+                            {{ __('Properties') }}
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="home-modern" :href="route('portal.rooms')" :current="request()->routeIs('portal.rooms')">
+                            {{ __('Rooms') }}
+                        </flux:sidebar.item>
+                    </flux:sidebar.group>
+                @endif
+
                 @can(\App\Enums\Permission::AccessAdmin->value)
                     <flux:sidebar.group
                         expandable
@@ -43,7 +61,7 @@
                         :expanded="request()->routeIs('admin.*')"
                     >
                         <flux:sidebar.item icon="squares-2x2" :href="route('admin.index')" :current="request()->routeIs('admin.index')">
-                            {{ __('Surveillance') }}
+                            {{ __('Overview') }}
                         </flux:sidebar.item>
                         <flux:sidebar.item icon="users" :href="route('admin.users')" :current="request()->routeIs('admin.users')">
                             {{ __('Users') }}

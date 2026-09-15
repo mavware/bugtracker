@@ -2,6 +2,7 @@
 
 use App\Enums\SurveillanceSessionStatus;
 use App\Models\Customer;
+use App\Models\Room;
 use App\Models\SurveillanceSession;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,7 +25,7 @@ new class extends Component {
     /** A customer id, or 'none' for nights filed under nobody. */
     public string $customerFilter = '';
 
-    /** A room label, or 'none' for nights without one. */
+    /** A room id, or 'none' for nights without one. */
     public string $roomFilter = '';
 
     /**
@@ -37,7 +38,7 @@ new class extends Component {
     private const SORTABLE_COLUMNS = [
         'name' => 'name',
         'customer' => 'customer_name',
-        'room' => 'room',
+        'room' => 'room_name',
         'status' => 'status',
         'tracks' => 'tracks_count',
         'started' => 'COALESCE(started_at, created_at)',
@@ -97,18 +98,21 @@ new class extends Component {
         $direction = $this->sortDirection === 'asc' ? 'asc' : 'desc';
 
         return Auth::user()->surveillanceSessions()
-            ->with('customer')
+            ->with(['customer', 'room'])
             ->withCount('tracks')
-            ->addSelect(['customer_name' => Customer::select('name')->whereColumn('customers.id', 'surveillance_sessions.customer_id')])
+            ->addSelect([
+                'customer_name' => Customer::select('name')->whereColumn('customers.id', 'surveillance_sessions.customer_id'),
+                'room_name' => Room::select('name')->whereColumn('rooms.id', 'surveillance_sessions.room_id'),
+            ])
             ->when($this->status !== '', fn (Builder $query) => $query->where('status', $this->status))
             ->when($this->customerFilter === 'none', fn (Builder $query) => $query->whereNull('customer_id'))
             ->when($this->customerFilter !== '' && $this->customerFilter !== 'none', fn (Builder $query) => $query->where('customer_id', (int) $this->customerFilter))
-            ->when($this->roomFilter === 'none', fn (Builder $query) => $query->whereNull('room'))
-            ->when($this->roomFilter !== '' && $this->roomFilter !== 'none', fn (Builder $query) => $query->where('room', $this->roomFilter))
+            ->when($this->roomFilter === 'none', fn (Builder $query) => $query->whereNull('room_id'))
+            ->when($this->roomFilter !== '' && $this->roomFilter !== 'none', fn (Builder $query) => $query->where('room_id', (int) $this->roomFilter))
             ->when($this->search !== '', fn (Builder $query) => $query->where(
                 fn (Builder $search) => $search
                     ->where('name', 'like', "%{$this->search}%")
-                    ->orWhere('room', 'like', "%{$this->search}%")
+                    ->orWhereHas('room', fn (Builder $room) => $room->where('name', 'like', "%{$this->search}%"))
                     ->orWhereHas('customer', fn (Builder $customer) => $customer->where('name', 'like', "%{$this->search}%"))
             ))
             ->orderByRaw(self::SORTABLE_COLUMNS[$sortBy].' '.$direction)
@@ -134,18 +138,15 @@ new class extends Component {
     }
 
     /**
-     * Every room label on this account's nights, for the room filter.
+     * Every room this account has recorded in, for the room filter. Only the
+     * account's own rooms, so the filter never lists another account's.
      *
-     * @return Collection<int, string>
+     * @return Collection<int, Room>
      */
     #[Computed]
     public function rooms(): Collection
     {
-        return Auth::user()->surveillanceSessions()
-            ->whereNotNull('room')
-            ->distinct()
-            ->orderBy('room')
-            ->pluck('room');
+        return Auth::user()->rooms()->with('customer:id,name')->orderBy('name')->orderBy('id')->get();
     }
 
     /**
@@ -176,11 +177,11 @@ new class extends Component {
         $latest = Auth::user()->surveillanceSessions()
             ->orderByDesc('created_at')
             ->orderByDesc('id')
-            ->first(['room', 'customer_id']);
+            ->first(['room_id', 'customer_id']);
 
         $session = Auth::user()->surveillanceSessions()->create([
             'name' => __('Night of :date', ['date' => SurveillanceSession::nightDateFor(now())->format('M j')]),
-            'room' => $latest?->room,
+            'room_id' => $latest?->room_id,
             'customer_id' => $latest?->customer_id,
         ]);
 
@@ -269,7 +270,7 @@ new class extends Component {
                     <flux:select.option value="">{{ __('Any room') }}</flux:select.option>
                     <flux:select.option value="none">{{ __('No room') }}</flux:select.option>
                     @foreach ($this->rooms as $roomOption)
-                        <flux:select.option value="{{ $roomOption }}">{{ $roomOption }}</flux:select.option>
+                        <flux:select.option value="{{ $roomOption->id }}">{{ $roomOption->label() }}</flux:select.option>
                     @endforeach
                 </flux:select>
             @endif
@@ -315,7 +316,7 @@ new class extends Component {
                         @if ($this->customers->isNotEmpty())
                             <flux:table.cell>{{ $session->customer?->name ?? '—' }}</flux:table.cell>
                         @endif
-                        <flux:table.cell>{{ $session->room ?? '—' }}</flux:table.cell>
+                        <flux:table.cell>{{ $session->room?->name ?? '—' }}</flux:table.cell>
                         <flux:table.cell>
                             <flux:badge size="sm" :color="match ($session->status) {
                                 \App\Enums\SurveillanceSessionStatus::Pending => 'zinc',

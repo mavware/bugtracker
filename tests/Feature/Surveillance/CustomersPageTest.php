@@ -127,3 +127,51 @@ test('another user\'s customer cannot be removed', function () {
         ->test('pages::dashboard.customers')
         ->call('deleteCustomer', $customer->id);
 })->throws(ModelNotFoundException::class);
+
+test('a customer can be invited to the portal, and the link shown until it is cancelled', function () {
+    $user = User::factory()->professional()->create();
+    $customer = Customer::factory()->for($user)->create();
+
+    $component = Livewire::actingAs($user)
+        ->test('pages::dashboard.customers')
+        ->assertSeeHtml('data-test="invite-client-button"')
+        ->call('invite', $customer->id)
+        ->assertHasNoErrors();
+
+    $token = $customer->refresh()->portal_invite_token;
+    expect($token)->not->toBeNull();
+
+    $component
+        ->assertSeeHtml('data-test="invitation-link"')
+        ->assertSee(route('portal.invitations.show', ['token' => $token]))
+        ->call('revokeInvitation', $customer->id)
+        ->assertDontSeeHtml('data-test="invitation-link"')
+        ->assertSeeHtml('data-test="invite-client-button"');
+
+    expect($customer->refresh()->portal_invite_token)->toBeNull();
+});
+
+test('a linked customer shows their account and can have access removed', function () {
+    $user = User::factory()->professional()->create();
+    $client = User::factory()->create(['email' => 'alvarez@example.com']);
+    $customer = Customer::factory()->for($user)->linkedTo($client)->create();
+
+    Livewire::actingAs($user)
+        ->test('pages::dashboard.customers')
+        ->assertSee('alvarez@example.com')
+        ->assertDontSeeHtml('data-test="invite-client-button"')
+        ->call('unlinkClient', $customer->id)
+        ->assertDontSee('alvarez@example.com')
+        ->assertSeeHtml('data-test="invite-client-button"');
+
+    expect($customer->refresh()->client_user_id)->toBeNull()
+        ->and(User::find($client->id))->not->toBeNull();
+});
+
+test('another user\'s customer cannot be invited', function () {
+    $customer = Customer::factory()->create();
+
+    Livewire::actingAs(User::factory()->professional()->create())
+        ->test('pages::dashboard.customers')
+        ->call('invite', $customer->id);
+})->throws(ModelNotFoundException::class);

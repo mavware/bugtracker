@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Customer;
+use App\Models\Room;
 use App\Models\SurveillanceSession;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -19,8 +20,10 @@ new class extends Component {
     public SurveillanceSession $session;
 
     /**
-     * Which room the camera is watching. Grouping nights by room keeps the entry
-     * point map honest — it only makes sense to merge nights shot from one spot.
+     * The name of the room the camera is watching. Typed rather than picked:
+     * it is looked up, or created, among the rooms of the night's property, so
+     * grouping nights by room keeps the entry point map honest — it only makes
+     * sense to merge nights shot from one spot.
      */
     public string $room = '';
 
@@ -32,7 +35,7 @@ new class extends Component {
         Gate::authorize('update', $session);
 
         $this->session = $session;
-        $this->room = (string) $session->room;
+        $this->room = (string) $session->room?->name;
         $this->customer = (string) $session->customer_id;
     }
 
@@ -55,12 +58,16 @@ new class extends Component {
         return Auth::user()->customers()->orderBy('name')->get();
     }
 
+    /**
+     * The customer is saved first: a room belongs to a property, so the room
+     * name is then filed under the property the night now belongs to.
+     */
     private function save(): void
     {
         Gate::authorize('update', $this->session);
 
         $validated = $this->validate([
-            'room' => ['nullable', 'string', 'max:80'],
+            'room' => ['nullable', 'string', 'max:'.Room::NAME_MAX_LENGTH],
             'customer' => [
                 'nullable', 'integer',
                 Rule::exists('customers', 'id')->where('user_id', Auth::id()),
@@ -68,9 +75,10 @@ new class extends Component {
         ]);
 
         $this->session->update([
-            'room' => trim($validated['room']) !== '' ? trim($validated['room']) : null,
             'customer_id' => $validated['customer'] !== '' ? (int) $validated['customer'] : null,
         ]);
+
+        $this->session->moveToRoomNamed($validated['room']);
 
         // The card's Alpine listens for this to show "Saved" for a moment.
         $this->dispatch('night-details-saved');
@@ -117,7 +125,7 @@ new class extends Component {
             wire:model.live.debounce.500ms="room"
             :label="__('Room')"
             :placeholder="__('Kitchen')"
-            maxlength="80"
+            maxlength="{{ Room::NAME_MAX_LENGTH }}"
             data-test="session-room"
         />
     </div>

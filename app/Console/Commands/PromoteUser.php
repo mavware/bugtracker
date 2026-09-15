@@ -13,14 +13,14 @@ class PromoteUser extends Command
      *
      * @var string
      */
-    protected $signature = 'user:promote {email : The email address of the user} {--role=admin : The role to grant: admin or professional} {--demote : Make the account a plain homeowner instead}';
+    protected $signature = 'user:promote {email : The email address of the user} {--role=admin : The role to grant: admin, professional or homeowner} {--demote : Take the role away instead of granting it}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Set an account\'s role. Needed once to create the first admin.';
+    protected $description = 'Grant or revoke one of an account\'s roles. Needed once to create the first admin.';
 
     /**
      * Execute the console command.
@@ -36,9 +36,7 @@ class PromoteUser extends Command
             return self::FAILURE;
         }
 
-        $role = (bool) $this->option('demote')
-            ? UserRole::Homeowner
-            : UserRole::tryFrom((string) $this->option('role'));
+        $role = UserRole::tryFrom((string) $this->option('role'));
 
         if ($role === null) {
             $this->error('The role must be one of: '.implode(', ', array_column(UserRole::cases(), 'value')).'.');
@@ -46,14 +44,17 @@ class PromoteUser extends Command
             return self::FAILURE;
         }
 
-        $user->role = $role;
+        $demote = (bool) $this->option('demote');
+
+        $demote ? $user->revokeRole($role) : $user->grantRole($role);
         $user->save();
 
-        $this->info(match ($role) {
-            UserRole::Admin => "$user->email is now a site admin.",
-            UserRole::Professional => "$user->email is now a professional.",
-            UserRole::Homeowner => "$user->email is no longer a site admin or professional; the account is a homeowner.",
-        });
+        $label = strtolower($role->label());
+        $held = $user->roles->map(fn (UserRole $held): string => strtolower($held->label()))->implode(', ');
+
+        $this->info($demote
+            ? "$user->email is no longer a $label. Roles now: ".($held !== '' ? $held : 'none').'.'
+            : "$user->email is now a $label. Roles now: $held.");
 
         return self::SUCCESS;
     }

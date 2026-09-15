@@ -62,7 +62,7 @@ test('importing a night creates a finished session dated when it really happened
         ->and($session->user_id)->toBe($user->id)
         ->and($session->imported_local_id)->toBe('4f1a9d0e-7b7d-4c1e-9d5e-3f0a1b2c3d4e')
         ->and($session->name)->toBe('Night of Sep 8')
-        ->and($session->room)->toBe('Kitchen')
+        ->and($session->room?->name)->toBe('Kitchen')
         ->and($session->status)->toBe(SurveillanceSessionStatus::Completed)
         ->and($session->started_at->toIso8601ZuluString())->toBe('2026-09-09T00:30:00Z')
         ->and($session->ended_at->toIso8601ZuluString())->toBe('2026-09-09T05:30:00Z')
@@ -128,7 +128,7 @@ test('a discarded night is imported as aborted, and a night with no sightings st
 
     $session = SurveillanceSession::query()->sole();
     expect($session->status)->toBe(SurveillanceSessionStatus::Aborted)
-        ->and($session->room)->toBeNull()
+        ->and($session->room_id)->toBeNull()
         ->and($session->reference_image_path)->toBeNull()
         ->and($session->analytics['track_count'])->toBe(0);
 });

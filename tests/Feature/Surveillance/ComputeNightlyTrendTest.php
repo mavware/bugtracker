@@ -139,12 +139,12 @@ test(
  * @throws Exception
  */ 'it scopes nights to a room when one is given', function () {
         $user = User::factory()->create();
-        $kitchen = SurveillanceSession::factory()->for($user)->completed()->create(['room' => 'Kitchen', 'started_at' => Carbon::parse('2026-09-01 23:00')]);
-        $bathroom = SurveillanceSession::factory()->for($user)->completed()->create(['room' => 'Bathroom', 'started_at' => Carbon::parse('2026-09-02 23:00')]);
+        $kitchen = SurveillanceSession::factory()->for($user)->completed()->inRoom('Kitchen')->create(['started_at' => Carbon::parse('2026-09-01 23:00')]);
+        $bathroom = SurveillanceSession::factory()->for($user)->completed()->inRoom('Bathroom')->create(['started_at' => Carbon::parse('2026-09-02 23:00')]);
         BugTrack::factory()->count(2)->for($kitchen, 'session')->create();
         BugTrack::factory()->count(7)->for($bathroom, 'session')->create();
 
-        $trend = app(ComputeNightlyTrend::class)->handle($user, 'Kitchen');
+        $trend = app(ComputeNightlyTrend::class)->handle($user, $kitchen->room_id);
 
         expect($trend['nights'])->toHaveCount(1)
             ->and($trend['total_sightings'])->toBe(2);
@@ -178,11 +178,11 @@ test(
  * @throws Exception
  */ 'a room filter keeps that room\'s interventions and the ones that apply everywhere', function () {
         $user = User::factory()->create();
-        Intervention::factory()->for($user)->create(['room' => 'Kitchen', 'performed_on' => '2026-09-01', 'description' => 'Kitchen bait']);
-        Intervention::factory()->for($user)->create(['room' => null, 'performed_on' => '2026-09-02', 'description' => 'Sealed the front door']);
-        Intervention::factory()->for($user)->create(['room' => 'Bathroom', 'performed_on' => '2026-09-03', 'description' => 'Bathroom bait']);
+        $kitchenBait = Intervention::factory()->for($user)->inRoom('Kitchen')->create(['performed_on' => '2026-09-01', 'description' => 'Kitchen bait']);
+        Intervention::factory()->for($user)->create(['performed_on' => '2026-09-02', 'description' => 'Sealed the front door']);
+        Intervention::factory()->for($user)->inRoom('Bathroom')->create(['performed_on' => '2026-09-03', 'description' => 'Bathroom bait']);
 
-        $trend = app(ComputeNightlyTrend::class)->handle($user, 'Kitchen');
+        $trend = app(ComputeNightlyTrend::class)->handle($user, $kitchenBait->room_id);
 
         expect(array_column($trend['interventions'], 'description'))
             ->toBe(['Kitchen bait', 'Sealed the front door']);
@@ -234,11 +234,11 @@ test(
 test('it lists only the rooms recorded for the given customer', function () {
     $user = User::factory()->create();
     $alvarez = Customer::factory()->for($user)->create();
-    SurveillanceSession::factory()->for($user)->create(['customer_id' => $alvarez->id, 'room' => 'Kitchen']);
-    SurveillanceSession::factory()->for($user)->create(['customer_id' => null, 'room' => 'Garage']);
+    SurveillanceSession::factory()->for($user)->inRoom('Kitchen')->create(['customer_id' => $alvarez->id]);
+    SurveillanceSession::factory()->for($user)->inRoom('Garage')->create(['customer_id' => null]);
 
-    expect(app(ComputeNightlyTrend::class)->rooms($user, $alvarez->id))->toBe(['Kitchen'])
-        ->and(app(ComputeNightlyTrend::class)->rooms($user))->toBe(['Garage', 'Kitchen']);
+    expect(app(ComputeNightlyTrend::class)->rooms($user, $alvarez->id)->pluck('name')->all())->toBe(['Kitchen'])
+        ->and(app(ComputeNightlyTrend::class)->rooms($user)->pluck('name')->all())->toBe(['Garage', 'Kitchen']);
 });
 
 test(
@@ -261,11 +261,11 @@ test(
 
 test('it lists the distinct rooms the user has recorded', function () {
     $user = User::factory()->create();
-    SurveillanceSession::factory()->for($user)->create(['room' => 'Kitchen']);
-    SurveillanceSession::factory()->for($user)->create(['room' => 'Kitchen']);
-    SurveillanceSession::factory()->for($user)->create(['room' => 'Bathroom']);
-    SurveillanceSession::factory()->for($user)->create(['room' => null]);
-    SurveillanceSession::factory()->create(['room' => 'Someone else\'s garage']);
+    SurveillanceSession::factory()->for($user)->inRoom('Kitchen')->create();
+    SurveillanceSession::factory()->for($user)->inRoom('Kitchen')->create();
+    SurveillanceSession::factory()->for($user)->inRoom('Bathroom')->create();
+    SurveillanceSession::factory()->for($user)->create();
+    SurveillanceSession::factory()->inRoom('Someone else\'s garage')->create();
 
-    expect(app(ComputeNightlyTrend::class)->rooms($user))->toBe(['Bathroom', 'Kitchen']);
+    expect(app(ComputeNightlyTrend::class)->rooms($user)->pluck('name')->all())->toBe(['Bathroom', 'Kitchen']);
 });

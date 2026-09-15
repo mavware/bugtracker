@@ -15,6 +15,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | packages/surveillance/** | .ai/rules/packages-surveillance.md |
 | resources/views/pages/surveillance/** | .ai/rules/pages-surveillance.md |
 | resources/views/pages/** | .ai/rules/pages.md |
+| resources/views/pages/portal/** | .ai/rules/portal.md |
 | routes/** | .ai/rules/routes.md |
 | app/Http/Controllers/Surveillance/** | .ai/rules/surveillance.md |
 | tests/js/** | .ai/rules/tests-js.md |

@@ -23,7 +23,7 @@ class CreateNewUser implements CreatesNewUsers
     {
         $validated = Validator::make($input, [
             ...$this->profileRules(),
-            'password' => $this->passwordRules(),
+            'password' => $this->unconfirmedPasswordRules(),
             'role' => ['nullable', Rule::enum(UserRole::class)->only(UserRole::selfAssignable())],
         ])->validate();
 
@@ -35,7 +35,7 @@ class CreateNewUser implements CreatesNewUsers
 
         // role is not fillable, so it is set by hand — and only from the roles an
         // account may choose for itself; admin is never one of them.
-        $user->role = UserRole::tryFrom($input['role'] ?? '') ?? UserRole::Homeowner;
+        $user->setRoles([UserRole::tryFrom($input['role'] ?? '') ?? UserRole::Homeowner]);
         $user->save();
 
         return $user;

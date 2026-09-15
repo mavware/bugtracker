@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\SurveillanceSessionStatus;
+use App\Models\Room;
 use App\Models\SurveillanceSession;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -24,6 +25,18 @@ class SurveillanceSessionFactory extends Factory
             'name' => 'Night of '.$this->faker->date('M j'),
             'status' => SurveillanceSessionStatus::Pending,
         ];
+    }
+
+    /**
+     * Filed in the room with this name at the session's own property, created
+     * on the way if it is new. The owner and customer are only known once the
+     * row exists, so the room is attached after creation.
+     */
+    public function inRoom(string $name): static
+    {
+        return $this->afterCreating(function (SurveillanceSession $session) use ($name) {
+            $session->update(['room_id' => Room::resolve($session->user_id, $session->customer_id, $name)?->id]);
+        });
     }
 
     /**
