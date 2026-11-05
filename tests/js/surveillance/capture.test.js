@@ -912,7 +912,10 @@ describe("capture page", () => {
             expect(clocks[0].textContent).not.toBe("");
             expect(clocks[1].textContent).toBe(clocks[0].textContent);
 
-            await vi.advanceTimersByTimeAsync(2 * HOUR - 1000);
+            // The clock is jumped to just short of the deadline rather than run: two
+            // hours of fake frames took seconds locally and timed out on CI.
+            vi.setSystemTime(Date.now() + 2 * HOUR - 2000);
+            await vi.advanceTimersByTimeAsync(1000);
             expect(stubs.uploaderEnd).not.toHaveBeenCalled();
 
             await vi.advanceTimersByTimeAsync(2000);
