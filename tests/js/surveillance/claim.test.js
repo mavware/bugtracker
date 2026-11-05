@@ -1,27 +1,30 @@
 // @vitest-environment happy-dom
 
 // The dashboard's per-night import list, driven against a seeded store.
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { buildLocalNight, InMemoryNightStore } from '@mavware/bug-surveillance';
+import { afterEach, beforeEach, describe, expect, test, vi } from "vite-plus/test";
+import { buildLocalNight, InMemoryNightStore } from "@mavware/bug-surveillance";
 
 const stubs = vi.hoisted(() => ({
     store: null,
     claimNight: vi.fn(),
 }));
 
-vi.mock('@mavware/bug-surveillance', async (importOriginal) => ({
+vi.mock("@mavware/bug-surveillance", async (importOriginal) => ({
     ...(await importOriginal()),
     openNightStore: vi.fn(async () => stubs.store),
 }));
 
-vi.mock('../../../resources/js/surveillance/claimNight.js', () => ({
+vi.mock("../../../resources/js/surveillance/claimNight.js", () => ({
     claimNight: stubs.claimNight,
 }));
 
 const CONFIG = {
-    csrfToken: 'test-csrf-token',
-    routes: { import: '/surveillance/import' },
-    customers: [{ id: 7, name: 'Alvarez' }, { id: 9, name: 'Brody' }],
+    csrfToken: "test-csrf-token",
+    routes: { import: "/surveillance/import" },
+    customers: [
+        { id: 7, name: "Alvarez" },
+        { id: 9, name: "Brody" },
+    ],
 };
 
 const el = (name) => document.querySelector(`[data-claim="${name}"]`);
@@ -56,7 +59,7 @@ function mountPage(config = CONFIG) {
 
 async function bootPage() {
     vi.resetModules();
-    await import('../../../resources/js/surveillance/claim.js');
+    await import("../../../resources/js/surveillance/claim.js");
     await settle();
 }
 
@@ -64,13 +67,13 @@ const settle = () => new Promise((resolve) => setTimeout(resolve, 20));
 
 const night = (id, startedAt, extra = {}) => ({
     ...buildLocalNight({ id, startedAt, frameWidth: 1280, frameHeight: 720, settings: {} }),
-    status: 'completed',
+    status: "completed",
     endedAt: startedAt + 3600000,
     analytics: { track_count: 3, entry_zones: [], exit_zones: [] },
     ...extra,
 });
 
-describe('dashboard import list', () => {
+describe("dashboard import list", () => {
     beforeEach(() => {
         stubs.store = new InMemoryNightStore();
         stubs.store.volatile = false;
@@ -79,7 +82,7 @@ describe('dashboard import list', () => {
         stubs.claimNight.mockImplementation(async (store, nightId) => {
             await store.deleteNight(nightId);
 
-            return { sessionId: 42, reportUrl: '/surveillance/42/report' };
+            return { sessionId: 42, reportUrl: "/surveillance/42/report" };
         });
         window.confirm = vi.fn(() => true);
         window.Livewire = { dispatch: vi.fn() };
@@ -91,97 +94,110 @@ describe('dashboard import list', () => {
         vi.unstubAllGlobals();
     });
 
-    test('stays hidden while this browser holds no nights', async () => {
+    test("stays hidden while this browser holds no nights", async () => {
         await bootPage();
 
-        expect(document.getElementById('claim-nights').classList.contains('hidden')).toBe(true);
+        expect(document.getElementById("claim-nights").classList.contains("hidden")).toBe(true);
     });
 
-    test('lists every night with its own room field and customer choice, newest first', async () => {
-        await stubs.store.putNight(night('old', new Date(2026, 8, 7, 22, 0).getTime(), { claimedSessionId: 3 }));
-        await stubs.store.putNight(night('new', new Date(2026, 8, 8, 22, 0).getTime()));
+    test("lists every night with its own room field and customer choice, newest first", async () => {
+        await stubs.store.putNight(
+            night("old", new Date(2026, 8, 7, 22, 0).getTime(), { claimedSessionId: 3 }),
+        );
+        await stubs.store.putNight(night("new", new Date(2026, 8, 8, 22, 0).getTime()));
         await bootPage();
 
-        expect(document.getElementById('claim-nights').classList.contains('hidden')).toBe(false);
-        expect([...rows()].map((row) => row.dataset.nightId)).toEqual(['new', 'old']);
-        expect(el('count').textContent).toBe('1');
+        expect(document.getElementById("claim-nights").classList.contains("hidden")).toBe(false);
+        expect([...rows()].map((row) => row.dataset.nightId)).toEqual(["new", "old"]);
+        expect(el("count").textContent).toBe("1");
 
         const [pending, saved] = rows();
-        expect(cell(pending, 'name').textContent).toBe('Night of Sep 8');
-        expect(cell(pending, 'controls').classList.contains('hidden')).toBe(false);
-        expect(cell(pending, 'saved').classList.contains('hidden')).toBe(true);
-        expect([...cell(pending, 'customer').options].map((option) => option.textContent)).toEqual(['No customer', 'Alvarez', 'Brody']);
-        expect(cell(pending, 'customer').classList.contains('hidden')).toBe(false);
+        expect(cell(pending, "name").textContent).toBe("Night of Sep 8");
+        expect(cell(pending, "controls").classList.contains("hidden")).toBe(false);
+        expect(cell(pending, "saved").classList.contains("hidden")).toBe(true);
+        expect([...cell(pending, "customer").options].map((option) => option.textContent)).toEqual([
+            "No customer",
+            "Alvarez",
+            "Brody",
+        ]);
+        expect(cell(pending, "customer").classList.contains("hidden")).toBe(false);
 
-        expect(cell(saved, 'controls').classList.contains('hidden')).toBe(true);
-        expect(cell(saved, 'saved').classList.contains('hidden')).toBe(false);
+        expect(cell(saved, "controls").classList.contains("hidden")).toBe(true);
+        expect(cell(saved, "saved").classList.contains("hidden")).toBe(false);
     });
 
-    test('a user with no customers is not shown an empty customer choice', async () => {
+    test("a user with no customers is not shown an empty customer choice", async () => {
         mountPage({ ...CONFIG, customers: [] });
-        await stubs.store.putNight(night('n1', new Date(2026, 8, 8, 22, 0).getTime()));
+        await stubs.store.putNight(night("n1", new Date(2026, 8, 8, 22, 0).getTime()));
         await bootPage();
 
-        expect(cell(rows()[0], 'customer').classList.contains('hidden')).toBe(true);
+        expect(cell(rows()[0], "customer").classList.contains("hidden")).toBe(true);
     });
 
-    test('importing one night sends that row\'s room and customer, drops its copy, and tells the sessions list', async () => {
-        await stubs.store.putNight(night('a', new Date(2026, 8, 7, 22, 0).getTime()));
-        await stubs.store.putNight(night('b', new Date(2026, 8, 8, 22, 0).getTime()));
+    test("importing one night sends that row's room and customer, drops its copy, and tells the sessions list", async () => {
+        await stubs.store.putNight(night("a", new Date(2026, 8, 7, 22, 0).getTime()));
+        await stubs.store.putNight(night("b", new Date(2026, 8, 8, 22, 0).getTime()));
         await bootPage();
 
         const [rowB, rowA] = rows();
-        cell(rowB, 'room').value = 'Kitchen';
-        cell(rowB, 'customer').value = '9';
-        cell(rowA, 'room').value = 'Hall';
-        cell(rowA, 'customer').value = '7';
+        cell(rowB, "room").value = "Kitchen";
+        cell(rowB, "customer").value = "9";
+        cell(rowA, "room").value = "Hall";
+        cell(rowA, "customer").value = "7";
 
-        cell(rowB, 'import').click();
+        cell(rowB, "import").click();
         await settle();
 
         expect(stubs.claimNight).toHaveBeenCalledTimes(1);
-        expect(stubs.claimNight.mock.calls[0][1]).toBe('b');
-        expect(stubs.claimNight.mock.calls[0][2]).toMatchObject({ importUrl: '/surveillance/import', csrfToken: 'test-csrf-token', room: 'Kitchen', customerId: '9' });
+        expect(stubs.claimNight.mock.calls[0][1]).toBe("b");
+        expect(stubs.claimNight.mock.calls[0][2]).toMatchObject({
+            importUrl: "/surveillance/import",
+            csrfToken: "test-csrf-token",
+            room: "Kitchen",
+            customerId: "9",
+        });
 
         // B's local copy is gone, and the other row keeps what was typed into it.
-        expect([...rows()].map((row) => row.dataset.nightId)).toEqual(['a']);
-        expect(el('count').textContent).toBe('1');
-        expect(cell(rows()[0], 'room').value).toBe('Hall');
-        expect(cell(rows()[0], 'customer').value).toBe('7');
-        expect(window.Livewire.dispatch).toHaveBeenCalledWith('night-imported');
+        expect([...rows()].map((row) => row.dataset.nightId)).toEqual(["a"]);
+        expect(el("count").textContent).toBe("1");
+        expect(cell(rows()[0], "room").value).toBe("Hall");
+        expect(cell(rows()[0], "customer").value).toBe("7");
+        expect(window.Livewire.dispatch).toHaveBeenCalledWith("night-imported");
     });
 
     // A real click lands on the label span inside the button, which has its own
     // data-cell; the handler has to find the button, not the span.
-    test('clicking the label inside the Import button imports the night', async () => {
-        await stubs.store.putNight(night('n1', new Date(2026, 8, 8, 22, 0).getTime()));
+    test("clicking the label inside the Import button imports the night", async () => {
+        await stubs.store.putNight(night("n1", new Date(2026, 8, 8, 22, 0).getTime()));
         await bootPage();
 
-        cell(rows()[0], 'import-label').click();
+        cell(rows()[0], "import-label").click();
         await settle();
 
         expect(stubs.claimNight).toHaveBeenCalledTimes(1);
-        expect(stubs.claimNight.mock.calls[0][1]).toBe('n1');
+        expect(stubs.claimNight.mock.calls[0][1]).toBe("n1");
     });
 
-    test('an unsaved night can be removed from the device without importing it', async () => {
-        await stubs.store.putNight(night('n1', new Date(2026, 8, 8, 22, 0).getTime()));
-        await stubs.store.putNight(night('n2', new Date(2026, 8, 9, 22, 0).getTime()));
+    test("an unsaved night can be removed from the device without importing it", async () => {
+        await stubs.store.putNight(night("n1", new Date(2026, 8, 8, 22, 0).getTime()));
+        await stubs.store.putNight(night("n2", new Date(2026, 8, 9, 22, 0).getTime()));
         await bootPage();
 
-        cell(rows()[0], 'discard').click();
+        cell(rows()[0], "discard").click();
         await settle();
 
-        expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('never saved'));
+        expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining("never saved"));
         expect(stubs.claimNight).not.toHaveBeenCalled();
-        expect(await stubs.store.getNight('n2')).toBeNull();
-        expect([...rows()].map((row) => row.dataset.nightId)).toEqual(['n1']);
+        expect(await stubs.store.getNight("n2")).toBeNull();
+        expect([...rows()].map((row) => row.dataset.nightId)).toEqual(["n1"]);
     });
 
     // On a page with the layout's dialog the question is asked there, in the
     // app's own clothes, and the browser box never appears.
-    test('removal asks through the themed dialog when the page has one', async () => {
-        document.body.insertAdjacentHTML('beforeend', `
+    test("removal asks through the themed dialog when the page has one", async () => {
+        document.body.insertAdjacentHTML(
+            "beforeend",
+            `
             <dialog data-confirm-dialog>
                 <span data-confirm="icon"></span>
                 <h2 data-confirm="title"></h2>
@@ -190,89 +206,98 @@ describe('dashboard import list', () => {
                 <button data-confirm="accept"><span data-confirm="accept-label">Confirm</span></button>
                 <button data-confirm="accept-danger" class="hidden"><span data-confirm="accept-danger-label">Confirm</span></button>
             </dialog>
-        `);
-        await stubs.store.putNight(night('n1', new Date(2026, 8, 8, 22, 0).getTime()));
+        `,
+        );
+        await stubs.store.putNight(night("n1", new Date(2026, 8, 8, 22, 0).getTime()));
         await bootPage();
 
-        cell(rows()[0], 'discard').click();
+        cell(rows()[0], "discard").click();
         await settle();
 
-        const dialog = document.querySelector('dialog[data-confirm-dialog]');
+        const dialog = document.querySelector("dialog[data-confirm-dialog]");
         expect(dialog.open).toBe(true);
-        expect(document.querySelector('[data-confirm="title"]').textContent).toBe('Delete this night from this device?');
-        expect(document.querySelector('[data-confirm="accept-danger-label"]').textContent).toBe('Delete night');
+        expect(document.querySelector('[data-confirm="title"]').textContent).toBe(
+            "Delete this night from this device?",
+        );
+        expect(document.querySelector('[data-confirm="accept-danger-label"]').textContent).toBe(
+            "Delete night",
+        );
         expect(window.confirm).not.toHaveBeenCalled();
-        expect(await stubs.store.getNight('n1')).not.toBeNull();
+        expect(await stubs.store.getNight("n1")).not.toBeNull();
 
         document.querySelector('[data-confirm="accept-danger"]').click();
         await settle();
 
-        expect(await stubs.store.getNight('n1')).toBeNull();
+        expect(await stubs.store.getNight("n1")).toBeNull();
         expect(rows()).toHaveLength(0);
     });
 
-    test('declining the removal keeps the night', async () => {
+    test("declining the removal keeps the night", async () => {
         window.confirm = vi.fn(() => false);
-        await stubs.store.putNight(night('n1', new Date(2026, 8, 8, 22, 0).getTime()));
+        await stubs.store.putNight(night("n1", new Date(2026, 8, 8, 22, 0).getTime()));
         await bootPage();
 
-        cell(rows()[0], 'discard').click();
+        cell(rows()[0], "discard").click();
         await settle();
 
-        expect(await stubs.store.getNight('n1')).not.toBeNull();
+        expect(await stubs.store.getNight("n1")).not.toBeNull();
         expect(rows()).toHaveLength(1);
     });
 
-    test('importing the last night hides the panel', async () => {
-        await stubs.store.putNight(night('n1', new Date(2026, 8, 8, 22, 0).getTime()));
+    test("importing the last night hides the panel", async () => {
+        await stubs.store.putNight(night("n1", new Date(2026, 8, 8, 22, 0).getTime()));
         await bootPage();
 
-        cell(rows()[0], 'import').click();
+        cell(rows()[0], "import").click();
         await settle();
 
         expect(rows()).toHaveLength(0);
-        expect(document.getElementById('claim-nights').classList.contains('hidden')).toBe(true);
+        expect(document.getElementById("claim-nights").classList.contains("hidden")).toBe(true);
     });
 
-    test('a night with no customer chosen is sent with none', async () => {
-        await stubs.store.putNight(night('n1', new Date(2026, 8, 8, 22, 0).getTime()));
+    test("a night with no customer chosen is sent with none", async () => {
+        await stubs.store.putNight(night("n1", new Date(2026, 8, 8, 22, 0).getTime()));
         await bootPage();
 
-        cell(rows()[0], 'import').click();
+        cell(rows()[0], "import").click();
         await settle();
 
-        expect(stubs.claimNight.mock.calls[0][2]).toMatchObject({ room: '', customerId: null });
+        expect(stubs.claimNight.mock.calls[0][2]).toMatchObject({ room: "", customerId: null });
     });
 
-    test('a failed import is explained and the row can be tried again', async () => {
-        stubs.claimNight.mockRejectedValueOnce(new Error('Could not save this night to your account (HTTP 500).'));
-        await stubs.store.putNight(night('n1', new Date(2026, 8, 8, 22, 0).getTime()));
+    test("a failed import is explained and the row can be tried again", async () => {
+        stubs.claimNight.mockRejectedValueOnce(
+            new Error("Could not save this night to your account (HTTP 500)."),
+        );
+        await stubs.store.putNight(night("n1", new Date(2026, 8, 8, 22, 0).getTime()));
         await bootPage();
 
-        cell(rows()[0], 'import').click();
+        cell(rows()[0], "import").click();
         await settle();
 
-        expect(el('progress').textContent).toContain('HTTP 500');
+        expect(el("progress").textContent).toContain("HTTP 500");
         expect(rows()).toHaveLength(1);
-        expect(cell(rows()[0], 'import').hasAttribute('disabled')).toBe(false);
-        expect(cell(rows()[0], 'import-label').textContent).toBe('Import');
-        expect(await stubs.store.getNight('n1')).not.toBeNull();
+        expect(cell(rows()[0], "import").hasAttribute("disabled")).toBe(false);
+        expect(cell(rows()[0], "import-label").textContent).toBe("Import");
+        expect(await stubs.store.getNight("n1")).not.toBeNull();
     });
 
     // A copy kept by its own report page still shows here, and its row is the
     // one place to clear it; clearing the last one hides the panel.
-    test('a copy saved from its report page can be removed from its row', async () => {
-        await stubs.store.putNight(night('n1', new Date(2026, 8, 8, 22, 0).getTime(), { claimedSessionId: 3 }));
+    test("a copy saved from its report page can be removed from its row", async () => {
+        await stubs.store.putNight(
+            night("n1", new Date(2026, 8, 8, 22, 0).getTime(), { claimedSessionId: 3 }),
+        );
         await bootPage();
 
-        expect(el('pending').classList.contains('hidden')).toBe(true);
-        expect(el('all-saved').classList.contains('hidden')).toBe(false);
+        expect(el("pending").classList.contains("hidden")).toBe(true);
+        expect(el("all-saved").classList.contains("hidden")).toBe(false);
 
-        cell(rows()[0], 'remove').click();
+        cell(rows()[0], "remove").click();
         await settle();
 
         expect(window.confirm).toHaveBeenCalled();
         expect(await stubs.store.listNights()).toHaveLength(0);
-        expect(document.getElementById('claim-nights').classList.contains('hidden')).toBe(true);
+        expect(document.getElementById("claim-nights").classList.contains("hidden")).toBe(true);
     });
 });

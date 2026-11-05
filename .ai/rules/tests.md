@@ -10,3 +10,6 @@ tests/Pest.php binds ->beforeEach(fn () => Storage::fake('local')) to the whole 
 
 ## A cached config makes the test suite wipe the local database
 If bootstrap/cache/config.php exists, Laravel ignores the <env> overrides in phpunit.xml, so tests run with APP_ENV=local, the database session driver and the real database/database.sqlite file instead of :memory:. RefreshDatabase then runs migrate:fresh against the developer's own database and wipes it, and form posts fail with 419 because CSRF is only skipped in the testing environment. This happened on 2026-09-11. Before running the suite, check that bootstrap/cache/config.php is absent, and run `php artisan config:clear` if it is not. Do not "fix" 419s in tests by touching CSRF middleware.
+
+## Livewire tests: a 404 from findOrFail is a response, not an exception
+Since livewire/livewire 4.4.8 the test RequestBroker lets ModelNotFoundException reach the exception handler, so a Livewire component action that calls findOrFail on another user's record produces a 404 response instead of throwing. Assert it with `->call('action', $id)->assertNotFound()`; `->throws(ModelNotFoundException::class)` no longer fails the way you expect (the test reports "no exception thrown"). Five tests were converted on 2026-11-05 when the dependency update landed.

@@ -3,7 +3,6 @@
 use App\Models\Customer;
 use App\Models\SurveillanceSession;
 use App\Models\User;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Livewire\Livewire;
 
 test('guests are redirected to the login page', function () {
@@ -117,16 +116,18 @@ test('another user\'s customer cannot be edited', function () {
 
     Livewire::actingAs(User::factory()->professional()->create())
         ->test('pages::dashboard.customers')
-        ->call('edit', $customer->id);
-})->throws(ModelNotFoundException::class);
+        ->call('edit', $customer->id)
+        ->assertNotFound();
+});
 
 test('another user\'s customer cannot be removed', function () {
     $customer = Customer::factory()->create();
 
     Livewire::actingAs(User::factory()->professional()->create())
         ->test('pages::dashboard.customers')
-        ->call('deleteCustomer', $customer->id);
-})->throws(ModelNotFoundException::class);
+        ->call('deleteCustomer', $customer->id)
+        ->assertNotFound();
+});
 
 test('a customer can be invited to the portal, and the link shown until it is cancelled', function () {
     $user = User::factory()->professional()->create();
@@ -173,5 +174,6 @@ test('another user\'s customer cannot be invited', function () {
 
     Livewire::actingAs(User::factory()->professional()->create())
         ->test('pages::dashboard.customers')
-        ->call('invite', $customer->id);
-})->throws(ModelNotFoundException::class);
+        ->call('invite', $customer->id)
+        ->assertNotFound();
+});

@@ -1,13 +1,13 @@
 {
     "name": "@mavware/bug-surveillance-demo",
-    "private": true,
     "version": "0.1.0",
+    "private": true,
     "description": "A static demo of @mavware/bug-surveillance: watch a room overnight from a browser camera, no account and no server.",
     "type": "module",
     "scripts": {
-        "dev": "vite",
-        "build": "vite build",
-        "preview": "vite preview"
+        "dev": "vp dev",
+        "build": "vp build",
+        "preview": "vp preview"
     },
     "dependencies": {
         "@mavware/bug-surveillance": "*"

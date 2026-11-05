@@ -41,3 +41,8 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      # vite-plus is pinned exactly and an upgrade needs `vp migrate` (it rewrites
+      # the test imports and the `vite` alias), so it is bumped by hand. See
+      # .ai/rules/package-json.md.
+      - dependency-name: "vite-plus"

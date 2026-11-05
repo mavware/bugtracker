@@ -5,7 +5,6 @@ use App\Models\Intervention;
 use App\Models\Room;
 use App\Models\SurveillanceSession;
 use App\Models\User;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Carbon;
 use Livewire\Livewire;
 
@@ -109,5 +108,6 @@ test('another user\'s intervention cannot be removed', function () {
 
     Livewire::actingAs(User::factory()->create())
         ->test('pages::dashboard.trends')
-        ->call('deleteIntervention', $intervention->id);
-})->throws(ModelNotFoundException::class);
+        ->call('deleteIntervention', $intervention->id)
+        ->assertNotFound();
+});

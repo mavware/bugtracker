@@ -12,6 +12,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/js/** | .ai/rules/js.md |
 | resources/views/layouts/** | .ai/rules/layouts.md |
 | app/Http/Middleware/** | .ai/rules/middleware.md |
+| package.json | .ai/rules/package-json.md |
 | packages/surveillance/** | .ai/rules/packages-surveillance.md |
 | resources/views/pages/surveillance/** | .ai/rules/pages-surveillance.md |
 | resources/views/pages/** | .ai/rules/pages.md |

@@ -1,5 +1,5 @@
-import { describe, expect, test } from 'vitest';
-import { Tracker } from '../src/tracker.js';
+import { describe, expect, test } from "vite-plus/test";
+import { Tracker } from "../src/tracker.js";
 
 const SESSION_START = 1000;
 const SCALE = 4;
@@ -37,8 +37,8 @@ function idle(tracker, frames, startingAt = SESSION_START + 1000) {
     }
 }
 
-describe('Tracker', () => {
-    test('a single sighting is only a candidate, not yet a track', () => {
+describe("Tracker", () => {
+    test("a single sighting is only a candidate, not yet a track", () => {
         const { tracker, closed } = makeTracker();
 
         tracker.update([{ cx: 10, cy: 10 }], SESSION_START);
@@ -48,7 +48,7 @@ describe('Tracker', () => {
         expect(closed).toHaveLength(0);
     });
 
-    test('a blob seen repeatedly is confirmed and gets an opening snapshot', () => {
+    test("a blob seen repeatedly is confirmed and gets an opening snapshot", () => {
         const { tracker, crops } = makeTracker();
 
         walk(tracker, { frames: 3 });
@@ -58,7 +58,7 @@ describe('Tracker', () => {
         expect(crops).toEqual([[80, 40]]);
     });
 
-    test('a confirmed track is handed over once the bug leaves, in full-frame pixels', () => {
+    test("a confirmed track is handed over once the bug leaves, in full-frame pixels", () => {
         const { tracker, closed } = makeTracker();
 
         walk(tracker);
@@ -76,13 +76,13 @@ describe('Tracker', () => {
                 [400, 120, 40],
                 [500, 140, 40],
             ],
-            start_crop: 'crop:80,40',
-            end_crop: 'crop:140,40',
+            start_crop: "crop:80,40",
+            end_crop: "crop:140,40",
         });
         expect(closed[0].client_track_id).toMatch(/^[0-9a-f-]{36}$/);
     });
 
-    test('a track is not handed over until the bug has been gone a while', () => {
+    test("a track is not handed over until the bug has been gone a while", () => {
         const { tracker, closed } = makeTracker();
 
         walk(tracker);
@@ -95,7 +95,7 @@ describe('Tracker', () => {
         expect(closed).toHaveLength(1);
     });
 
-    test('something that twitches in place is discarded as noise', () => {
+    test("something that twitches in place is discarded as noise", () => {
         const { tracker, closed } = makeTracker();
 
         walk(tracker, { step: 0, frames: 10 });
@@ -104,7 +104,7 @@ describe('Tracker', () => {
         expect(closed).toHaveLength(0);
     });
 
-    test('a track too short to be worth reporting is discarded', () => {
+    test("a track too short to be worth reporting is discarded", () => {
         const { tracker, closed } = makeTracker();
 
         walk(tracker, { frames: 3 });
@@ -113,7 +113,7 @@ describe('Tracker', () => {
         expect(closed).toHaveLength(0);
     });
 
-    test('a blob that jumps too far is a new track rather than the same one', () => {
+    test("a blob that jumps too far is a new track rather than the same one", () => {
         const { tracker } = makeTracker();
 
         tracker.update([{ cx: 10, cy: 10 }], SESSION_START);
@@ -122,14 +122,17 @@ describe('Tracker', () => {
         expect(tracker.candidates).toHaveLength(2);
     });
 
-    test('two bugs at once stay two tracks', () => {
+    test("two bugs at once stay two tracks", () => {
         const { tracker, closed } = makeTracker();
 
         for (let frame = 0; frame < 6; frame++) {
-            tracker.update([
-                { cx: 10 + 5 * frame, cy: 10 },
-                { cx: 200 + 5 * frame, cy: 200 },
-            ], SESSION_START + frame * 100);
+            tracker.update(
+                [
+                    { cx: 10 + 5 * frame, cy: 10 },
+                    { cx: 200 + 5 * frame, cy: 200 },
+                ],
+                SESSION_START + frame * 100,
+            );
         }
 
         expect(tracker.active).toHaveLength(2);
@@ -141,7 +144,7 @@ describe('Tracker', () => {
         expect(closed[1].points[0]).toEqual([0, 800, 800]);
     });
 
-    test('ending the night hands over whatever is still open', () => {
+    test("ending the night hands over whatever is still open", () => {
         const { tracker, closed } = makeTracker();
 
         walk(tracker);
@@ -155,7 +158,7 @@ describe('Tracker', () => {
         expect(tracker.candidates).toHaveLength(0);
     });
 
-    test('a track that runs too long is cut short so uploads stay small', () => {
+    test("a track that runs too long is cut short so uploads stay small", () => {
         const { tracker, closed } = makeTracker({ maxPointsPerTrack: 5 });
 
         walk(tracker, { frames: 5 });
@@ -165,7 +168,7 @@ describe('Tracker', () => {
         expect(tracker.active).toHaveLength(0);
     });
 
-    test('offsets never go negative when a frame arrives before the session start', () => {
+    test("offsets never go negative when a frame arrives before the session start", () => {
         const { tracker, closed } = makeTracker();
 
         tracker.update([{ cx: 10, cy: 10 }], SESSION_START - 500);

@@ -1,28 +1,33 @@
 // @vitest-environment happy-dom
 
 // The list of nights on the watch page, driven against a seeded store.
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { buildLocalNight, InMemoryNightStore } from '@mavware/bug-surveillance';
+import { afterEach, beforeEach, describe, expect, test, vi } from "vite-plus/test";
+import { buildLocalNight, InMemoryNightStore } from "@mavware/bug-surveillance";
 
 const stubs = vi.hoisted(() => ({
     store: null,
     claimNight: vi.fn(),
 }));
 
-vi.mock('@mavware/bug-surveillance', async (importOriginal) => ({
+vi.mock("@mavware/bug-surveillance", async (importOriginal) => ({
     ...(await importOriginal()),
     openNightStore: vi.fn(async () => stubs.store),
 }));
 
-vi.mock('../../../resources/js/surveillance/claimNight.js', () => ({
+vi.mock("../../../resources/js/surveillance/claimNight.js", () => ({
     claimNight: stubs.claimNight,
 }));
 
 const CONFIG = {
-    mode: 'local',
+    mode: "local",
     authenticated: true,
-    csrfToken: 'test-csrf-token',
-    routes: { report: '/watch/00000000-0000-4000-8000-000000000000/report', watch: '/watch', import: '/surveillance/import', register: '/register' },
+    csrfToken: "test-csrf-token",
+    routes: {
+        report: "/watch/00000000-0000-4000-8000-000000000000/report",
+        watch: "/watch",
+        import: "/surveillance/import",
+        register: "/register",
+    },
 };
 
 const el = (name) => document.querySelector(`[data-nights="${name}"]`);
@@ -60,19 +65,19 @@ function mountPage() {
 
 async function bootPage() {
     vi.resetModules();
-    await import('../../../resources/js/surveillance/localNights.js');
+    await import("../../../resources/js/surveillance/localNights.js");
     await new Promise((resolve) => setTimeout(resolve, 20));
 }
 
 const night = (id, startedAt, extra = {}) => ({
     ...buildLocalNight({ id, startedAt, frameWidth: 1280, frameHeight: 720, settings: {} }),
-    status: 'completed',
+    status: "completed",
     endedAt: startedAt + 3600000,
     analytics: { track_count: 3, entry_zones: [], exit_zones: [] },
     ...extra,
 });
 
-describe('local nights list', () => {
+describe("local nights list", () => {
     beforeEach(() => {
         stubs.store = new InMemoryNightStore();
         stubs.store.volatile = false;
@@ -86,133 +91,163 @@ describe('local nights list', () => {
         vi.unstubAllGlobals();
     });
 
-    test('stays hidden while this browser holds no nights', async () => {
+    test("stays hidden while this browser holds no nights", async () => {
         await bootPage();
 
-        expect(document.getElementById('local-nights').classList.contains('hidden')).toBe(true);
+        expect(document.getElementById("local-nights").classList.contains("hidden")).toBe(true);
     });
 
-    test('lists nights newest first with a report link and whether they are saved', async () => {
-        await stubs.store.putNight(night('old', new Date(2026, 8, 7, 22, 0).getTime(), { claimedSessionId: 3 }));
-        await stubs.store.putNight(night('new', new Date(2026, 8, 8, 22, 0).getTime()));
+    test("lists nights newest first with a report link and whether they are saved", async () => {
+        await stubs.store.putNight(
+            night("old", new Date(2026, 8, 7, 22, 0).getTime(), { claimedSessionId: 3 }),
+        );
+        await stubs.store.putNight(night("new", new Date(2026, 8, 8, 22, 0).getTime()));
         await bootPage();
 
-        expect(document.getElementById('local-nights').classList.contains('hidden')).toBe(false);
-        expect([...rows()].map((row) => row.dataset.nightId)).toEqual(['new', 'old']);
-        expect(rows()[0].querySelector('[data-cell="name"]').textContent).toBe('Night of Sep 8');
-        expect(rows()[0].querySelector('[data-cell="sightings"]').textContent).toBe('3');
-        expect(rows()[0].querySelector('[data-cell="report"]').getAttribute('href')).toBe('/watch/new/report');
-        expect(rows()[1].querySelector('[data-cell="status"]').textContent).toContain('saved to account');
-        expect(rows()[1].querySelector('[data-cell="claim"]').classList.contains('hidden')).toBe(true);
+        expect(document.getElementById("local-nights").classList.contains("hidden")).toBe(false);
+        expect([...rows()].map((row) => row.dataset.nightId)).toEqual(["new", "old"]);
+        expect(rows()[0].querySelector('[data-cell="name"]').textContent).toBe("Night of Sep 8");
+        expect(rows()[0].querySelector('[data-cell="sightings"]').textContent).toBe("3");
+        expect(rows()[0].querySelector('[data-cell="report"]').getAttribute("href")).toBe(
+            "/watch/new/report",
+        );
+        expect(rows()[1].querySelector('[data-cell="status"]').textContent).toContain(
+            "saved to account",
+        );
+        expect(rows()[1].querySelector('[data-cell="claim"]').classList.contains("hidden")).toBe(
+            true,
+        );
     });
 
-    test('closes a night whose tab died so it can be read', async () => {
+    test("closes a night whose tab died so it can be read", async () => {
         const startedAt = new Date(2026, 8, 8, 22, 0).getTime();
-        await stubs.store.putNight({ ...buildLocalNight({ id: 'n1', startedAt, frameWidth: 1, frameHeight: 1, settings: {} }), lastHeartbeatAt: startedAt + 60000 });
+        await stubs.store.putNight({
+            ...buildLocalNight({
+                id: "n1",
+                startedAt,
+                frameWidth: 1,
+                frameHeight: 1,
+                settings: {},
+            }),
+            lastHeartbeatAt: startedAt + 60000,
+        });
         await bootPage();
 
-        expect((await stubs.store.getNight('n1')).status).toBe('completed');
-        expect(rows()[0].querySelector('[data-cell="status"]').textContent).toBe('Completed');
+        expect((await stubs.store.getNight("n1")).status).toBe("completed");
+        expect(rows()[0].querySelector('[data-cell="status"]').textContent).toBe("Completed");
     });
 
-    test('removing a night asks first, then drops it from the store and the list', async () => {
-        await stubs.store.putNight(night('n1', new Date(2026, 8, 8, 22, 0).getTime()));
+    test("removing a night asks first, then drops it from the store and the list", async () => {
+        await stubs.store.putNight(night("n1", new Date(2026, 8, 8, 22, 0).getTime()));
         await bootPage();
 
         rows()[0].querySelector('[data-cell="remove"]').click();
         await new Promise((resolve) => setTimeout(resolve, 20));
 
         expect(window.confirm).toHaveBeenCalled();
-        expect(await stubs.store.getNight('n1')).toBeNull();
+        expect(await stubs.store.getNight("n1")).toBeNull();
         expect(rows()).toHaveLength(0);
     });
 
-    test('importing everything skips nights already saved and reports the outcome', async () => {
-        await stubs.store.putNight(night('done', new Date(2026, 8, 6, 22, 0).getTime(), { claimedSessionId: 3 }));
-        await stubs.store.putNight(night('a', new Date(2026, 8, 7, 22, 0).getTime()));
-        await stubs.store.putNight(night('b', new Date(2026, 8, 8, 22, 0).getTime()));
+    test("importing everything skips nights already saved and reports the outcome", async () => {
+        await stubs.store.putNight(
+            night("done", new Date(2026, 8, 6, 22, 0).getTime(), { claimedSessionId: 3 }),
+        );
+        await stubs.store.putNight(night("a", new Date(2026, 8, 7, 22, 0).getTime()));
+        await stubs.store.putNight(night("b", new Date(2026, 8, 8, 22, 0).getTime()));
         stubs.claimNight.mockImplementation(async (store, nightId) => {
             await store.deleteNight(nightId);
 
-            return { sessionId: 9, reportUrl: '/surveillance/9/report' };
+            return { sessionId: 9, reportUrl: "/surveillance/9/report" };
         });
         await bootPage();
 
-        el('claim-all').click();
+        el("claim-all").click();
         await new Promise((resolve) => setTimeout(resolve, 20));
 
         expect(stubs.claimNight).toHaveBeenCalledTimes(2);
-        expect(stubs.claimNight.mock.calls[0][2]).toMatchObject({ room: 'Hall', importUrl: '/surveillance/import' });
-        expect(el('progress').textContent).toBe('2 nights saved to your account, 1 already saved.');
+        expect(stubs.claimNight.mock.calls[0][2]).toMatchObject({
+            room: "Hall",
+            importUrl: "/surveillance/import",
+        });
+        expect(el("progress").textContent).toBe("2 nights saved to your account, 1 already saved.");
         // The imported copies are gone; the one saved earlier from its report stays listed as such.
-        expect([...rows()].map((row) => row.dataset.nightId)).toEqual(['done']);
-        expect(rows()[0].querySelector('[data-cell="status"]').textContent).toContain('saved to account');
+        expect([...rows()].map((row) => row.dataset.nightId)).toEqual(["done"]);
+        expect(rows()[0].querySelector('[data-cell="status"]').textContent).toContain(
+            "saved to account",
+        );
     });
 
-    test('a failed import is explained and the rest still go through', async () => {
-        await stubs.store.putNight(night('a', new Date(2026, 8, 7, 22, 0).getTime()));
-        await stubs.store.putNight(night('b', new Date(2026, 8, 8, 22, 0).getTime()));
+    test("a failed import is explained and the rest still go through", async () => {
+        await stubs.store.putNight(night("a", new Date(2026, 8, 7, 22, 0).getTime()));
+        await stubs.store.putNight(night("b", new Date(2026, 8, 8, 22, 0).getTime()));
         stubs.claimNight
-            .mockRejectedValueOnce(new Error('Could not save this night to your account (HTTP 500).'))
-            .mockResolvedValueOnce({ sessionId: 9, reportUrl: '/surveillance/9/report' });
+            .mockRejectedValueOnce(
+                new Error("Could not save this night to your account (HTTP 500)."),
+            )
+            .mockResolvedValueOnce({ sessionId: 9, reportUrl: "/surveillance/9/report" });
         await bootPage();
 
-        el('claim-all').click();
+        el("claim-all").click();
         await new Promise((resolve) => setTimeout(resolve, 20));
 
-        expect(el('progress').textContent).toContain('1 night saved to your account, 1 could not be saved.');
-        expect(el('progress').textContent).toContain('HTTP 500');
+        expect(el("progress").textContent).toContain(
+            "1 night saved to your account, 1 could not be saved.",
+        );
+        expect(el("progress").textContent).toContain("HTTP 500");
     });
 
-    describe('paging', () => {
+    describe("paging", () => {
         const seedNights = async (count) => {
             for (let i = 0; i < count; i++) {
-                await stubs.store.putNight(night(`n${i}`, new Date(2026, 8, 1 + i, 22, 0).getTime()));
+                await stubs.store.putNight(
+                    night(`n${i}`, new Date(2026, 8, 1 + i, 22, 0).getTime()),
+                );
             }
         };
 
         const settle = () => new Promise((resolve) => setTimeout(resolve, 5));
 
-        test('one page of nights needs no pager', async () => {
+        test("one page of nights needs no pager", async () => {
             await seedNights(5);
             await bootPage();
 
             expect(rows()).toHaveLength(5);
-            expect(el('pager').classList.contains('hidden')).toBe(true);
+            expect(el("pager").classList.contains("hidden")).toBe(true);
         });
 
-        test('shows five newest first, says which, and steps through the rest', async () => {
+        test("shows five newest first, says which, and steps through the rest", async () => {
             await seedNights(7);
             await bootPage();
 
-            expect(el('pager').classList.contains('hidden')).toBe(false);
+            expect(el("pager").classList.contains("hidden")).toBe(false);
             expect(rows()).toHaveLength(5);
-            expect(rows()[0].dataset.nightId).toBe('n6');
-            expect(el('page-summary').textContent).toBe('Showing 1–5 of 7 nights');
-            expect(el('prev').hasAttribute('disabled')).toBe(true);
-            expect(el('next').hasAttribute('disabled')).toBe(false);
+            expect(rows()[0].dataset.nightId).toBe("n6");
+            expect(el("page-summary").textContent).toBe("Showing 1–5 of 7 nights");
+            expect(el("prev").hasAttribute("disabled")).toBe(true);
+            expect(el("next").hasAttribute("disabled")).toBe(false);
 
-            el('next').click();
+            el("next").click();
             await settle();
 
             expect(rows()).toHaveLength(2);
-            expect([...rows()].map((row) => row.dataset.nightId)).toEqual(['n1', 'n0']);
-            expect(el('page-summary').textContent).toBe('Showing 6–7 of 7 nights');
-            expect(el('next').hasAttribute('disabled')).toBe(true);
+            expect([...rows()].map((row) => row.dataset.nightId)).toEqual(["n1", "n0"]);
+            expect(el("page-summary").textContent).toBe("Showing 6–7 of 7 nights");
+            expect(el("next").hasAttribute("disabled")).toBe(true);
 
-            el('prev').click();
+            el("prev").click();
             await settle();
 
-            expect(rows()[0].dataset.nightId).toBe('n6');
+            expect(rows()[0].dataset.nightId).toBe("n6");
         });
 
         // Removing the last night on the last page must not leave an empty page
         // on show with nowhere to go.
-        test('emptying the last page falls back to the one before it', async () => {
+        test("emptying the last page falls back to the one before it", async () => {
             await seedNights(6);
             await bootPage();
 
-            el('next').click();
+            el("next").click();
             await settle();
             expect(rows()).toHaveLength(1);
 
@@ -220,15 +255,15 @@ describe('local nights list', () => {
             await settle();
 
             expect(rows()).toHaveLength(5);
-            expect(el('pager').classList.contains('hidden')).toBe(true);
+            expect(el("pager").classList.contains("hidden")).toBe(true);
         });
     });
 
-    test('warns when the browser will not keep nights between visits', async () => {
+    test("warns when the browser will not keep nights between visits", async () => {
         stubs.store.volatile = true;
         await bootPage();
 
-        expect(el('banner').classList.contains('hidden')).toBe(false);
-        expect(el('banner').textContent).toContain('will not keep nights');
+        expect(el("banner").classList.contains("hidden")).toBe(false);
+        expect(el("banner").textContent).toContain("will not keep nights");
     });
 });

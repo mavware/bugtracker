@@ -3,7 +3,6 @@
 use App\Models\BugTrack;
 use App\Models\SurveillanceSession;
 use App\Models\User;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Livewire\Livewire;
 
 test('dismissing a track excludes it from the analytics and the report payload', function () {
@@ -43,5 +42,6 @@ test('a track from a different session cannot be toggled', function () {
 
     Livewire::actingAs($user)
         ->test('pages::surveillance.report', ['session' => $session])
-        ->call('toggleDismissed', $foreignTrack->id);
-})->throws(ModelNotFoundException::class);
+        ->call('toggleDismissed', $foreignTrack->id)
+        ->assertNotFound();
+});
