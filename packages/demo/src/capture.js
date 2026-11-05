@@ -72,7 +72,7 @@ function initCaptureApp(root) {
     ui.startButton.addEventListener('click', () => startNight().catch((error) => {
         // A refused camera prompt must leave the buttons usable, otherwise the
         // only way to try again is reloading the page.
-        ui.startButton.removeAttribute('disabled');
+        showStartButton(true);
         showCameraCheck(true);
         showCameraStage(false);
         setState('Error');
@@ -175,7 +175,7 @@ function initCaptureApp(root) {
 
         stopCameraCheck();
 
-        ui.startButton.setAttribute('disabled', 'disabled');
+        showStartButton(false);
         showCameraCheck(false);
         setState('Starting camera…');
         showCameraStage(true);
@@ -197,7 +197,7 @@ function initCaptureApp(root) {
 
         if (outcome.blocked) {
             setState('Too dark');
-            ui.startButton.removeAttribute('disabled');
+            showStartButton(true);
             showCameraCheck(true);
             app.camera.stop();
             showCameraStage(false);
@@ -249,7 +249,6 @@ function initCaptureApp(root) {
         setNavigationLocked(true);
         showRecording(true);
         ui.setupHelp.classList.add('hidden');
-        ui.startButton.classList.add('hidden');
         ui.endButton.classList.remove('hidden');
         setState(watchingState(false));
 
@@ -273,7 +272,6 @@ function initCaptureApp(root) {
         app.tracker.update(blobs);
 
         ui.liveCount.textContent = String(app.tracker.active.length);
-        setState(watchingState(app.detector.largeMotion));
         drawOverlay(blobs);
     }
 
@@ -293,7 +291,8 @@ function initCaptureApp(root) {
         }
 
         // A dropped frame gets a red border instead of boxes: the person in
-        // shot is being ignored, not missed.
+        // shot is being ignored, not missed. The header text stays on
+        // "Tracking"; a longer message there made the page jump.
         if (app.detector.largeMotion) {
             ctx.strokeStyle = '#f87171';
             ctx.lineWidth = 6;
@@ -353,6 +352,15 @@ function initCaptureApp(root) {
 
     function setState(text) {
         ui.state.textContent = text;
+    }
+
+    /**
+     * Start tracking is only offered while no night is underway. It leaves the
+     * page the moment one is pending (camera, countdown, calibration) and comes
+     * back only when that attempt is abandoned.
+     */
+    function showStartButton(visible) {
+        ui.startButton.classList.toggle('hidden', !visible);
     }
 
     /** The header's recording light, and the clock time the night began beside it. */
