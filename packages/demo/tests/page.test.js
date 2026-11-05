@@ -74,3 +74,47 @@ describe("demo capture page", () => {
         }
     });
 });
+
+// The preflight checklist is copied by hand from the app's dialog. Every line the
+// app shows has to be here too, except the auto-end option, which the demo lacks.
+describe("demo preflight dialog", () => {
+    const blade = readFileSync(
+        join(
+            import.meta.dirname,
+            "..",
+            "..",
+            "..",
+            "resources",
+            "views",
+            "components",
+            "surveillance",
+            "capture-panel.blade.php",
+        ),
+        "utf8",
+    );
+    const appDialog = blade.slice(blade.indexOf('data-capture="preflight"'), blade.indexOf("</dialog>"));
+    const appLines = [...appDialog.matchAll(/__\('([^']+)'\)/g)].map((match) => match[1]);
+    const autoEndLines = ["Stop tracking after a set time", "hours from the start, then the night ends on its own."];
+    const dialog = page.querySelector('dialog[data-capture="preflight"]');
+
+    test("the dialog is a modal on the capture page with a start and a cancel", () => {
+        expect(dialog).not.toBeNull();
+        expect(page.querySelector("#capture-app").contains(dialog)).toBe(true);
+        expect(dialog.querySelector('[data-capture="preflight-start"]')).not.toBeNull();
+        expect(dialog.querySelector('[data-capture="preflight-cancel"]')).not.toBeNull();
+    });
+
+    test("it says everything the app's dialog says", () => {
+        const expected = appLines.filter((line) => !autoEndLines.includes(line));
+
+        expect(expected.length).toBeGreaterThanOrEqual(12);
+
+        for (const line of expected) {
+            expect(dialog.textContent).toContain(line);
+        }
+    });
+
+    test("it offers no auto-end, which the demo cannot honour", () => {
+        expect(dialog.querySelector('[data-capture="auto-end"]')).toBeNull();
+    });
+});

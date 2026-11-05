@@ -16,7 +16,6 @@ import {
     LocalNightSink,
     openNightStore,
     overlayBoxes,
-    PREFLIGHT_MESSAGE,
     Tracker,
     VOLATILE_STORE_MESSAGE,
     WakeLock,
@@ -39,6 +38,9 @@ function initCaptureApp(root) {
         overlay: el('overlay'),
         placeholder: el('placeholder'),
         startButton: el('start'),
+        preflight: el('preflight'),
+        preflightStart: el('preflight-start'),
+        preflightCancel: el('preflight-cancel'),
         checkButton: el('check'),
         checkLabel: el('check-label'),
         endButton: el('end'),
@@ -85,6 +87,14 @@ function initCaptureApp(root) {
         showBanner(String(error));
     }));
     ui.endButton.addEventListener('click', () => endNight());
+    ui.preflightCancel.addEventListener('click', () => ui.preflight.close(''));
+    // A click on the backdrop lands on the dialog element itself, never on its
+    // contents, so it can be told from a click inside and treated as a cancel.
+    ui.preflight.addEventListener('click', (event) => {
+        if (event.target === ui.preflight) {
+            ui.preflight.close('');
+        }
+    });
     // Closing the tab ends the night for good. Browsers word this prompt
     // themselves; all we can do is ask for it.
     window.addEventListener('beforeunload', (event) => {
@@ -169,7 +179,9 @@ function initCaptureApp(root) {
     // The countdown comes before calibration and the reference photo so all of
     // them describe an empty room rather than the person walking out of it.
     async function startNight() {
-        if (!window.confirm(PREFLIGHT_MESSAGE)) {
+        // Asked before the camera opens: the light has to be on before calibration
+        // reads the room.
+        if (!(await askPreflight())) {
             return;
         }
 
@@ -254,6 +266,26 @@ function initCaptureApp(root) {
 
         app.loopTimer = setInterval(processFrame, 1000 / settings.processFps);
         setInterval(updateElapsed, 1000);
+    }
+
+    /**
+     * Put the room checklist in front of the user and wait for their answer. The
+     * dialog is the page's; Start closes it with a value, Not yet, the backdrop
+     * and Escape close it empty, and the close event is the one place both are read.
+     */
+    function askPreflight() {
+        return new Promise((resolve) => {
+            const onStart = () => ui.preflight.close('start');
+            const onClose = () => {
+                ui.preflightStart.removeEventListener('click', onStart);
+                resolve(ui.preflight.returnValue === 'start');
+            };
+
+            ui.preflightStart.addEventListener('click', onStart);
+            ui.preflight.addEventListener('close', onClose, { once: true });
+            ui.preflight.returnValue = '';
+            ui.preflight.showModal();
+        });
     }
 
     async function countdownToLeave() {
