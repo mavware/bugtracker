@@ -102,7 +102,7 @@ test('the dashboard carries the panel that imports device-local nights, hidden u
         ->assertSee('max-h-80 overflow-y-auto', false);
 
     // Hidden in the markup: nothing to show until claim.js has read the store.
-    expect(Str::before(Str::after($response->getContent(), 'id="claim-nights"'), '>'))->toContain('class="hidden"');
+    expect(Str::before(Str::after($response->getContent(), 'id="claim-nights"'), '>'))->toMatch('/class="[^"]*\bhidden\b/');
 });
 
 // Each row offers the user's own customers, and only theirs, so a night can be

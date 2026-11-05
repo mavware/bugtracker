@@ -144,7 +144,7 @@ new #[Title('Admin · Users'), Layout('layouts::app', [
             'email' => $validated['email'],
         ]);
 
-        $roles = array_map(UserRole::from(...), $validated['roles']);
+        $roles = array_map(fn (string $role): UserRole => UserRole::from($role), $validated['roles']);
 
         if ($this->isEditingSelf()) {
             $roles = array_filter($roles, fn (UserRole $role): bool => $role !== UserRole::Admin);
