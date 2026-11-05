@@ -4,10 +4,12 @@ namespace App\Concerns;
 
 use App\Models\SurveillanceSession;
 use App\Models\User;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ValidatedInput;
 use Illuminate\Validation\Rule;
+use Stringable;
 
 trait SurveillanceValidationRules
 {
@@ -17,7 +19,7 @@ trait SurveillanceValidationRules
      * reading it back through `integer()`/`string()` keeps the ingestion path
      * from working with untyped values.
      *
-     * @param  array<string, array<int, string>>  $rules
+     * @param  array<string, array<int, string|Stringable|ValidationRule>>  $rules
      */
     protected function validatedInput(Request $request, array $rules): ValidatedInput
     {
@@ -60,7 +62,7 @@ trait SurveillanceValidationRules
      * is still a night, so the track list may be empty. A customer, if named,
      * has to be one of the importing user's own.
      *
-     * @return array<string, array<int, mixed>>
+     * @return array<string, array<int, string|Stringable>>
      */
     protected function importNightRules(User $user): array
     {

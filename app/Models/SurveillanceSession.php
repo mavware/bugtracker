@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Storage;
  * @property Carbon|null $started_at
  * @property Carbon|null $ended_at
  * @property Carbon|null $last_heartbeat_at
+ * @property Carbon|null $planned_end_at The device's own deadline for the night, if it set one.
  * @property string|null $reference_image_path
  * @property int|null $frame_width
  * @property int|null $frame_height

@@ -26,12 +26,12 @@ class DescribeNightInProgress
      */
     public function handle(SurveillanceSession $session): array
     {
-        $lastOffsetMs = $session->tracks()->confirmed()->max('end_offset_ms');
+        $lastSighting = $session->tracks()->confirmed()->orderByDesc('end_offset_ms')->first(['end_offset_ms']);
 
         return [
             'sightings' => $session->tracks()->confirmed()->count(),
-            'last_sighting_at' => $lastOffsetMs !== null && $session->started_at !== null
-                ? $session->started_at->copy()->addMilliseconds((int) $lastOffsetMs)
+            'last_sighting_at' => $lastSighting !== null && $session->started_at !== null
+                ? $session->started_at->copy()->addMilliseconds($lastSighting->end_offset_ms)
                 : null,
             'heartbeat_stale' => $session->last_heartbeat_at === null
                 || $session->last_heartbeat_at->lt(now()->subMinutes(self::STALE_HEARTBEAT_MINUTES)),
