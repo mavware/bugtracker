@@ -118,3 +118,26 @@ describe("demo preflight dialog", () => {
         expect(dialog.querySelector('[data-capture="auto-end"]')).toBeNull();
     });
 });
+
+// nights.js fills the count in the page heading and shows it once a night exists;
+// its href is what carries the click down to the table.
+describe("demo nights count", () => {
+    test("the heading carries a hidden count that links down to the nights table", () => {
+        const link = page.querySelector('[data-nights="count-link"]');
+
+        expect(link).not.toBeNull();
+        expect(page.querySelector("#capture-app .page-heading").contains(link)).toBe(true);
+        expect(link.getAttribute("href")).toBe("#local-nights");
+        expect(link.classList.contains("hidden")).toBe(true);
+        expect(link.querySelector('[data-nights="count"]')).not.toBeNull();
+        expect(link.querySelector('[data-nights="count-label"]')).not.toBeNull();
+        expect(page.querySelector("#local-nights")).not.toBeNull();
+    });
+
+    test("the nights table has a section-sized heading", () => {
+        const heading = page.querySelector("#local-nights h2");
+
+        expect(heading).not.toBeNull();
+        expect(heading.classList.contains("section-title")).toBe(true);
+    });
+});

@@ -11,6 +11,9 @@ if (root !== null) {
 
 async function initLocalNights(root) {
     const el = (name) => root.querySelector(`[data-nights="${name}"]`);
+    // The count sits in the page heading, outside this section, so it is looked
+    // up on the document rather than on the table it links down to.
+    const countLink = document.querySelector('[data-nights="count-link"]');
     const store = await openNightStore();
 
     if (store.volatile) {
@@ -32,6 +35,7 @@ async function initLocalNights(root) {
         const body = el('rows');
 
         root.classList.toggle('hidden', rows.length === 0 && !store.volatile);
+        showNightCount(countLink, rows.length);
         body.replaceChildren();
 
         for (const row of rows) {
@@ -64,4 +68,15 @@ async function initLocalNights(root) {
     });
 
     await render();
+}
+
+/** "3 nights recorded" in the page heading, or nothing at all while there are none. */
+function showNightCount(link, count) {
+    if (link === null) {
+        return;
+    }
+
+    link.classList.toggle('hidden', count === 0);
+    link.querySelector('[data-nights="count"]').textContent = String(count);
+    link.querySelector('[data-nights="count-label"]').textContent = count === 1 ? 'night recorded' : 'nights recorded';
 }

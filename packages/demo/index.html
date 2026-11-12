@@ -23,6 +23,14 @@
                     <h1>Watch a room tonight</h1>
                     <p class="muted">Keep the device plugged in, the screen on, and this tab visible all night.</p>
                 </div>
+
+                <!-- How many nights this browser holds, as a link down to their
+                     table. nights.js writes the count and shows the link once there
+                     is one; it stays hidden until then. -->
+                <a href="#local-nights" data-nights="count-link" class="nights-count hidden">
+                    <span data-nights="count" class="tabular">0</span>
+                    <span data-nights="count-label">nights recorded</span>
+                </a>
             </div>
 
             <div data-capture="banner" class="banner hidden"></div>
@@ -263,7 +271,7 @@
         <section id="local-nights" class="hidden nights">
             <div class="page-heading">
                 <div>
-                    <h2>Nights on this device</h2>
+                    <h2 class="section-title">Nights on this device</h2>
                     <p class="muted small">Only this browser can see these. Clearing site data deletes them.</p>
                 </div>
             </div>
